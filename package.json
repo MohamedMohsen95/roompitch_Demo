@@ -1,0 +1,13 @@
+{
+  "name": "roompitch",
+  "version": "0.1.0",
+  "private": true,
+  "description": "AI concept co-pilot for interior designers: live restyle, budget and branded proposal.",
+  "type": "module",
+  "scripts": {
+    "dev": "node dev-server.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

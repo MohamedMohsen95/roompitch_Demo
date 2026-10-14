@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>RoomPitch — AI Concept Co-Pilot</title>
+  <meta name="description" content="Restyle a room photo live with your client, price it from your own rates and export a branded proposal." />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app" id="app">
+    <!-- Header -->
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 32 32" width="28" height="28"><path d="M4 28V12L16 4l12 8v16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/><path d="M11 28v-9h10v9" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/></svg>
+        </span>
+        <span class="brand-name">RoomPitch</span>
+        <span class="mode-badge" id="modeBadge"></span>
+      </div>
+      <div class="top-actions">
+        <button class="ghost" id="btnPrices" data-i18n="priceList">Price list</button>
+        <button class="ghost" id="btnStudio" data-i18n="studio">Studio</button>
+        <button class="lang" id="btnLang" aria-label="Switch language">ع</button>
+      </div>
+    </header>
+
+    <main class="layout">
+      <!-- LEFT: controls -->
+      <section class="panel controls">
+        <div class="step">
+          <h2><span class="num">1</span><span data-i18n="s1">The room</span></h2>
+          <label class="drop" id="drop">
+            <input type="file" id="fileInput" accept="image/*" hidden />
+            <span class="drop-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="26" height="26"><path d="M12 16V4m0 0-4 4m4-4 4 4M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+            <span class="drop-text" data-i18n="dropText">Upload or take a photo of the room</span>
+            <span class="drop-hint" data-i18n="dropHint">Finished room or site under construction</span>
+          </label>
+
+          <div class="grid2">
+            <label class="field">
+              <span data-i18n="roomType">Room type</span>
+              <select id="roomType"></select>
+            </label>
+            <label class="field check">
+              <input type="checkbox" id="construction" />
+              <span data-i18n="construction">Site under construction</span>
+            </label>
+          </div>
+          <div class="grid3">
+            <label class="field"><span data-i18n="length">Length (m)</span><input type="number" id="dimL" min="1" step="0.1" value="5" inputmode="decimal" /></label>
+            <label class="field"><span data-i18n="width">Width (m)</span><input type="number" id="dimW" min="1" step="0.1" value="4" inputmode="decimal" /></label>
+            <label class="field"><span data-i18n="height">Ceiling (m)</span><input type="number" id="dimH" min="2" step="0.1" value="3" inputmode="decimal" /></label>
+          </div>
+        </div>
+
+        <div class="step">
+          <h2><span class="num">2</span><span data-i18n="s2">Style</span></h2>
+          <div class="chips" id="styleChips"></div>
+
+          <div class="field">
+            <span data-i18n="preserve">Keep the room's structure</span>
+            <div class="segmented" id="preserveSeg">
+              <button data-v="strict" data-i18n="pStrict">Exactly</button>
+              <button data-v="balanced" data-i18n="pBalanced">Mostly</button>
+              <button data-v="creative" data-i18n="pCreative">Loosely</button>
+            </div>
+          </div>
+          <label class="field">
+            <span data-i18n="extra">Client wishes (optional)</span>
+            <input type="text" id="extraNotes" data-i18n-ph="extraPh" placeholder="e.g. warm beige, wooden ceiling, no carpets" />
+          </label>
+          <div class="btn-row">
+            <button class="primary" id="btnGenerate" data-i18n="generate">Generate render</button>
+            <button class="secondary" id="btnThree" data-i18n="three">3 styles at once</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- CENTER: viewer -->
+      <section class="panel viewer">
+        <div class="stage" id="stage">
+          <div class="empty" id="emptyState">
+            <p class="empty-title" data-i18n="emptyTitle">Show your client their room, redesigned — in seconds.</p>
+            <p class="empty-sub" data-i18n="emptySub">Upload a photo to start. Everything stays on this device.</p>
+          </div>
+          <div class="frame" id="frame" hidden>
+            <img id="imgBefore" alt="" draggable="false" />
+            <img id="imgAfter" alt="" draggable="false" />
+            <canvas id="brushCanvas" hidden></canvas>
+            <span class="tag tag-before" data-i18n="before">Before</span>
+            <span class="tag tag-after" data-i18n="after">After</span>
+            <input type="range" id="compare" min="0" max="100" value="50" aria-label="Before / after" />
+            <div class="handle" id="handle" aria-hidden="true"><span></span></div>
+          </div>
+          <div class="loading" id="loading" hidden>
+            <div class="spinner"></div>
+            <p id="loadingText" data-i18n="rendering">Rendering…</p>
+            <p class="timer" id="timer">0.0s</p>
+          </div>
+        </div>
+
+        <div class="viewer-tools" id="viewerTools" hidden>
+          <div class="tool-row">
+            <button class="secondary" id="btnEditMode" data-i18n="editArea">Edit an area</button>
+            <span class="muted small" id="renderMeta"></span>
+          </div>
+          <div class="edit-bar" id="editBar" hidden>
+            <p class="small muted" data-i18n="editHelp">Paint over what you want to change (e.g. the sofa), then describe the change.</p>
+            <div class="edit-row">
+              <label class="field inline"><span data-i18n="brush">Brush</span><input type="range" id="brushSize" min="10" max="120" value="40" /></label>
+              <button class="ghost" id="btnClearMask" data-i18n="clear">Clear</button>
+            </div>
+            <div class="edit-row">
+              <input type="text" id="editPrompt" data-i18n-ph="editPh" placeholder="e.g. replace with a light grey linen sofa" />
+              <button class="primary" id="btnApplyEdit" data-i18n="apply">Apply</button>
+              <button class="ghost" id="btnCancelEdit" data-i18n="cancel">Cancel</button>
+            </div>
+          </div>
+          <div class="strip" id="strip"></div>
+        </div>
+      </section>
+
+      <!-- RIGHT: budget + proposal -->
+      <section class="panel budget">
+        <div class="step">
+          <h2><span class="num">3</span><span data-i18n="s3">Budget</span></h2>
+          <div class="field">
+            <span data-i18n="finish">Finish level</span>
+            <div class="segmented" id="finishSeg">
+              <button data-v="economy" data-i18n="fEconomy">Economy</button>
+              <button data-v="standard" data-i18n="fStandard">Standard</button>
+              <button data-v="premium" data-i18n="fPremium">Premium</button>
+            </div>
+          </div>
+          <p class="sample-note" id="sampleNote" data-i18n="sampleNote">Sample prices — open “Price list” and enter your own rates.</p>
+          <div class="table-wrap">
+            <table class="lines" id="linesTable">
+              <thead><tr><th></th><th data-i18n="item">Item</th><th data-i18n="qty">Qty</th><th class="num-col" data-i18n="amount">Amount</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="totals" id="totals"></div>
+        </div>
+
+        <div class="step">
+          <h2><span class="num">4</span><span data-i18n="s4">Proposal</span></h2>
+          <label class="field"><span data-i18n="clientName">Client name</span><input type="text" id="clientName" /></label>
+          <label class="field"><span data-i18n="projectName">Project / location</span><input type="text" id="projectName" /></label>
+          <label class="field"><span data-i18n="notes">Notes for the client</span><textarea id="propNotes" rows="2"></textarea></label>
+          <div class="grid2">
+            <label class="field"><span data-i18n="pdfLang">PDF language</span>
+              <select id="pdfLang"><option value="en">English</option><option value="ar">العربية</option></select>
+            </label>
+            <label class="field"><span data-i18n="validity">Valid for (days)</span><input type="number" id="validity" min="1" value="14" /></label>
+          </div>
+          <button class="primary wide" id="btnPdf" data-i18n="exportPdf">Export PDF proposal</button>
+          <p class="small muted" data-i18n="pdfHint">Choose “Save as PDF” in the print window.</p>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Price list dialog -->
+  <dialog id="dlgPrices" class="dlg">
+    <form method="dialog" class="dlg-inner">
+      <header class="dlg-head">
+        <h3 data-i18n="priceListTitle">Your price list</h3>
+        <button class="ghost" value="close" aria-label="Close">✕</button>
+      </header>
+      <p class="small muted" data-i18n="priceListHelp">These rates drive every estimate. They are saved on this device only.</p>
+      <div class="grid3">
+        <label class="field"><span data-i18n="currency">Currency</span><select id="currency"></select></label>
+        <label class="field"><span data-i18n="feePct">Design & labor fee %</span><input type="number" id="feePct" min="0" step="0.5" /></label>
+        <label class="field"><span data-i18n="vatPct">VAT %</span><input type="number" id="vatPct" min="0" step="0.5" /></label>
+      </div>
+      <div class="table-wrap tall">
+        <table class="lines" id="priceTable">
+          <thead><tr><th data-i18n="item">Item</th><th data-i18n="unit">Unit</th><th class="num-col" data-i18n="price">Price</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <footer class="dlg-foot">
+        <button class="ghost" type="button" id="btnResetPrices" data-i18n="resetPrices">Reset to samples</button>
+        <button class="primary" value="close" data-i18n="done">Done</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <!-- Studio dialog -->
+  <dialog id="dlgStudio" class="dlg">
+    <form method="dialog" class="dlg-inner">
+      <header class="dlg-head">
+        <h3 data-i18n="studioTitle">Your studio</h3>
+        <button class="ghost" value="close" aria-label="Close">✕</button>
+      </header>
+      <p class="small muted" data-i18n="studioHelp">Shown on every proposal. Saved on this device only.</p>
+      <div class="logo-row">
+        <div class="logo-preview" id="logoPreview"><span data-i18n="noLogo">No logo</span></div>
+        <label class="secondary file-btn"><input type="file" id="logoInput" accept="image/*" hidden /><span data-i18n="uploadLogo">Upload logo</span></label>
+        <button class="ghost" type="button" id="btnRemoveLogo" data-i18n="remove">Remove</button>
+      </div>
+      <label class="field"><span data-i18n="studioName">Studio name</span><input type="text" id="stName" /></label>
+      <div class="grid2">
+        <label class="field"><span data-i18n="designer">Designer</span><input type="text" id="stDesigner" /></label>
+        <label class="field"><span data-i18n="phone">Phone</span><input type="tel" id="stPhone" /></label>
+      </div>
+      <label class="field"><span data-i18n="email">Email / website</span><input type="text" id="stEmail" /></label>
+      <label class="field"><span data-i18n="accessCode">Access code (only if your deployment sets one)</span><input type="password" id="stAccess" autocomplete="off" /></label>
+      <footer class="dlg-foot">
+        <span></span>
+        <button class="primary" value="close" data-i18n="done">Done</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <!-- Printable proposal (filled on export) -->
+  <div id="proposal" class="proposal" aria-hidden="true"></div>
+
+  <script src="i18n.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
