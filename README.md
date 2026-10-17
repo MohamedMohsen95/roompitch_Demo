@@ -33,26 +33,40 @@ node dev-server.mjs
 
 ## 🔑 2. شغّل الذكاء الاصطناعي الحقيقي
 
+فيه اختيارين. انسخ `.env.example` لملف اسمه `.env` وحط مفاتيح واحد منهم:
+
+### أ) Cloudflare Workers AI — **مجاني للتجربة**
+فيه رصيد مجاني يومي (10,000 neuron ≈ حوالي 100 رندر في اليوم)، بيتجدد كل يوم الساعة 12 بالليل UTC.
+
+1. اعمل حساب مجاني على <https://dash.cloudflare.com>.
+2. الـ **Account ID**: هتلاقيه في الداشبورد (Workers & Pages → على اليمين)، أو في اللينك بعد `dash.cloudflare.com/`.
+3. الـ **API Token**: من <https://dash.cloudflare.com/profile/api-tokens> → **Create Token** → اختار template **Workers AI**.
+4. في `.env`:
+   ```
+   CF_ACCOUNT_ID=الـ_account_id
+   CF_API_TOKEN=التوكن
+   ```
+
+الموديل: `@cf/black-forest-labs/flux-2-klein-4b` (سريع ورخيص). الجودة أقل شوية من fal، والصورة اللي بتتبعت للموديل بتصغر لأقل من 512 بكسل (شرط عندهم)، والتعديل بالفرشاة بيتلزق على الجزء اللي لونته بس.
+
+### ب) fal.ai — مدفوع، أحسن جودة
 1. اعمل حساب على <https://fal.ai> واشحن رصيد صغير (مثلاً 10 دولار).
-2. من <https://fal.ai/dashboard/keys> اعمل API key.
-3. انسخ `.env.example` لملف اسمه `.env` وحط المفتاح:
-   ```
-   FAL_KEY=المفتاح_بتاعك
-   ```
-4. اقفل السيرفر (Ctrl+C) وشغله تاني. هتلاقي فوق مكتوب **"AI live"**.
+2. من <https://fal.ai/dashboard/keys> اعمل API key، وحطه في `.env`: `FAL_KEY=المفتاح_بتاعك`
 
-**الموديلات المستخدمة** (تقدر تغيرها من `.env` من غير ما تلمس الكود):
-- تغيير الستايل: `fal-ai/nano-banana/edit` (بيحافظ على شكل الغرفة كويس جداً)
-- التعديل بالفرشاة: `fal-ai/flux-pro/v1/fill`
+الموديلات: تغيير الستايل `fal-ai/nano-banana/edit`، والتعديل بالفرشاة `fal-ai/flux-pro/v1/fill`.
 
-> ⚠️ **التكلفة:** كل رندر بيتخصم من رصيدك على fal.ai. شوف الأسعار الحالية في صفحة كل موديل، واحسب إن اشتراك المصمم يغطيها.
+---
+
+بعدها اقفل السيرفر (Ctrl+C) وشغله تاني. هتلاقي فوق مكتوب **"AI live"**. لو حطيت الاتنين، Cloudflare هو اللي هيشتغل (أو اختار بـ `AI_PROVIDER=fal`).
+
+> ⚠️ **التكلفة:** على fal كل رندر بيتخصم من رصيدك. على Cloudflare لما الرصيد المجاني اليومي يخلص هيظهرلك رسالة، ولو فعلت الخطة المدفوعة (Workers Paid) هيتحسب عليك.
 
 ## 🚀 3. ارفعه على Vercel
 
 1. ارفع فولدر `roompitch` على GitHub (repo جديد). **الملف `.env` مش هيترفع** — وده مقصود عشان مفتاحك يفضل سري.
 2. ادخل <https://vercel.com/new> واختار الـ repo. سيب كل الإعدادات زي ما هي واضغط **Deploy**.
 3. من **Project → Settings → Environment Variables** ضيف:
-   - `FAL_KEY` = مفتاحك
+   - `CF_ACCOUNT_ID` و `CF_API_TOKEN` (أو `FAL_KEY`)
    - `ACCESS_CODE` = أي كود سري (اختياري لكن **مهم جداً**: من غيره أي حد يعرف اللينك يقدر يصرف من رصيدك)
 4. اعمل **Redeploy** عشان الإعدادات تشتغل.
 5. لو حطيت `ACCESS_CODE`: افتح التطبيق → **Studio** → اكتب نفس الكود.
@@ -93,10 +107,12 @@ node dev-server.mjs
 
 **What it is:** a no-build web app for interior designers to use live with clients — upload a room photo, restyle it with AI (8 styles, 3 structure-preservation levels, "site under construction" option), compare before/after, brush-edit one area, get an itemized estimate from the designer's own price list, and export a branded A4 proposal in English or Arabic (RTL).
 
-**Run locally:** `node dev-server.mjs` → http://localhost:3000 (Node 18+, no dependencies). Without `FAL_KEY` it runs in demo mode.
+**Run locally:** `node dev-server.mjs` → http://localhost:3000 (Node 18+, no dependencies). Without any AI keys it runs in demo mode.
 
-**Real AI:** put `FAL_KEY=...` in `.env`. Restyle uses `fal-ai/nano-banana/edit`; brush edits use `fal-ai/flux-pro/v1/fill` (override with `FAL_RESTYLE_MODEL` / `FAL_INPAINT_MODEL`).
+**Real AI (free to try):** set `CF_ACCOUNT_ID` + `CF_API_TOKEN` in `.env` to use Cloudflare Workers AI (`@cf/black-forest-labs/flux-2-klein-4b`, roughly 100 free renders/day). Input photos are downscaled below 512px (a Workers AI limit) and brush edits are composited into the painted area in the browser.
 
-**Deploy:** push to GitHub → import on Vercel → add `FAL_KEY` and (strongly recommended) `ACCESS_CODE` env vars → redeploy. `api/generate.js` runs as a Vercel serverless function (60s max).
+**Real AI (paid, best quality):** set `FAL_KEY`. Restyle uses `fal-ai/nano-banana/edit`; brush edits use `fal-ai/flux-pro/v1/fill` (override with `FAL_RESTYLE_MODEL` / `FAL_INPAINT_MODEL`). If both are set, Cloudflare is used unless `AI_PROVIDER=fal`.
+
+**Deploy:** push to GitHub → import on Vercel → add the AI keys and (strongly recommended) `ACCESS_CODE` env vars → redeploy. `api/generate.js` runs as a Vercel serverless function (60s max).
 
 **MVP limits:** settings live in the browser (localStorage); renders aren't saved; no accounts, payments or floor-plan parsing yet; PDF goes through the browser's print dialog.

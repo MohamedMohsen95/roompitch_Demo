@@ -126,7 +126,8 @@
     lines: [],               // { id, qty, on, auto }
     editMode: false,
     busy: false,
-    aiEnabled: null
+    aiEnabled: null,
+    maxInputSide: null       // set by the server when the AI needs smaller input photos (Cloudflare)
   };
 
   const $ = sel => document.querySelector(sel);
@@ -232,7 +233,52 @@
     return parts.join(" ");
   }
 
+  // Shrink a data-URI image so its longest side is at most maxSide (some AI providers require it).
+  async function downscaleDataUrl(src, maxSide) {
+    const img = await loadImage(src);
+    const scale = Math.min(1, maxSide / Math.max(img.naturalWidth, img.naturalHeight));
+    if (scale === 1) return src;
+    const w = Math.max(8, Math.floor(img.naturalWidth * scale / 8) * 8);
+    const h = Math.max(8, Math.floor(img.naturalHeight * scale / 8) * 8);
+    const c = el("canvas", { width: w, height: h });
+    c.getContext("2d").drawImage(img, 0, 0, w, h);
+    return c.toDataURL("image/jpeg", 0.92);
+  }
+
+  // Paste `newSrc` over `baseSrc` only where the mask is white, with a soft edge.
+  async function compositeWithMask(baseSrc, newSrc, maskSrc) {
+    const [base, next, mask] = await Promise.all([loadImage(baseSrc), loadImage(newSrc), loadImage(maskSrc)]);
+    const w = base.naturalWidth, h = base.naturalHeight;
+    const c = el("canvas", { width: w, height: h });
+    const ctx = c.getContext("2d");
+    ctx.drawImage(base, 0, 0);
+
+    const mc = el("canvas", { width: w, height: h });
+    const mctx = mc.getContext("2d");
+    mctx.filter = `blur(${Math.max(2, Math.round(w / 200))}px)`;
+    mctx.drawImage(mask, 0, 0, w, h);
+    const id = mctx.getImageData(0, 0, w, h);
+    for (let i = 0; i < id.data.length; i += 4) { id.data[i + 3] = id.data[i]; }
+    mctx.putImageData(id, 0, 0);
+
+    const layer = el("canvas", { width: w, height: h });
+    const lc = layer.getContext("2d");
+    lc.drawImage(next, 0, 0, w, h);
+    lc.globalCompositeOperation = "destination-in";
+    lc.drawImage(mc, 0, 0);
+    ctx.drawImage(layer, 0, 0);
+    return c.toDataURL("image/jpeg", 0.92);
+  }
+
   async function callApi(payload) {
+    if (payload.image) {
+      // Ask for an output with the photo's aspect ratio, longest side ~1024px.
+      const img = await loadImage(payload.image);
+      const s = 1024 / Math.max(img.naturalWidth, img.naturalHeight);
+      payload.width = Math.round(img.naturalWidth * s);
+      payload.height = Math.round(img.naturalHeight * s);
+      if (state.maxInputSide) payload.image = await downscaleDataUrl(payload.image, state.maxInputSide);
+    }
     const res = await fetch("api/generate", {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-access-code": settings.accessCode || "" },
@@ -285,7 +331,7 @@
     // Label so nobody mistakes it for a real render
     const fs = Math.round(w / 34);
     ctx.font = `600 ${fs}px Inter, system-ui, sans-serif`;
-    const label = "DEMO — add FAL_KEY for real AI renders";
+    const label = "DEMO — add an AI key in .env for real renders";
     const tw = ctx.measureText(label).width;
     // Bottom-right, so it stays visible on the "After" side of the comparison slider.
     const x = w - tw - fs * 1.8;
@@ -354,7 +400,9 @@
     const t0 = performance.now();
     try {
       const data = await callApi({ mode: "edit", image: active.src, mask: maskSrc, prompt });
-      const src = data.demo ? await demoRender(active.src, "#6d8f7a", maskSrc) : data.image;
+      const src = data.demo ? await demoRender(active.src, "#6d8f7a", maskSrc)
+        : data.maskComposite ? await compositeWithMask(active.src, data.image, maskSrc)
+        : data.image;
       if (data.demo) setAiEnabled(false); else setAiEnabled(true);
       const secs = ((performance.now() - t0) / 1000).toFixed(1);
       const r = await addRender(src, { kind: "edit", secs }, active.styleId);
@@ -940,7 +988,10 @@
     applyLang();
 
     // Ask the server whether a real AI key is configured.
-    fetch("api/generate").then(r => r.json()).then(d => setAiEnabled(!!d.aiEnabled)).catch(() => {});
+    fetch("api/generate").then(r => r.json()).then(d => {
+      state.maxInputSide = d.maxInputSide || null;
+      setAiEnabled(!!d.aiEnabled);
+    }).catch(() => {});
   }
 
   init();
