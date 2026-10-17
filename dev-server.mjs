@@ -4,7 +4,7 @@
 import http from "node:http";
 import { readFile } from "node:fs/promises";
 import { existsSync, readFileSync } from "node:fs";
-import { extname, join, normalize } from "node:path";
+import { extname, join, posix } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = fileURLToPath(new URL(".", import.meta.url));
@@ -41,7 +41,7 @@ const server = http.createServer(async (req, res) => {
       if (raw) { try { req.body = JSON.parse(raw); } catch { req.body = raw; } }
       return await generate(req, wrapRes(res));
     }
-    const path = url.pathname === "/" ? "/index.html" : normalize(url.pathname);
+    const path = url.pathname === "/" ? "/index.html" : posix.normalize(url.pathname);
     if (!PUBLIC.has(path)) { res.writeHead(404).end("Not found"); return; }
     const data = await readFile(join(root, path));
     res.writeHead(200, { "Content-Type": TYPES[extname(path)] || "application/octet-stream" });
