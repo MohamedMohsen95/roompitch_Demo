@@ -98,6 +98,7 @@
             <span class="tag tag-after" data-i18n="after">After</span>
             <input type="range" id="compare" min="0" max="100" value="50" aria-label="Before / after" />
             <div class="handle" id="handle" aria-hidden="true"><span></span></div>
+            <div class="furn-layer" id="furnLayer"></div>
           </div>
           <div class="loading" id="loading" hidden>
             <div class="spinner"></div>
@@ -109,6 +110,7 @@
         <div class="viewer-tools" id="viewerTools" hidden>
           <div class="tool-row">
             <button class="secondary" id="btnEditMode" data-i18n="editArea">Edit an area</button>
+            <button class="secondary" id="btnFurnitureMode" aria-pressed="false" data-i18n="furnitureToggle">Add furniture</button>
             <span class="muted small" id="renderMeta"></span>
           </div>
           <div class="edit-bar" id="editBar" hidden>
@@ -121,6 +123,14 @@
               <input type="text" id="editPrompt" data-i18n-ph="editPh" placeholder="e.g. replace with a light grey linen sofa" />
               <button class="primary" id="btnApplyEdit" data-i18n="apply">Apply</button>
               <button class="ghost" id="btnCancelEdit" data-i18n="cancel">Cancel</button>
+            </div>
+          </div>
+          <div class="furn-bar" id="furnBar" hidden>
+            <p class="small muted" data-i18n="furnitureHint">Drag a piece onto the photo, or tap it to drop it in — then drag the tag into place. Use arrow keys to nudge, Delete to remove.</p>
+            <div class="furn-catalog" id="furnCatalog"></div>
+            <div class="furn-summary" id="furnSummary" hidden>
+              <span id="furnSummaryText"></span>
+              <button class="ghost" id="btnClearFurniture" data-i18n="clearFurniture">Clear all</button>
             </div>
           </div>
           <div class="strip" id="strip"></div>

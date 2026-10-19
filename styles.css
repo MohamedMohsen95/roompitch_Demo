@@ -199,6 +199,50 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 #brushCanvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 3; cursor: crosshair; touch-action: none; }
 #brushCanvas[hidden] { display: none; }
 
+/* ───── Furniture drag & drop ───── */
+.frame.furn-drop-ready { box-shadow: inset 0 0 0 3px var(--accent); }
+.furn-layer { position: absolute; inset: 0; z-index: 4; pointer-events: none; }
+.frame.editing .furn-layer { display: none; }
+.furn-item {
+  position: absolute; transform: translate(-50%, -100%); pointer-events: auto; cursor: grab;
+  display: flex; flex-direction: column; align-items: center; touch-action: none;
+}
+.furn-item:focus-visible { outline: none; }
+.furn-item:focus-visible .ftag { outline: 2px solid var(--accent); outline-offset: 2px; }
+.furn-item.dragging { cursor: grabbing; z-index: 999 !important; }
+.furn-item .ftag {
+  position: relative; display: flex; align-items: center; gap: 6px;
+  background: color-mix(in srgb, var(--surface) 96%, transparent); color: var(--ink);
+  border-radius: 8px; padding: 5px 9px 5px 6px; box-shadow: 0 2px 8px rgba(0, 0, 0, .25); font-size: 12px;
+  white-space: nowrap; border: 1px solid var(--line);
+}
+.furn-item .ftag svg { color: var(--accent); flex: none; width: 16px; height: 16px; }
+.furn-item .ftag .fn { font-weight: 500; }
+.furn-item .ftag .fp { color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.furn-item .fpin { width: 9px; height: 9px; border-radius: 50%; background: var(--accent); border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, .4); margin-top: -1px; }
+.furn-item .fremove {
+  position: absolute; top: -8px; inset-inline-end: -8px; width: 18px; height: 18px; border-radius: 50%;
+  background: var(--ink); color: var(--surface); font-size: 12px; line-height: 1; border: 2px solid var(--surface);
+  display: grid; place-items: center; opacity: 0; transition: opacity .12s; padding: 0;
+}
+.furn-item:hover .fremove, .furn-item:focus-within .fremove, .furn-item.selected .fremove { opacity: 1; }
+.furn-item.selected .ftag { outline: 2px solid var(--accent); outline-offset: 1px; }
+.furn-bar { margin-top: 10px; padding: 12px; border-radius: 10px; background: var(--accent-soft); }
+.furn-bar[hidden] { display: none; }
+.furn-bar p { margin: 0 0 8px; }
+.furn-catalog { display: flex; gap: 8px; overflow-x: auto; padding: 2px 2px 6px; scrollbar-width: thin; }
+.furn-chip {
+  flex: none; display: flex; flex-direction: column; align-items: center; gap: 4px; width: 78px; padding: 8px 6px;
+  border: 1px solid var(--line); border-radius: 10px; background: var(--surface); cursor: grab; text-align: center;
+}
+.furn-chip:hover { border-color: var(--accent); }
+.furn-chip:active { cursor: grabbing; }
+.furn-chip svg { width: 22px; height: 22px; color: var(--ink-2); }
+.furn-chip .fname { font-size: 11px; font-weight: 500; line-height: 1.2; }
+.furn-chip .fprice { font-size: 10.5px; color: var(--accent); font-variant-numeric: tabular-nums; }
+.furn-summary { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 4px; padding-top: 8px; border-top: 1px solid rgba(0, 0, 0, .08); font-size: 13px; }
+.furn-summary[hidden] { display: none; }
+
 .loading {
   position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 6px;
   background: color-mix(in srgb, var(--paper) 78%, transparent); backdrop-filter: blur(3px); z-index: 5; text-align: center;
@@ -313,6 +357,15 @@ td.unit { display: table-cell; }
   .pp-costs tfoot td:first-child { text-align: end; color: var(--ink-2); }
   .pp-costs tr.grand td { font-size: 13pt; font-weight: 700; border-top: 1.5px solid #1f1d1a; color: #1f1d1a; }
   .pp-costs tr.grand td:last-child { color: var(--accent); }
+  .pp-furniture { break-inside: avoid; }
+  .pp-furniture-hint { font-size: 9pt; color: var(--ink-2); margin: -2px 0 8px; }
+  .pp-furniture table { width: 100%; border-collapse: collapse; font-size: 10pt; }
+  .pp-furniture th { text-align: start; font-weight: 600; border-bottom: 1.5px solid #1f1d1a; padding: 6px 4px; }
+  .pp-furniture td { padding: 5px 4px; border-bottom: 1px solid var(--line); }
+  .pp-furniture .n { text-align: end; white-space: nowrap; }
+  .pp-furniture tfoot td { border-bottom: 0; padding-top: 6px; }
+  .pp-furniture tr.grand td { font-weight: 700; border-top: 1.5px solid #1f1d1a; }
+  .pp-furniture tr.grand td:last-child { color: var(--accent); }
   .pp-notes p { white-space: pre-wrap; margin: 0; }
   .pp-foot { margin-top: 18px; font-size: 9pt; color: var(--ink-2); break-inside: avoid; }
   .pp-foot p { margin: 3px 0; }

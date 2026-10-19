@@ -51,6 +51,31 @@
     { id: "kitchen", en: "Kitchen", ar: "مطبخ" }
   ];
 
+  // Furniture "buy the look" catalog — draggable onto the room photo.
+  // Priced separately from the renovation budget above; each icon is a generic schematic glyph.
+  const FURNITURE = [
+    { id: "sofa", en: "Sofa", ar: "كنبة", price: 1200,
+      icon: '<path d="M5 11V9a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M3 11h18v5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-5Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M4 17v2M20 17v2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>' },
+    { id: "armchair", en: "Armchair", ar: "كرسي فوتيه", price: 450,
+      icon: '<path d="M6 10V8a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M4 10h2v7H4a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1Zm16 0h-2v7h2a1 1 0 0 0 1-1v-4a1 1 0 0 0-1-1Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M6 10h12v6a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1v-6Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M5 17v2M19 17v2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>' },
+    { id: "ctable", en: "Coffee table", ar: "ترابيزة وسط", price: 300,
+      icon: '<rect x="3" y="8" width="18" height="3" rx="1" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M5 11v8M19 11v8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>' },
+    { id: "lamp", en: "Floor lamp", ar: "لامبة أرضية", price: 180,
+      icon: '<path d="M12 7V21" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M8 3h8l2 4H6l2-4Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M9 21h6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>' },
+    { id: "rug", en: "Rug", ar: "سجادة", price: 350,
+      icon: '<rect x="3" y="6" width="18" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><rect x="6" y="9" width="12" height="6" rx="1" fill="none" stroke="currentColor" stroke-width="1.2" stroke-dasharray="2 2"/>' },
+    { id: "plant", en: "Plant", ar: "نبات", price: 120,
+      icon: '<path d="M9 14h6l-1 7H10l-1-7Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 14c0-4 3-5 5-7-4 0-6 2-6.5 5M12 14c0-5-3-6-5-8 4 0 6.5 2.5 7 6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>' },
+    { id: "art", en: "Wall art", ar: "لوحة", price: 220,
+      icon: '<rect x="4" y="4" width="16" height="16" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M7 15l3.5-5 3 3.5L17 9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9" cy="8" r="1.3" fill="currentColor"/>' },
+    { id: "dtable", en: "Dining table", ar: "ترابيزة سفرة", price: 900,
+      icon: '<rect x="2" y="9" width="20" height="2.6" rx="1" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M5 11.6v7M19 11.6v7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>' },
+    { id: "bed", en: "Bed", ar: "سرير", price: 1100,
+      icon: '<path d="M3 20v-7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/><path d="M3 17h18" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><rect x="5" y="12" width="5" height="3" rx="1" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M3 11V6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>' },
+    { id: "wardrobe", en: "Wardrobe", ar: "دولاب", price: 1500,
+      icon: '<rect x="5" y="3" width="14" height="18" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 3v18" stroke="currentColor" stroke-width="1.6"/><circle cx="10.4" cy="12" r="0.9" fill="currentColor"/><circle cx="13.6" cy="12" r="0.9" fill="currentColor"/>' }
+  ];
+
   // Units: m2floor / m2wall / m2ceiling are calculated from the room size.
   // pc (piece) and lm (linear metre) quantities come from the room type below.
   const DEFAULT_PRICES = [
@@ -127,10 +152,14 @@
     editMode: false,
     busy: false,
     aiEnabled: null,
-    maxInputSide: null       // set by the server when the AI needs smaller input photos (Cloudflare)
+    maxInputSide: null,      // set by the server when the AI needs smaller input photos (Cloudflare)
+    furniture: [],           // { uid, catId, x, y, z } — x/y are % of the frame, placed by drag & drop
+    furnZ: 0,
+    furnSelected: null
   };
 
   const $ = sel => document.querySelector(sel);
+  const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n));
   const el = (tag, attrs = {}, ...kids) => {
     const n = document.createElement(tag);
     for (const [k, v] of Object.entries(attrs)) {
@@ -166,6 +195,9 @@
     renderModeBadge();
     renderStrip();
     renderBudget();
+    renderFurnCatalog();
+    renderFurnLayer();
+    renderFurnSummary();
   }
 
   /* ───────────── 4. PHOTO UPLOAD ───────────── */
@@ -204,6 +236,8 @@
       state.original = await fileToResizedDataUrl(file);
       state.renders = [];
       state.activeId = null;
+      state.furniture = [];
+      state.furnSelected = null;
       exitEditMode();
       $(".drop-text").textContent = t("dropChange");
       $("#drop").classList.add("has-photo");
@@ -459,6 +493,8 @@
     fitFrame(state.original.w, state.original.h);
     updateCompareMode();
     renderStrip();
+    renderFurnLayer();
+    renderFurnSummary();
   }
 
   // Size the frame to the image's exact proportions (capped at 72% of screen height)
@@ -529,6 +565,8 @@
     state.editMode = true;
     $("#editBar").hidden = false;
     $("#btnEditMode").hidden = true;
+    $("#furnBar").hidden = true;
+    $("#btnFurnitureMode").setAttribute("aria-pressed", "false");
     $("#frame").classList.add("editing");
     fitFrame(r.w, r.h);
     const bc = $("#brushCanvas");
@@ -619,6 +657,156 @@
     if (overlayQueued) return;
     overlayQueued = true;
     requestAnimationFrame(() => { overlayQueued = false; redrawOverlay(); });
+  }
+
+  /* ───────────── 6b. FURNITURE DRAG & DROP ───────────── */
+
+  function renderFurnCatalog() {
+    const wrap = $("#furnCatalog");
+    if (!wrap) return;
+    wrap.innerHTML = "";
+    for (const f of FURNITURE) {
+      const chip = el("button", {
+        type: "button", class: "furn-chip", draggable: "true",
+        onclick: () => placeFurniture(f.id),
+        ondragstart: e => { e.dataTransfer.effectAllowed = "copy"; e.dataTransfer.setData("text/plain", f.id); }
+      });
+      chip.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true">${f.icon}</svg>`;
+      chip.append(el("span", { class: "fname", text: nameOf(f) }), el("span", { class: "fprice", text: money(f.price) }));
+      wrap.append(chip);
+    }
+  }
+
+  function placeFurniture(catId, x = 50, y = 55) {
+    if (!state.original) return;
+    const n = state.furniture.length;
+    // Cascade repeated taps in a loose grid so they land apart, not stacked exactly.
+    const col = n % 5, row = Math.floor(n / 5) % 4;
+    const jx = x === 50 ? col * 11 - 22 : 0;
+    const jy = x === 50 ? row * 10 - 15 : 0;
+    const item = {
+      uid: "f" + Date.now() + Math.random().toString(36).slice(2, 6),
+      catId,
+      x: clamp(x + jx, 4, 96),
+      y: clamp(y + jy, 8, 96),
+      z: ++state.furnZ
+    };
+    state.furniture.push(item);
+    renderFurnLayer();
+    renderFurnSummary();
+    selectFurn(item.uid);
+  }
+
+  function removeFurniture(uid) {
+    state.furniture = state.furniture.filter(i => i.uid !== uid);
+    if (state.furnSelected === uid) state.furnSelected = null;
+    renderFurnLayer();
+    renderFurnSummary();
+  }
+
+  function clearFurniture() {
+    state.furniture = [];
+    state.furnSelected = null;
+    renderFurnLayer();
+    renderFurnSummary();
+  }
+
+  function selectFurn(uid) {
+    state.furnSelected = uid;
+    const layer = $("#furnLayer");
+    if (!layer) return;
+    layer.querySelectorAll(".furn-item").forEach(n => n.classList.toggle("selected", n.dataset.uid === uid));
+  }
+
+  function renderFurnLayer() {
+    const layer = $("#furnLayer");
+    if (!layer) return;
+    layer.innerHTML = "";
+    if (!state.original) return;
+    for (const item of state.furniture) {
+      const cat = FURNITURE.find(f => f.id === item.catId);
+      if (!cat) continue;
+      const node = el("div", {
+        class: "furn-item" + (item.uid === state.furnSelected ? " selected" : ""),
+        tabindex: "0",
+        role: "group",
+        "aria-label": `${nameOf(cat)} · ${money(cat.price)}`
+      });
+      node.dataset.uid = item.uid;
+      node.style.left = item.x + "%";
+      node.style.top = item.y + "%";
+      node.style.zIndex = String(item.z);
+
+      const tag = el("span", { class: "ftag" });
+      tag.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true">${cat.icon}</svg>`;
+      tag.append(el("span", { class: "fn", text: nameOf(cat) }), el("span", { class: "fp", text: money(cat.price) }));
+      const removeBtn = el("button", {
+        type: "button", class: "fremove", "aria-label": t("remove"),
+        onclick: e => { e.stopPropagation(); removeFurniture(item.uid); }
+      }, el("span", { "aria-hidden": "true", text: "✕" }));
+      tag.append(removeBtn);
+
+      node.append(tag, el("span", { class: "fpin", "aria-hidden": "true" }));
+      wireFurnItemDrag(node, item);
+      layer.append(node);
+    }
+  }
+
+  function wireFurnItemDrag(node, item) {
+    let dragging = false, startClientX = 0, startClientY = 0, startX = 0, startY = 0, rect = null;
+
+    node.addEventListener("pointerdown", e => {
+      if (e.target.closest(".fremove")) return;
+      e.preventDefault();
+      node.setPointerCapture(e.pointerId);
+      dragging = true;
+      node.classList.add("dragging");
+      selectFurn(item.uid);
+      rect = $("#frame").getBoundingClientRect();
+      startClientX = e.clientX; startClientY = e.clientY;
+      startX = item.x; startY = item.y;
+    });
+    node.addEventListener("pointermove", e => {
+      if (!dragging) return;
+      const dx = (e.clientX - startClientX) / rect.width * 100;
+      const dy = (e.clientY - startClientY) / rect.height * 100;
+      item.x = clamp(startX + dx, 2, 98);
+      item.y = clamp(startY + dy, 4, 98);
+      node.style.left = item.x + "%";
+      node.style.top = item.y + "%";
+    });
+    const endDrag = () => { dragging = false; node.classList.remove("dragging"); };
+    node.addEventListener("pointerup", endDrag);
+    node.addEventListener("pointercancel", endDrag);
+
+    node.addEventListener("focus", () => selectFurn(item.uid));
+    node.addEventListener("keydown", e => {
+      const step = e.shiftKey ? 5 : 1.5;
+      if (e.key === "ArrowUp") { item.y = clamp(item.y - step, 4, 98); }
+      else if (e.key === "ArrowDown") { item.y = clamp(item.y + step, 4, 98); }
+      else if (e.key === "ArrowLeft") { item.x = clamp(item.x - step, 2, 98); }
+      else if (e.key === "ArrowRight") { item.x = clamp(item.x + step, 2, 98); }
+      else if (e.key === "Delete" || e.key === "Backspace") { e.preventDefault(); removeFurniture(item.uid); return; }
+      else return;
+      e.preventDefault();
+      node.style.left = item.x + "%";
+      node.style.top = item.y + "%";
+    });
+  }
+
+  function furnSubtotal() {
+    return state.furniture.reduce((sum, item) => {
+      const cat = FURNITURE.find(f => f.id === item.catId);
+      return sum + (cat ? cat.price : 0);
+    }, 0);
+  }
+
+  function renderFurnSummary() {
+    const box = $("#furnSummary");
+    if (!box) return;
+    const n = state.furniture.length;
+    box.hidden = n === 0;
+    if (n) $("#furnSummaryText").textContent = t("furnSummary", { n, total: money(furnSubtotal()) });
   }
 
   /* ───────────── 7. BUDGET ───────────── */
@@ -821,6 +1009,11 @@
       <td class="c">${r.qty} ${esc(unitLabel(r.item.unit, lang))}</td>
       <td class="n">${m(r.unitPrice)}</td><td class="n">${m(r.amount)}</td></tr>`).join("");
 
+    const furnRows = state.furniture.map(it => {
+      const cat = FURNITURE.find(f => f.id === it.catId);
+      return cat ? `<tr><td>${esc(nameOf(cat, lang))}</td><td class="n">${m(cat.price)}</td></tr>` : "";
+    }).join("");
+
     const p = $("#proposal");
     p.setAttribute("dir", lang === "ar" ? "rtl" : "ltr");
     p.setAttribute("lang", lang);
@@ -870,6 +1063,17 @@
           </tfoot>
         </table>
       </section>
+
+      ${state.furniture.length ? `
+      <section class="pp-furniture">
+        <h2>${esc(T("pFurniture"))}</h2>
+        <p class="pp-furniture-hint">${esc(T("pFurnitureHint"))}</p>
+        <table>
+          <thead><tr><th>${esc(T("item"))}</th><th class="n">${esc(T("price"))}</th></tr></thead>
+          <tbody>${furnRows}</tbody>
+          <tfoot><tr class="grand"><td>${esc(T("subtotal"))}</td><td class="n">${m(furnSubtotal())}</td></tr></tfoot>
+        </table>
+      </section>` : ""}
 
       ${$("#propNotes").value.trim() ? `<section class="pp-notes"><h2>${esc(T("pNotes"))}</h2><p>${esc($("#propNotes").value.trim())}</p></section>` : ""}
 
@@ -932,6 +1136,32 @@
     // Compare slider
     $("#compare").addEventListener("input", e => setComparePos(e.target.value));
 
+    // Furniture drag & drop
+    const frame = $("#frame");
+    ["dragenter", "dragover"].forEach(ev => frame.addEventListener(ev, e => {
+      if (!e.dataTransfer || !e.dataTransfer.types.includes("text/plain")) return;
+      e.preventDefault();
+      frame.classList.add("furn-drop-ready");
+    }));
+    frame.addEventListener("dragleave", () => frame.classList.remove("furn-drop-ready"));
+    frame.addEventListener("drop", e => {
+      frame.classList.remove("furn-drop-ready");
+      const catId = e.dataTransfer && e.dataTransfer.getData("text/plain");
+      if (!catId || !FURNITURE.find(f => f.id === catId)) return;
+      e.preventDefault();
+      const rect = frame.getBoundingClientRect();
+      const x = (e.clientX - rect.left) / rect.width * 100;
+      const y = (e.clientY - rect.top) / rect.height * 100;
+      placeFurniture(catId, x, y);
+    });
+    $("#btnFurnitureMode").addEventListener("click", () => {
+      const opening = $("#furnBar").hidden;
+      if (opening) exitEditMode();
+      $("#furnBar").hidden = !opening;
+      $("#btnFurnitureMode").setAttribute("aria-pressed", String(opening));
+    });
+    $("#btnClearFurniture").addEventListener("click", clearFurniture);
+
     // Brush editing
     $("#btnEditMode").addEventListener("click", enterEditMode);
     $("#btnCancelEdit").addEventListener("click", exitEditMode);
@@ -957,7 +1187,7 @@
     // Dialogs
     $("#btnPrices").addEventListener("click", openPrices);
     $("#btnStudio").addEventListener("click", openStudio);
-    $("#currency").addEventListener("change", e => { settings.currency = e.target.value; saveSettings(); renderBudget(); });
+    $("#currency").addEventListener("change", e => { settings.currency = e.target.value; saveSettings(); renderBudget(); renderFurnCatalog(); renderFurnLayer(); renderFurnSummary(); });
     $("#feePct").addEventListener("input", e => { settings.feePct = Math.max(0, parseFloat(e.target.value) || 0); saveSettings(); renderBudget(); });
     $("#vatPct").addEventListener("input", e => { settings.vatPct = Math.max(0, parseFloat(e.target.value) || 0); saveSettings(); renderBudget(); });
     $("#btnResetPrices").addEventListener("click", () => {

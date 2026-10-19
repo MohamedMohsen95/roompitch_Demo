@@ -22,6 +22,8 @@ window.I18N = {
     editHelp: "Paint over what you want to change (e.g. the sofa), then describe the change.",
     brush: "Brush", clear: "Clear", apply: "Apply", cancel: "Cancel",
     editPh: "e.g. replace with a light grey linen sofa",
+    furnitureToggle: "Add furniture", furnitureHint: "Drag a piece onto the photo, or tap it to drop it in — then drag the tag into place. Use arrow keys to nudge, Delete to remove.",
+    clearFurniture: "Clear all", furnSummary: "{n} placed · {total}",
     finish: "Finish level", fEconomy: "Economy", fStandard: "Standard", fPremium: "Premium",
     sampleNote: "Sample prices — open “Price list” and enter your own rates.",
     item: "Item", qty: "Qty", amount: "Amount", unit: "Unit", price: "Price",
@@ -54,7 +56,8 @@ window.I18N = {
     pBreakdown: "Cost breakdown", pValid: "This estimate is valid for {d} days. Final prices are confirmed after site measurement.",
     pVisual: "Visuals are AI-generated concept images for discussion, not construction drawings.",
     pSignClient: "Client approval", pSignDesigner: "Designer",
-    pNotes: "Notes", pFinish: "Finish level"
+    pNotes: "Notes", pFinish: "Finish level",
+    pFurniture: "Furniture placed — buy the look", pFurnitureHint: "Priced separately from the renovation estimate above."
   },
   ar: {
     priceList: "قائمة الأسعار", studio: "المكتب",
@@ -77,6 +80,8 @@ window.I18N = {
     editHelp: "لوّن على الجزء اللي عايز تغيره (مثلاً الكنبة)، واكتب التعديل.",
     brush: "الفرشاة", clear: "مسح", apply: "تطبيق", cancel: "إلغاء",
     editPh: "مثلاً: كنبة لينين رمادي فاتح",
+    furnitureToggle: "إضافة أثاث", furnitureHint: "اسحب القطعة على الصورة، أو اضغط عليها لوضعها — بعدين اسحب العلامة لمكانها. استخدم الأسهم للتحريك، و Delete للحذف.",
+    clearFurniture: "مسح الكل", furnSummary: "{n} قطعة · {total}",
     finish: "مستوى التشطيب", fEconomy: "اقتصادي", fStandard: "متوسط", fPremium: "فاخر",
     sampleNote: "أسعار تجريبية — افتح «قائمة الأسعار» وحط أسعارك.",
     item: "البند", qty: "الكمية", amount: "المبلغ", unit: "الوحدة", price: "السعر",
@@ -108,6 +113,7 @@ window.I18N = {
     pBreakdown: "تفاصيل التكلفة", pValid: "هذا التقدير صالح لمدة {d} يوم. الأسعار النهائية تُعتمد بعد المعاينة والقياس.",
     pVisual: "الصور تصورات مبدئية مولدة بالذكاء الاصطناعي للنقاش، وليست رسومات تنفيذية.",
     pSignClient: "موافقة العميل", pSignDesigner: "المصمم",
-    pNotes: "ملاحظات", pFinish: "مستوى التشطيب"
+    pNotes: "ملاحظات", pFinish: "مستوى التشطيب",
+    pFurniture: "الأثاث الموضوع — اشترِ المظهر", pFurnitureHint: "له سعر منفصل عن تقدير التشطيب أعلاه."
   }
 };
