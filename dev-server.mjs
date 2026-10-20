@@ -56,6 +56,7 @@ const server = http.createServer(async (req, res) => {
 const port = Number(process.env.PORT) || 3000;
 server.listen(port, () => {
   console.log(`RoomPitch running at http://localhost:${port}`);
+  console.log(`Room studio (test): http://localhost:${port}/studio.html`);
   const cf = process.env.CF_ACCOUNT_ID && process.env.CF_API_TOKEN;
   const provider = process.env.AI_PROVIDER === "fal" && process.env.FAL_KEY ? "fal.ai" : cf ? "Cloudflare Workers AI" : process.env.FAL_KEY ? "fal.ai" : null;
   console.log(provider ? `AI: live (${provider})` : "AI: demo mode (no AI keys in .env)");
