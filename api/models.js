@@ -117,9 +117,10 @@ const apply = (m, x, y, z) => [
 
 /* ── Names and prices ── */
 
-// "metal_office_desk_2k.gltf" -> "Metal office desk"
+// "metal_office_desk_2k.gltf" -> "Metal office desk", "ChairDamaskPurplegold.glb" -> "Chair damask purplegold"
 function niceName(file) {
-  const s = basename(file).replace(/\.(gltf|glb)$/i, "").replace(/[_-]\d+k$/i, "").replace(/[_-]+/g, " ").trim();
+  const s = basename(file).replace(/\.(gltf|glb)$/i, "").replace(/[_-]\d+k$/i, "")
+    .replace(/([a-z])([A-Z])/g, "$1 $2").replace(/[_-]+/g, " ").trim();
   return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
 }
 const slug = (s) => s.replace(/\.(gltf|glb)$/i, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
