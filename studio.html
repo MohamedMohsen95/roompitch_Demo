@@ -198,6 +198,7 @@ details p{margin:6px 0 0; font-family:var(--font-data); font-size:11.5px; line-h
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 <script>
 (() => {
   /* ───────── Catalog (example prices, EGP) ───────── */
@@ -226,6 +227,7 @@ details p{margin:6px 0 0; font-family:var(--font-data); font-size:11.5px; line-h
     {id:"dtable",   name:"Dining table (6)",   w:1.8, d:.9,  h:.75, price:14000, c:"#6b4a33"},
     {id:"bed",      name:"Bed 160",       w:1.7, d:2.1, h:1,   price:16000, c:"#d4cec2"},
     {id:"plant",    name:"Plant",     w:.45, d:.45, h:1.2, price:1200,  c:"#4e7a4a"}
+    // Real 3D models from the models/ folder are added on page load (see loadModelCatalog).
   ];
   const byId = (arr) => Object.fromEntries(arr.map(o => [o.id, o]));
   const WM = byId(WALL_MATS), FM = byId(FLOOR_MATS), FU = byId(FURN);
@@ -567,7 +569,28 @@ details p{margin:6px 0 0; font-family:var(--font-data); font-size:11.5px; line-h
     t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(w / m.tile, h / m.tile); t.encoding = THREE.sRGBEncoding; t.anisotropy = 4;
     return new THREE.MeshStandardMaterial({map:t, roughness:m.kind === "marble" ? .35 : .85, metalness:0});
   }
-  function clearGroup(g){ while (g.children.length){ const o = g.children.pop(); o.traverse(n => { if (n.geometry) n.geometry.dispose(); if (n.material){ if (n.material.map) n.material.map.dispose(); n.material.dispose(); } }); } }
+  // Loaded glTF models are shared between copies (userData.shared), so they're never disposed here.
+  function clearGroup(g){ while (g.children.length){ const o = g.children.pop(); o.traverse(n => { if (n.userData.shared) return; if (n.geometry) n.geometry.dispose(); if (n.material){ if (n.material.map) n.material.map.dispose(); n.material.dispose(); } }); } }
+
+  // glTF models: load each file once, then clone it for every placed copy.
+  const gltfCache = new Map();
+  function loadModel(url){
+    if (!gltfCache.has(url)) gltfCache.set(url, new Promise((resolve, reject) => {
+      new THREE.GLTFLoader().load(url, gltf => {
+        gltf.scene.traverse(n => { n.userData.shared = true; if (n.isMesh){ n.castShadow = true; n.receiveShadow = true; } });
+        resolve(gltf.scene);
+      }, undefined, reject);
+    }));
+    return gltfCache.get(url);
+  }
+  // Fit a model into the catalog footprint (w × d × h), centred, standing on the floor.
+  function fitModel(obj, w, d, h){
+    const box = new THREE.Box3().setFromObject(obj), size = box.getSize(new THREE.Vector3()), c = box.getCenter(new THREE.Vector3());
+    const k = Math.min(w / size.x, d / size.z, h / size.y);
+    obj.scale.setScalar(k);
+    obj.position.set(-c.x * k, -box.min.y * k, -c.z * k);
+    return obj;
+  }
 
   function buildRoom(){
     clearGroup(roomGroup); pickables.length = 0;
@@ -605,6 +628,18 @@ details p{margin:6px 0 0; font-family:var(--font-data); font-size:11.5px; line-h
       const m = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, bd), new THREE.MeshStandardMaterial({color:new THREE.Color(col), roughness:.8}));
       m.position.set(x, y, z); m.castShadow = shadow; m.receiveShadow = true; g.add(m); return m;
     };
+    if (f.model){
+      // Grey placeholder box until the model arrives, then swap it in.
+      const ph = box(w, h, d, 0, h / 2, 0, c);
+      ph.material.transparent = true; ph.material.opacity = .35;
+      loadModel(f.model).then(src => {
+        g.remove(ph); ph.geometry.dispose(); ph.material.dispose();
+        const m = fitModel(src.clone(true), w, d, h);
+        m.traverse(n => { n.userData.itemId = it.id; });
+        g.add(m);
+        if (S.sel && S.sel.kind === "item" && S.sel.id === it.id) refreshHelper();
+      }).catch(err => { console.error("Model failed to load", f.model, err); ph.material.opacity = 1; });
+    }
     switch (it.type){
       case "sofa":
         box(w, .42, d, 0, .21, 0, c); box(w, .44, .2, 0, .64, -d / 2 + .1, shade(c, -.1));
@@ -832,7 +867,23 @@ details p{margin:6px 0 0; font-family:var(--font-data); font-size:11.5px; line-h
     else { S.items.forEach(syncItem); refreshHelper(); }
   }
 
+  // Add every model found in models/ to the furniture library (real size from the file, placeholder price).
+  async function loadModelCatalog(){
+    try {
+      const r = await fetch("/api/models");
+      if (!r.ok) return;
+      const {models = []} = await r.json();
+      for (const m of models){
+        if (FU[m.id]) continue;
+        FURN.push(m); FU[m.id] = m;
+        EN[m.id] = m.name.toLowerCase();   // used in the AI render description
+      }
+      if (models.length) renderLib();
+    } catch { /* page opened without the server: keep the built-in catalog */ }
+  }
+
   renderLib(); resize(); update(true); setCam("corner");
+  loadModelCatalog();
 })();
 </script>
 

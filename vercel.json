@@ -1,5 +1,6 @@
 {
   "functions": {
-    "api/generate.js": { "maxDuration": 60 }
+    "api/generate.js": { "maxDuration": 60 },
+    "api/models.js": { "includeFiles": "models/**/*.{gltf,glb}" }
   }
 }

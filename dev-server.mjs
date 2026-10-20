@@ -18,8 +18,11 @@ if (existsSync(join(root, ".env"))) {
 }
 
 const { default: generate } = await import("./api/generate.js");
+const { default: models } = await import("./api/models.js");
 
-const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8", ".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg", ".ico": "image/x-icon" };
+const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8", ".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg", ".ico": "image/x-icon", ".gltf": "model/gltf+json", ".glb": "model/gltf-binary", ".bin": "application/octet-stream" };
+// 3D models: anything inside /models/ (posix.normalize below already strips "..")
+const MODEL_FILE = /^\/models\/[\w./-]+\.(gltf|glb|bin|jpg|png)$/;
 const PUBLIC = new Set(["/index.html", "/app.js", "/i18n.js", "/styles.css", "/favicon.svg", "/studio.html"]);
 
 // Tiny shim so the Vercel-style handler (req.body, res.status().json()) works here.
@@ -41,8 +44,9 @@ const server = http.createServer(async (req, res) => {
       if (raw) { try { req.body = JSON.parse(raw); } catch { req.body = raw; } }
       return await generate(req, wrapRes(res));
     }
+    if (url.pathname === "/api/models") return await models(req, wrapRes(res));
     const path = url.pathname === "/" ? "/index.html" : posix.normalize(url.pathname);
-    if (!PUBLIC.has(path)) { res.writeHead(404).end("Not found"); return; }
+    if (!PUBLIC.has(path) && !MODEL_FILE.test(path)) { res.writeHead(404).end("Not found"); return; }
     const data = await readFile(join(root, path));
     res.writeHead(200, { "Content-Type": TYPES[extname(path)] || "application/octet-stream" });
     res.end(data);
