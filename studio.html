@@ -163,7 +163,7 @@ details p{margin:6px 0 0; font-family:var(--font-data); font-size:11.5px; line-h
         <div class="stage"><svg id="plan" aria-label="Room floor plan"></svg></div>
       </div>
       <div class="panel view">
-        <h2>3D <span class="views"><button class="btn" type="button" id="camCorner">Corner</button><button class="btn" type="button" id="camDoor">From door</button><button class="btn" type="button" id="camTop">Top</button></span></h2>
+        <h2>3D <small>Drag pieces to move · double-click or R to rotate</small> <span class="views"><button class="btn" type="button" id="camCorner">Corner</button><button class="btn" type="button" id="camDoor">From door</button><button class="btn" type="button" id="camTop">Top</button></span></h2>
         <div class="stage"><div id="three"></div></div>
       </div>
     </section>
@@ -719,9 +719,53 @@ details p{margin:6px 0 0; font-family:var(--font-data); font-size:11.5px; line-h
     ndc.set(((clientX - r.left) / r.width) * 2 - 1, -((clientY - r.top) / r.height) * 2 + 1);
     ray.setFromCamera(ndc, camera); return ray.intersectObjects(objs, true)[0] || null;
   }
-  let down = null;
-  renderer.domElement.addEventListener("pointerdown", e => { down = {x:e.clientX, y:e.clientY}; });
-  renderer.domElement.addEventListener("pointerup", e => {
+  // Where the pointer meets the floor, in room coordinates (metres from the north-west corner).
+  const floorPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), floorHit = new THREE.Vector3();
+  function floorPoint(clientX, clientY){
+    const r = renderer.domElement.getBoundingClientRect();
+    ndc.set(((clientX - r.left) / r.width) * 2 - 1, -((clientY - r.top) / r.height) * 2 + 1);
+    ray.setFromCamera(ndc, camera);
+    return ray.ray.intersectPlane(floorPlane, floorHit) ? {x:floorHit.x + S.L / 2, y:floorHit.z + S.W / 2} : null;
+  }
+
+  // Drag furniture across the floor in 3D (the camera stays still while dragging; the plan follows live).
+  let down = null, drag3 = null;
+  const cv = renderer.domElement;
+  cv.addEventListener("pointerdown", e => {
+    down = {x:e.clientX, y:e.clientY};
+    const h = hit3D(e.clientX, e.clientY, itemGroup.children), id = h && h.object.userData.itemId;
+    const it = id && S.items.find(i => i.id === id), p = it && floorPoint(e.clientX, e.clientY);
+    if (!p) return;
+    drag3 = {it, dx:p.x - it.x, dy:p.y - it.y, moved:false};
+    e.stopImmediatePropagation();   // keep OrbitControls from starting an orbit under the drag
+    controls.enabled = false; cv.setPointerCapture(e.pointerId); cv.style.cursor = "grabbing";
+    if (!(S.sel && S.sel.kind === "item" && S.sel.id === id)){ S.sel = {kind:"item", id}; renderInspect(); renderPlan(); refreshHelper(); }
+  }, {capture:true});
+  cv.addEventListener("pointermove", e => {
+    if (drag3){
+      const p = floorPoint(e.clientX, e.clientY); if (!p) return;
+      drag3.it.x = snap(p.x - drag3.dx); drag3.it.y = snap(p.y - drag3.dy); clampItem(drag3.it);
+      drag3.moved = true; syncItem(drag3.it); renderPlan();
+      return;
+    }
+    if (e.buttons) return; // orbiting
+    const h = hit3D(e.clientX, e.clientY, itemGroup.children);
+    cv.style.cursor = h && h.object.userData.itemId ? "grab" : "";
+  });
+  const endDrag3 = () => {
+    if (!drag3) return false;
+    const moved = drag3.moved; drag3 = null;
+    controls.enabled = true; cv.style.cursor = "grab";
+    if (moved){ renderEst(); renderInspect(); }
+    return true;
+  };
+  cv.addEventListener("pointercancel", () => { endDrag3(); down = null; });
+  cv.addEventListener("dblclick", e => {
+    const h = hit3D(e.clientX, e.clientY, itemGroup.children);
+    if (h && h.object.userData.itemId){ S.sel = {kind:"item", id:h.object.userData.itemId}; rotateSel(); }
+  });
+  cv.addEventListener("pointerup", e => {
+    if (endDrag3()){ down = null; return; }   // a press on a piece is a move (or a select), never a click-through
     if (!down || Math.hypot(e.clientX - down.x, e.clientY - down.y) > 5){ down = null; return; }
     down = null;
     const h = hit3D(e.clientX, e.clientY, [...itemGroup.children, ...pickables]);
