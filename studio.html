@@ -1,17 +1,17 @@
 <!doctype html>
-<html lang="ar" dir="rtl">
+<html lang="en" dir="ltr">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>استوديو الأوضة</title>
+<title>RoomPitch Room Studio</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
-/* Layout: drafting-table workspace. Library on the right (RTL), plan + 3D side by side in the middle, live estimate on the left. */
+/* Layout: drafting-table workspace. Library on the left, plan + 3D side by side in the middle, live estimate on the right. */
 :root{
   --bg:#e9ecea; --surface:#ffffff; --sunk:#f3f5f4; --ink:#1b2220; --muted:#5f6b67; --line:#d3d9d6;
   --accent:#2c6a5c; --accent-ink:#ffffff; --accent-soft:rgba(44,106,92,.12); --stage:#dfe4e1; --grid:rgba(27,34,32,.07);
-  --font-body:"IBM Plex Sans Arabic", "Segoe UI", Tahoma, sans-serif;
+  --font-body:"IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
   --font-data:"IBM Plex Mono", ui-monospace, "Cascadia Mono", monospace;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
@@ -84,7 +84,7 @@ button{cursor:pointer}
 .est{padding:4px 0 0}
 .est table{width:100%; border-collapse:collapse; font-size:12.5px}
 .est td{padding:6px 14px; border-bottom:1px solid var(--line); vertical-align:top}
-.est td.n{text-align:left; font-family:var(--font-data); font-variant-numeric:tabular-nums; white-space:nowrap; direction:ltr}
+.est td.n{text-align:right; font-family:var(--font-data); font-variant-numeric:tabular-nums; white-space:nowrap; direction:ltr}
 .est .grp td{background:var(--sunk); color:var(--muted); font-size:11.5px; letter-spacing:.3px; padding-block:4px}
 .est .sub{display:block; color:var(--muted); font-size:11.5px; font-family:var(--font-data); direction:ltr; text-align:end}
 .total{display:flex; justify-content:space-between; align-items:baseline; padding:12px 14px; font-weight:600}
@@ -133,25 +133,25 @@ details p{margin:6px 0 0; font-family:var(--font-data); font-size:11.5px; line-h
 </style>
 </head>
 <body>
-<div class="wrap" dir="rtl">
+<div class="wrap">
   <header class="bar">
-    <div class="brand"><strong>RoomPitch</strong><span class="tag">تجربة ريندر حقيقي · Cloudflare</span></div>
+    <div class="brand"><strong>RoomPitch</strong><span class="tag">Real render test · Cloudflare</span></div>
     <div class="dims">
-      <label for="dimL">الطول <input id="dimL" type="number" min="2" max="12" step="0.1" value="5"> م</label>
-      <label for="dimW">العرض <input id="dimW" type="number" min="2" max="12" step="0.1" value="4"> م</label>
-      <label for="dimH">الارتفاع <input id="dimH" type="number" min="2.2" max="5" step="0.05" value="2.8"> م</label>
+      <label for="dimL">Length <input id="dimL" type="number" min="2" max="12" step="0.1" value="5"> m</label>
+      <label for="dimW">Width <input id="dimW" type="number" min="2" max="12" step="0.1" value="4"> m</label>
+      <label for="dimH">Height <input id="dimH" type="number" min="2.2" max="5" step="0.05" value="2.8"> m</label>
     </div>
-    <button class="btn primary" id="renderBtn" type="button">ريندر واقعي</button>
+    <button class="btn primary" id="renderBtn" type="button">Photoreal render</button>
   </header>
 
   <main class="app">
     <aside class="panel">
-      <h2>المكتبة <small>اسحب وارمي</small></h2>
+      <h2>Library <small>Drag and drop</small></h2>
       <div class="inspect" id="inspect"></div>
       <div class="tabs" role="tablist">
-        <button role="tab" id="tab-furn" aria-selected="true" data-tab="furn">أثاث</button>
-        <button role="tab" id="tab-wall" aria-selected="false" data-tab="wall">حيطان</button>
-        <button role="tab" id="tab-floor" aria-selected="false" data-tab="floor">أرضيات</button>
+        <button role="tab" id="tab-furn" aria-selected="true" data-tab="furn">Furniture</button>
+        <button role="tab" id="tab-wall" aria-selected="false" data-tab="wall">Walls</button>
+        <button role="tab" id="tab-floor" aria-selected="false" data-tab="floor">Floors</button>
       </div>
       <div class="lib" id="lib"></div>
       <p class="hint" id="hint"></p>
@@ -159,17 +159,17 @@ details p{margin:6px 0 0; font-family:var(--font-data); font-size:11.5px; line-h
 
     <section class="work">
       <div class="panel view">
-        <h2>المسقط من فوق <small>اسحب القطع لتحريكها · دوس على حيطة لاختيارها</small></h2>
-        <div class="stage"><svg id="plan" aria-label="مسقط الأوضة"></svg></div>
+        <h2>Floor plan <small>Drag pieces to move them · click a wall to select it</small></h2>
+        <div class="stage"><svg id="plan" aria-label="Room floor plan"></svg></div>
       </div>
       <div class="panel view">
-        <h2>3D <span class="views"><button class="btn" type="button" id="camCorner">زاوية</button><button class="btn" type="button" id="camDoor">من الباب</button><button class="btn" type="button" id="camTop">من فوق</button></span></h2>
+        <h2>3D <span class="views"><button class="btn" type="button" id="camCorner">Corner</button><button class="btn" type="button" id="camDoor">From door</button><button class="btn" type="button" id="camTop">Top</button></span></h2>
         <div class="stage"><div id="three"></div></div>
       </div>
     </section>
 
     <aside class="panel budget">
-      <h2>الميزانية <small>بتتحسب وانت شغال</small></h2>
+      <h2>Estimate <small>Updates as you design</small></h2>
       <div class="est" id="est"></div>
     </aside>
   </main>
@@ -177,21 +177,21 @@ details p{margin:6px 0 0; font-family:var(--font-data); font-size:11.5px; line-h
 
 <div class="modal" id="modal" hidden>
   <div class="sheet2" role="dialog" aria-modal="true" aria-labelledby="mTitle">
-    <div class="mhead"><h3 id="mTitle">ريندر واقعي</h3><span class="mstatus" id="mStatus"></span></div>
+    <div class="mhead"><h3 id="mTitle">Photoreal render</h3><span class="mstatus" id="mStatus"></span></div>
     <div class="pair">
-      <figure><img id="shot" alt="لقطة من المشهد 3D"><figcaption>المشهد بتاعك (اللي اتبعت للـ AI)</figcaption></figure>
-      <figure><div class="out"><img id="outImg" alt="الريندر الواقعي" hidden><div class="spin" id="spin">بيتعمل الريندر…</div></div><figcaption>الريندر من الـ AI</figcaption></figure>
+      <figure><img id="shot" alt="Snapshot of the 3D scene"><figcaption>Your scene (sent to the AI)</figcaption></figure>
+      <figure><div class="out"><img id="outImg" alt="Photoreal render" hidden><div class="spin" id="spin">Rendering…</div></div><figcaption>AI render</figcaption></figure>
     </div>
     <div class="coderow" id="codeRow" hidden>
-      <label for="accessCode">كود الدخول (ACCESS_CODE اللي في ملف .env)</label>
+      <label for="accessCode">Access code (ACCESS_CODE in your .env file)</label>
       <input id="accessCode" type="password" autocomplete="off">
-      <button class="btn" id="codeGo" type="button">ابعت</button>
+      <button class="btn" id="codeGo" type="button">Send</button>
     </div>
-    <details><summary>الوصف اللي اتبعت للـ AI</summary><p id="promptTxt" dir="ltr"></p></details>
+    <details><summary>Prompt sent to the AI</summary><p id="promptTxt" dir="ltr"></p></details>
     <div class="acts2">
-      <button class="btn primary" id="again" type="button">ريندر تاني</button>
-      <a class="btn" id="saveImg" download="roompitch-render.jpg" hidden>حفظ الصورة</a>
-      <button class="btn" id="closeModal" type="button">رجوع للتصميم</button>
+      <button class="btn primary" id="again" type="button">Render again</button>
+      <a class="btn" id="saveImg" download="roompitch-render.jpg" hidden>Save image</a>
+      <button class="btn" id="closeModal" type="button">Back to design</button>
     </div>
   </div>
 </div>
@@ -202,34 +202,34 @@ details p{margin:6px 0 0; font-family:var(--font-data); font-size:11.5px; line-h
 (() => {
   /* ───────── Catalog (example prices, EGP) ───────── */
   const WALL_MATS = [
-    {id:"bare-wall",   name:"محارة بدون تشطيب", price:0, kind:"concrete", c:"#b9b4aa", tile:2},
-    {id:"paint-white", name:"دهان أبيض مطفي", price:180, kind:"paint", c:"#ecebe6", tile:1},
-    {id:"paint-sage",  name:"دهان أخضر زيتي", price:200, kind:"paint", c:"#a7b59d", tile:1},
-    {id:"paint-clay",  name:"دهان طوبي فاتح", price:200, kind:"paint", c:"#c9917a", tile:1},
-    {id:"wood-panel",  name:"تجاليد خشب",     price:1400, kind:"panel", c:"#9a6b43", tile:1.2},
-    {id:"marble-wall", name:"رخام كرارة",     price:2200, kind:"marble", c:"#e7e6e2", tile:1.4},
-    {id:"wallpaper",   name:"ورق حائط",       price:450, kind:"wallpaper", c:"#d6cbb5", tile:.7}
+    {id:"bare-wall",   name:"Bare plaster (unfinished)", price:0, kind:"concrete", c:"#b9b4aa", tile:2},
+    {id:"paint-white", name:"Matte white paint", price:180, kind:"paint", c:"#ecebe6", tile:1},
+    {id:"paint-sage",  name:"Sage green paint", price:200, kind:"paint", c:"#a7b59d", tile:1},
+    {id:"paint-clay",  name:"Terracotta paint", price:200, kind:"paint", c:"#c9917a", tile:1},
+    {id:"wood-panel",  name:"Wood panelling",     price:1400, kind:"panel", c:"#9a6b43", tile:1.2},
+    {id:"marble-wall", name:"Carrara marble",     price:2200, kind:"marble", c:"#e7e6e2", tile:1.4},
+    {id:"wallpaper",   name:"Wallpaper",       price:450, kind:"wallpaper", c:"#d6cbb5", tile:.7}
   ];
   const FLOOR_MATS = [
-    {id:"bare-floor",   name:"لياسة خام بدون تشطيب", price:0, kind:"concrete", c:"#a9a49b", tile:2},
-    {id:"oak",          name:"باركيه بلوط",     price:900,  kind:"parquet", c:"#b98b5b", tile:1.4},
-    {id:"porcelain",    name:"بورسلين 60×120",  price:650,  kind:"tiles",   c:"#d8d5cf", tile:1.2},
-    {id:"marble-floor", name:"رخام",            price:2400, kind:"marble",  c:"#efeeea", tile:1.6},
-    {id:"concrete",     name:"خرسانة مصقولة",   price:550,  kind:"concrete",c:"#9d9f9d", tile:2}
+    {id:"bare-floor",   name:"Bare screed (unfinished)", price:0, kind:"concrete", c:"#a9a49b", tile:2},
+    {id:"oak",          name:"Oak parquet",     price:900,  kind:"parquet", c:"#b98b5b", tile:1.4},
+    {id:"porcelain",    name:"Porcelain 60×120",  price:650,  kind:"tiles",   c:"#d8d5cf", tile:1.2},
+    {id:"marble-floor", name:"Marble",            price:2400, kind:"marble",  c:"#efeeea", tile:1.6},
+    {id:"concrete",     name:"Polished concrete",   price:550,  kind:"concrete",c:"#9d9f9d", tile:2}
   ];
   const FURN = [
-    {id:"sofa",     name:"كنبة 3 مقاعد",  w:2.2, d:.9,  h:.85, price:18000, c:"#7b898d"},
-    {id:"armchair", name:"فوتيه",          w:.85, d:.85, h:.85, price:6500,  c:"#c2a078"},
-    {id:"ctable",   name:"ترابيزة وسط",    w:1.2, d:.6,  h:.4,  price:4500,  c:"#5a4030"},
-    {id:"tvunit",   name:"وحدة تلفزيون",   w:1.8, d:.45, h:.5,  price:9000,  c:"#3a3936"},
-    {id:"rug",      name:"سجادة",          w:2.4, d:1.7, h:.01, price:5500,  c:"#b5a189"},
-    {id:"dtable",   name:"سفرة 6 أفراد",   w:1.8, d:.9,  h:.75, price:14000, c:"#6b4a33"},
-    {id:"bed",      name:"سرير 160",       w:1.7, d:2.1, h:1,   price:16000, c:"#d4cec2"},
-    {id:"plant",    name:"نبات طبيعي",     w:.45, d:.45, h:1.2, price:1200,  c:"#4e7a4a"}
+    {id:"sofa",     name:"3-seat sofa",  w:2.2, d:.9,  h:.85, price:18000, c:"#7b898d"},
+    {id:"armchair", name:"Armchair",          w:.85, d:.85, h:.85, price:6500,  c:"#c2a078"},
+    {id:"ctable",   name:"Coffee table",    w:1.2, d:.6,  h:.4,  price:4500,  c:"#5a4030"},
+    {id:"tvunit",   name:"TV unit",   w:1.8, d:.45, h:.5,  price:9000,  c:"#3a3936"},
+    {id:"rug",      name:"Rug",          w:2.4, d:1.7, h:.01, price:5500,  c:"#b5a189"},
+    {id:"dtable",   name:"Dining table (6)",   w:1.8, d:.9,  h:.75, price:14000, c:"#6b4a33"},
+    {id:"bed",      name:"Bed 160",       w:1.7, d:2.1, h:1,   price:16000, c:"#d4cec2"},
+    {id:"plant",    name:"Plant",     w:.45, d:.45, h:1.2, price:1200,  c:"#4e7a4a"}
   ];
   const byId = (arr) => Object.fromEntries(arr.map(o => [o.id, o]));
   const WM = byId(WALL_MATS), FM = byId(FLOOR_MATS), FU = byId(FURN);
-  const WALL_NAMES = {n:"الحيطة الشمالية (الشباك)", e:"الحيطة الشرقية", s:"الحيطة الجنوبية (الباب)", w:"الحيطة الغربية"};
+  const WALL_NAMES = {n:"North wall (window)", e:"East wall", s:"South wall (door)", w:"West wall"};
   const DOOR = {from:.6, w:.9, h:2.1};             // on south wall, measured from west corner
   const WIN  = {w:1.6, sill:.9, h:1.3};            // centred on north wall
 
@@ -310,9 +310,9 @@ details p{margin:6px 0 0; font-family:var(--font-data); font-size:11.5px; line-h
 
   /* ───────── Library ───────── */
   const HINTS = {
-    furn: "اسحب القطعة على المسقط أو الـ 3D، أو دوس عليها تتحط في نص الأوضة.",
-    wall: "اسحب الخامة على أي حيطة، أو اختار حيطة ودوس على الخامة.",
-    floor:"اسحب الخامة على الأرضية، أو دوس عليها."
+    furn: "Drag a piece onto the plan or the 3D view, or click it to place it in the middle of the room.",
+    wall: "Drag a finish onto any wall, or select a wall and click a finish.",
+    floor:"Drag a finish onto the floor, or click it."
   };
   function renderLib(){
     document.querySelectorAll(".tabs button").forEach(b => b.setAttribute("aria-selected", String(b.dataset.tab === S.tab)));
@@ -333,7 +333,7 @@ details p{margin:6px 0 0; font-family:var(--font-data); font-size:11.5px; line-h
       t.addEventListener("click", () => applyPayload(payload, null));
       lib.appendChild(t);
     }
-    $("#hint").textContent = S.replacing && S.tab === "furn" ? "اختار القطعة الجديدة، وهتتحط مكان القديمة بنفس الاتجاه." : HINTS[S.tab];
+    $("#hint").textContent = S.replacing && S.tab === "furn" ? "Pick the new piece. It takes the old one's place and direction." : HINTS[S.tab];
   }
   document.querySelectorAll(".tabs button").forEach(b => b.addEventListener("click", () => { S.tab = b.dataset.tab; renderLib(); }));
 
@@ -358,7 +358,7 @@ details p{margin:6px 0 0; font-family:var(--font-data); font-size:11.5px; line-h
       let w = target && target.kind === "wall" ? target.id : null;
       if (!w && target && target.kind === "point") w = nearestWall(target.x, target.y);
       if (!w && S.sel && S.sel.kind === "wall") w = S.sel.id;
-      if (!w){ flashHint("اختار حيطة الأول من المسقط أو الـ 3D، أو اسحب الخامة عليها."); return; }
+      if (!w){ flashHint("Select a wall first in the plan or 3D view, or drag the finish onto it."); return; }
       S.walls[w] = id; S.sel = {kind:"wall", id:w};
     } else if (kind === "floor"){
       S.floor = id; S.sel = {kind:"floor"};
@@ -383,32 +383,32 @@ details p{margin:6px 0 0; font-family:var(--font-data); font-size:11.5px; line-h
     if (S.replacing){
       const old = S.items.find(i => i.id === S.replacing);
       if (old){
-        box.innerHTML = `<div class="what">استبدال: ${FU[old.type].name}<em>اختار القطعة الجديدة من المكتبة</em></div>
-          <div class="acts"><button class="btn" type="button" id="cancelRep">إلغاء</button></div>`;
+        box.innerHTML = `<div class="what">Replacing: ${FU[old.type].name}<em>Pick the new piece from the library</em></div>
+          <div class="acts"><button class="btn" type="button" id="cancelRep">Cancel</button></div>`;
         $("#cancelRep").onclick = () => { S.replacing = null; renderLib(); update(false); };
         return;
       }
       S.replacing = null;
     }
-    if (!s){ box.innerHTML = `<div class="what">مفيش حاجة مختارة<em>دوس على قطعة أو حيطة أو الأرضية</em></div>`; return; }
+    if (!s){ box.innerHTML = `<div class="what">Nothing selected<em>Click a piece, a wall or the floor</em></div>`; return; }
     if (s.kind === "item"){
       const it = S.items.find(i => i.id === s.id); if (!it){ S.sel = null; return renderInspect(); }
       const f = FU[it.type];
-      box.innerHTML = `<div class="what">${f.name}<em>${Math.round(f.w * 100)}×${Math.round(f.d * 100)} سم · ${fmt(f.price)} ج.م</em></div>
-        <div class="acts"><button class="btn" type="button" id="repBtn">استبدال</button><button class="btn" type="button" id="rotBtn">لف 90°</button><button class="btn" type="button" id="dupBtn">تكرار</button><button class="btn" type="button" id="delBtn">مسح</button></div>`;
+      box.innerHTML = `<div class="what">${f.name}<em>${Math.round(f.w * 100)}×${Math.round(f.d * 100)} cm · EGP ${fmt(f.price)}</em></div>
+        <div class="acts"><button class="btn" type="button" id="repBtn">Replace</button><button class="btn" type="button" id="rotBtn">Rotate 90°</button><button class="btn" type="button" id="dupBtn">Duplicate</button><button class="btn" type="button" id="delBtn">Delete</button></div>`;
       $("#rotBtn").onclick = () => rotateSel(); $("#delBtn").onclick = () => deleteSel();
       $("#repBtn").onclick = () => { S.replacing = it.id; S.tab = "furn"; renderLib(); renderInspect(); };
       $("#dupBtn").onclick = () => { const c = {...it, id:S.nextId++, x:it.x + .3, y:it.y + .3}; clampItem(c); S.items.push(c); S.sel = {kind:"item", id:c.id}; update(false); };
     } else if (s.kind === "wall"){
       const m = WM[S.walls[s.id]];
-      box.innerHTML = `<div class="what">${WALL_NAMES[s.id]}<em>${m.name} · ${wallArea(s.id).toFixed(1)} م²</em></div>
-        <div class="acts"><button class="btn" type="button" id="allBtn">نفس الخامة لكل الحيطان</button><button class="btn" type="button" id="delBtn">شيل الخامة</button></div>`;
+      box.innerHTML = `<div class="what">${WALL_NAMES[s.id]}<em>${m.name} · ${wallArea(s.id).toFixed(1)} m²</em></div>
+        <div class="acts"><button class="btn" type="button" id="allBtn">Apply to all walls</button><button class="btn" type="button" id="delBtn">Remove finish</button></div>`;
       $("#delBtn").onclick = () => deleteSel();
       $("#allBtn").onclick = () => { for (const k in S.walls) S.walls[k] = S.walls[s.id]; update(true); };
       if (S.tab !== "wall"){ S.tab = "wall"; renderLib(); }
     } else {
-      box.innerHTML = `<div class="what">الأرضية<em>${FM[S.floor].name} · ${(S.L * S.W).toFixed(1)} م²</em></div>
-        <div class="acts"><button class="btn" type="button" id="delBtn">شيل الأرضية</button></div>`;
+      box.innerHTML = `<div class="what">Floor<em>${FM[S.floor].name} · ${(S.L * S.W).toFixed(1)} m²</em></div>
+        <div class="acts"><button class="btn" type="button" id="delBtn">Remove floor finish</button></div>`;
       $("#delBtn").onclick = () => deleteSel();
       if (S.tab !== "floor"){ S.tab = "floor"; renderLib(); }
     }
@@ -439,21 +439,21 @@ details p{margin:6px 0 0; font-family:var(--font-data); font-size:11.5px; line-h
   function renderEst(){
     const rows = [];
     const floorArea = S.L * S.W, fm = FM[S.floor];
-    rows.push({grp:"التشطيبات"});
-    if (fm.price) rows.push({name:`أرضية: ${fm.name}`, sub:`${floorArea.toFixed(1)} m² × ${fmt(fm.price)}`, amt:floorArea * fm.price});
+    rows.push({grp:"Finishes"});
+    if (fm.price) rows.push({name:`Floor: ${fm.name}`, sub:`${floorArea.toFixed(1)} m² × ${fmt(fm.price)}`, amt:floorArea * fm.price});
     const byMat = {};
     for (const k of ["n","e","s","w"]){ (byMat[S.walls[k]] ||= 0); byMat[S.walls[k]] += wallArea(k); }
-    for (const [id, a] of Object.entries(byMat)){ const m = WM[id]; if (!m.price) continue; rows.push({name:`حيطان: ${m.name}`, sub:`${a.toFixed(1)} m² × ${fmt(m.price)}`, amt:a * m.price}); }
+    for (const [id, a] of Object.entries(byMat)){ const m = WM[id]; if (!m.price) continue; rows.push({name:`Walls: ${m.name}`, sub:`${a.toFixed(1)} m² × ${fmt(m.price)}`, amt:a * m.price}); }
     const counts = {};
     for (const it of S.items) counts[it.type] = (counts[it.type] || 0) + 1;
-    if (Object.keys(counts).length) rows.push({grp:"الأثاث"});
+    if (Object.keys(counts).length) rows.push({grp:"Furniture"});
     for (const [t, n] of Object.entries(counts)){ const f = FU[t]; rows.push({name:f.name, sub:`${n} × ${fmt(f.price)}`, amt:n * f.price}); }
     const total = rows.reduce((s, r) => s + (r.amt || 0), 0);
     $("#est").innerHTML = `<table><tbody>${rows.map(r => r.grp
         ? `<tr class="grp"><td colspan="2">${r.grp}</td></tr>`
         : `<tr><td>${r.name}<span class="sub">${r.sub}</span></td><td class="n">${fmt(r.amt)}</td></tr>`).join("")}</tbody></table>
-      <div class="total"><span>الإجمالي</span><span class="n">${fmt(total)} ج.م</span></div>
-      <p class="note">الأسعار هنا أمثلة. في البرنامج الحقيقي هتبقى أسعار المصمم نفسه، أو أسعار المعرض لو القطعة من كتالوجه.</p>`;
+      <div class="total"><span>Total</span><span class="n">EGP ${fmt(total)}</span></div>
+      <p class="note">Example prices. In the real product these come from the designer's own price list, or from the showroom when a piece is from its catalog.</p>`;
   }
 
   /* ───────── Plan (SVG, 1 unit = 1 metre) ───────── */
@@ -496,7 +496,7 @@ details p{margin:6px 0 0; font-family:var(--font-data); font-size:11.5px; line-h
     const tx = (x, y, s, rot = 0) => `<text x="${x}" y="${y}" transform="rotate(${rot} ${x} ${y})" font-size=".17" fill="var(--muted)" text-anchor="middle" font-family="IBM Plex Mono, monospace" direction="ltr">${s}</text>`;
     h += `<line x1="0" y1="${-.38}" x2="${L}" y2="${-.38}" stroke="var(--muted)" stroke-width=".01"/>` + tx(L / 2, -.45, `${L.toFixed(2)} m`);
     h += `<line x1="${L + .38}" y1="0" x2="${L + .38}" y2="${W}" stroke="var(--muted)" stroke-width=".01"/>` + tx(L + .5, W / 2, `${W.toFixed(2)} m`, 90);
-    h += `<text x="${dx + DOOR.w / 2}" y="${W + .35}" font-size=".15" fill="var(--muted)" text-anchor="middle">باب</text><text x="${L / 2}" y="-.14" font-size=".15" fill="var(--muted)" text-anchor="middle">شباك</text>`;
+    h += `<text x="${dx + DOOR.w / 2}" y="${W + .35}" font-size=".15" fill="var(--muted)" text-anchor="middle">Door</text><text x="${L / 2}" y="-.14" font-size=".15" fill="var(--muted)" text-anchor="middle">Window</text>`;
     svg.innerHTML = h;
   }
   function svgPoint(evt){
@@ -782,7 +782,7 @@ details p{margin:6px 0 0; font-family:var(--font-data); font-size:11.5px; line-h
 
   async function runRender(){
     $("#codeRow").hidden = true; $("#outImg").hidden = true; $("#saveImg").hidden = true;
-    $("#spin").hidden = false; $("#spin").textContent = "بيتعمل الريندر…"; setStatus("");
+    $("#spin").hidden = false; $("#spin").textContent = "Rendering…"; setStatus("");
     const c = await getCfg();
     if (!job){
       const shot = snapshot(c.maxInputSide || 1024);
@@ -793,11 +793,11 @@ details p{margin:6px 0 0; font-family:var(--font-data); font-size:11.5px; line-h
     $("#shot").src = job.shot.full; $("#promptTxt").textContent = job.prompt;
     if (!c.aiEnabled){
       $("#spin").textContent = c.offline
-        ? "الصفحة دي لازم تتفتح من السيرفر: شغّل node dev-server.mjs وافتح http://localhost:3000/studio.html"
-        : "مفيش مفاتيح AI في ملف .env. حط CF_ACCOUNT_ID و CF_API_TOKEN وشغّل السيرفر تاني.";
-      setStatus("الريندر مش شغال", true); return;
+        ? "Open this page through the server: run node dev-server.mjs and go to http://localhost:3000/studio.html"
+        : "No AI keys in .env. Add CF_ACCOUNT_ID and CF_API_TOKEN, then restart the server.";
+      setStatus("Rendering is off", true); return;
     }
-    setStatus(`بيتبعت لـ ${c.provider === "cloudflare" ? "Cloudflare Workers AI" : c.provider}…`);
+    setStatus(`Sending to ${c.provider === "cloudflare" ? "Cloudflare Workers AI" : c.provider}…`);
     const t0 = performance.now();
     try {
       const r = await fetch("/api/generate", {
@@ -805,15 +805,15 @@ details p{margin:6px 0 0; font-family:var(--font-data); font-size:11.5px; line-h
         headers:{"Content-Type":"application/json", "x-access-code":getCode()},
         body:JSON.stringify({mode:"restyle", image:job.shot.small, prompt:job.prompt, width:job.outW, height:job.outH})
       });
-      if (r.status === 401){ $("#codeRow").hidden = false; $("#spin").textContent = "محتاج كود الدخول"; setStatus("اكتب الكود اللي في ملف .env", true); $("#accessCode").focus(); return; }
+      if (r.status === 401){ $("#codeRow").hidden = false; $("#spin").textContent = "Access code needed"; setStatus("Enter the code from your .env file", true); $("#accessCode").focus(); return; }
       const data = await r.json().catch(() => ({}));
-      if (!r.ok || !data.image){ $("#spin").textContent = data.error || `حصل خطأ (${r.status})`; setStatus("الريندر فشل", true); return; }
+      if (!r.ok || !data.image){ $("#spin").textContent = data.error || `Something went wrong (${r.status})`; setStatus("Render failed", true); return; }
       const secs = ((performance.now() - t0) / 1000).toFixed(1);
       $("#outImg").src = data.image; $("#outImg").hidden = false; $("#spin").hidden = true;
       $("#saveImg").href = data.image; $("#saveImg").hidden = false;
-      setStatus(`خلص في ${secs} ثانية · ${c.provider === "cloudflare" ? "Cloudflare" : c.provider}`);
+      setStatus(`Done in ${secs} s · ${c.provider === "cloudflare" ? "Cloudflare" : c.provider}`);
     } catch (e){
-      $("#spin").textContent = "مقدرتش أوصل للسيرفر. اتأكد إن node dev-server.mjs شغال."; setStatus("الريندر فشل", true);
+      $("#spin").textContent = "Could not reach the server. Make sure node dev-server.mjs is running."; setStatus("Render failed", true);
     }
   }
 
