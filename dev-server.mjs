@@ -20,7 +20,7 @@ if (existsSync(join(root, ".env"))) {
 const { default: generate } = await import("./api/generate.js");
 
 const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8", ".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg", ".ico": "image/x-icon" };
-const PUBLIC = new Set(["/index.html", "/app.js", "/i18n.js", "/styles.css", "/favicon.svg"]);
+const PUBLIC = new Set(["/index.html", "/app.js", "/i18n.js", "/styles.css", "/favicon.svg", "/studio.html"]);
 
 // Tiny shim so the Vercel-style handler (req.body, res.status().json()) works here.
 function wrapRes(res) {
