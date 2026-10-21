@@ -2,7 +2,7 @@
 //
 // GET /api/models -> { models: [{ id, name, w, d, h, price, c, model }] }
 //
-// Drop a model into models/<any folder>/ (.gltf with its .bin and textures, or a single .glb)
+// Drop a model into public/models/<any folder>/ (.gltf with its .bin and textures, or a single .glb)
 // and it shows up in the Room Studio's furniture library on the next page load.
 // Size comes from the model itself (glTF units are metres): w = width (x), d = depth (z), h = height (y).
 // The price is a placeholder between 5,000 and 12,000, fixed per model name so it doesn't change on reload.
@@ -11,7 +11,7 @@ import { readdir, readFile } from "node:fs/promises";
 import { join, relative, extname, basename } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const MODELS_DIR = fileURLToPath(new URL("../models/", import.meta.url));
+const MODELS_DIR = fileURLToPath(new URL("../public/models/", import.meta.url));
 
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");

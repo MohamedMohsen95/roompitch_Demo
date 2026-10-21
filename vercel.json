@@ -1,6 +1,7 @@
 {
+  "framework": "vite",
   "functions": {
     "api/generate.js": { "maxDuration": 60 },
-    "api/models.js": { "includeFiles": "models/**/*.{gltf,glb}" }
+    "api/models.js": { "includeFiles": "public/models/**/*.{gltf,glb}" }
   }
 }

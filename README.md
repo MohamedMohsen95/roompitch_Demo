@@ -11,9 +11,12 @@
 صفحة تجربة منفصلة: المصمم يبني أوضة فاضية من المقاسات، يسحب الخامات والأثاث على المسقط أو الـ 3D، والميزانية بتتحسب لوحدها. زرار **ريندر واقعي** بيبعت لقطة الـ 3D للـ AI (Cloudflare) ويرجع صورة واقعية.
 
 ```bash
-node dev-server.mjs
+npm install
+npm run dev
 ```
-وافتح <http://localhost:3000/studio.html>. ده نموذج للتجربة بس، مش الكود النهائي.
+وافتح <http://localhost:5173/studio.html>. ده نموذج للتجربة بس، مش الكود النهائي.
+
+الـ 3D مبني على **three.js** (أحدث نسخة) و **Vite**. أي موديل `.gltf` أو `.glb` تحطه في `public/models/<فولدر>/` بيظهر لوحده في مكتبة الأثاث بمقاساته الحقيقية.
 
 ---
 
@@ -25,11 +28,14 @@ node dev-server.mjs
 | `styles.css` | الألوان والتصميم (الألوان كلها متعرفة فوق في أول الملف) |
 | `app.js` | كل منطق التطبيق: الستايلات، الرندر، الفرشاة، الميزانية، الـ PDF |
 | `i18n.js` | كل الكلام اللي في الواجهة بالعربي والإنجليزي — عدّل الكلام من هنا |
+| `studio.html` + `src/studio.js` | استوديو الأوضة (المسقط + الـ 3D) |
 | `api/generate.js` | السيرفر: بيكلم الذكاء الاصطناعي ويخبي مفتاحك السري |
-| `dev-server.mjs` | عشان تشغل التطبيق على جهازك |
+| `api/models.js` | بيقرا موديلات الأثاث من `public/models/` |
+| `public/models/` | موديلات الأثاث الـ 3D |
+| `vite.config.js` | إعدادات Vite (بيشغل الصفحتين و `api/` على جهازك) |
 | `.env.example` | مثال للإعدادات السرية |
 
-مفيش أي حاجة محتاجة `npm install`. محتاج بس **Node.js 18 أو أحدث**.
+محتاج **Node.js 20.19 أو أحدث**، وأول مرة بس: `npm install`.
 
 ---
 
@@ -37,10 +43,11 @@ node dev-server.mjs
 
 ```bash
 cd roompitch
-node dev-server.mjs
+npm install
+npm run dev
 ```
 
-افتح <http://localhost:3000>. التطبيق هيشتغل في **الوضع التجريبي**: كل حاجة شغالة (الرفع، الستايلات، الفرشاة، الميزانية، الـ PDF)، بس "الرندر" مجرد تلوين للصورة ومكتوب عليه DEMO. ده كفاية عشان تجرب التجربة كلها.
+افتح <http://localhost:5173>. التطبيق هيشتغل في **الوضع التجريبي**: كل حاجة شغالة (الرفع، الستايلات، الفرشاة، الميزانية، الـ PDF)، بس "الرندر" مجرد تلوين للصورة ومكتوب عليه DEMO. ده كفاية عشان تجرب التجربة كلها.
 
 ## 🔑 2. شغّل الذكاء الاصطناعي الحقيقي
 
@@ -116,14 +123,16 @@ node dev-server.mjs
 
 ## English summary
 
-**What it is:** a no-build web app for interior designers to use live with clients — upload a room photo, restyle it with AI (8 styles, 3 structure-preservation levels, "site under construction" option), compare before/after, brush-edit one area, get an itemized estimate from the designer's own price list, and export a branded A4 proposal in English or Arabic (RTL).
+**What it is:** a web app (Vite + three.js) for interior designers to use live with clients — upload a room photo, restyle it with AI (8 styles, 3 structure-preservation levels, "site under construction" option), compare before/after, brush-edit one area, get an itemized estimate from the designer's own price list, and export a branded A4 proposal in English or Arabic (RTL).
 
-**Run locally:** `node dev-server.mjs` → http://localhost:3000 (Node 18+, no dependencies). Without any AI keys it runs in demo mode.
+**Run locally:** `npm install`, then `npm run dev` → http://localhost:5173 (main app) and `/studio.html` (Room Studio). Needs Node 20.19+. Vite also runs the `api/` functions locally, like Vercel does. `npm run build` + `npm run preview` serves the production build. Without any AI keys it runs in demo mode.
+
+**3D models:** drop a `.gltf` or `.glb` into `public/models/<folder>/` and it appears in the Room Studio library with its real size (Meshopt-compressed models are supported).
 
 **Real AI (free to try):** set `CF_ACCOUNT_ID` + `CF_API_TOKEN` in `.env` to use Cloudflare Workers AI (`@cf/black-forest-labs/flux-2-klein-4b`, roughly 100 free renders/day). Input photos are downscaled below 512px (a Workers AI limit) and brush edits are composited into the painted area in the browser.
 
 **Real AI (paid, best quality):** set `FAL_KEY`. Restyle uses `fal-ai/nano-banana/edit`; brush edits use `fal-ai/flux-pro/v1/fill` (override with `FAL_RESTYLE_MODEL` / `FAL_INPAINT_MODEL`). If both are set, Cloudflare is used unless `AI_PROVIDER=fal`.
 
-**Deploy:** push to GitHub → import on Vercel → add the AI keys and (strongly recommended) `ACCESS_CODE` env vars → redeploy. `api/generate.js` runs as a Vercel serverless function (60s max).
+**Deploy:** push to GitHub → import on Vercel → add the AI keys and (strongly recommended) `ACCESS_CODE` env vars → redeploy. Vercel detects Vite, runs `npm run build` and serves `dist/`; the files in `api/` run as serverless functions (`api/generate.js` has 60s max).
 
 **MVP limits:** settings live in the browser (localStorage); renders aren't saved; no accounts, payments or floor-plan parsing yet; PDF goes through the browser's print dialog.
