@@ -16,7 +16,13 @@ npm run dev
 ```
 وافتح <http://localhost:5173/studio.html>. ده نموذج للتجربة بس، مش الكود النهائي.
 
-الـ 3D مبني على **three.js** (أحدث نسخة) و **Vite**. أي موديل `.gltf` أو `.glb` تحطه في `public/models/<فولدر>/` بيظهر لوحده في مكتبة الأثاث بمقاساته الحقيقية.
+الـ 3D مبني على **three.js** (أحدث نسخة) و **Vite**، والإضاءة من صورة HDRI حقيقية (Poly Haven) عشان الخامات تبان واقعية.
+
+**إضافة أثاث 3D:** حط الموديل الأصلي (`.gltf` بملفاته، أو `.glb`) في `models-src/<فولدر>/` وبعدين شغّل:
+```bash
+npm run models
+```
+ده بيضغط الموديل (مثلاً 5 ميجا ← 200 كيلو) ويحطه في `public/models/`، وبيظهر لوحده في مكتبة الأثاث بمقاساته الحقيقية.
 
 ---
 
@@ -28,10 +34,13 @@ npm run dev
 | `styles.css` | الألوان والتصميم (الألوان كلها متعرفة فوق في أول الملف) |
 | `app.js` | كل منطق التطبيق: الستايلات، الرندر، الفرشاة، الميزانية، الـ PDF |
 | `i18n.js` | كل الكلام اللي في الواجهة بالعربي والإنجليزي — عدّل الكلام من هنا |
-| `studio.html` + `src/studio.js` | استوديو الأوضة (المسقط + الـ 3D) |
+| `studio.html` + `src/studio/` | استوديو الأوضة (المسقط + الـ 3D)، مقسوم لملفات صغيرة — الخريطة في أول `src/studio/main.js` |
 | `api/generate.js` | السيرفر: بيكلم الذكاء الاصطناعي ويخبي مفتاحك السري |
 | `api/models.js` | بيقرا موديلات الأثاث من `public/models/` |
-| `public/models/` | موديلات الأثاث الـ 3D |
+| `models-src/` | الموديلات الأصلية (مش بتترفع على الموقع) |
+| `public/models/` | الموديلات المضغوطة اللي الموقع بيستخدمها (`npm run models`) |
+| `public/hdri/` | صور الإضاءة HDRI |
+| `scripts/optimize-models.mjs` | سكريبت ضغط الموديلات |
 | `vite.config.js` | إعدادات Vite (بيشغل الصفحتين و `api/` على جهازك) |
 | `.env.example` | مثال للإعدادات السرية |
 
@@ -127,7 +136,11 @@ npm run dev
 
 **Run locally:** `npm install`, then `npm run dev` → http://localhost:5173 (main app) and `/studio.html` (Room Studio). Needs Node 20.19+. Vite also runs the `api/` functions locally, like Vercel does. `npm run build` + `npm run preview` serves the production build. Without any AI keys it runs in demo mode.
 
-**3D models:** drop a `.gltf` or `.glb` into `public/models/<folder>/` and it appears in the Room Studio library with its real size (Meshopt-compressed models are supported).
+**3D models:** put the original `.gltf` (with its files) or `.glb` in `models-src/<folder>/` and run `npm run models`. It writes a compressed `.glb` (Meshopt geometry, WebP textures ≤1024 px) to `public/models/<folder>/`; the desk went from 5.25 MB to 185 KB. Everything in `public/models/` appears in the Room Studio library with its real size.
+
+**Lighting:** image-based lighting from a Poly Haven HDRI (`public/hdri/`, CC0), with a generated environment as an instant fallback. Compare others with `studio.html?hdri=lebombo_1k` or `?hdri=none`.
+
+**Studio code:** `src/studio/` — one module per concern (catalog, state, library, inspector, plan, estimate, `three/` scene/room/items/models/interaction, AI render). The map is at the top of `src/studio/main.js`.
 
 **Real AI (free to try):** set `CF_ACCOUNT_ID` + `CF_API_TOKEN` in `.env` to use Cloudflare Workers AI (`@cf/black-forest-labs/flux-2-klein-4b`, roughly 100 free renders/day). Input photos are downscaled below 512px (a Workers AI limit) and brush edits are composited into the painted area in the browser.
 

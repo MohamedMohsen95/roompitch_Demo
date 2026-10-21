@@ -2,8 +2,9 @@
 //
 // GET /api/models -> { models: [{ id, name, w, d, h, price, c, model }] }
 //
-// Drop a model into public/models/<any folder>/ (.gltf with its .bin and textures, or a single .glb)
-// and it shows up in the Room Studio's furniture library on the next page load.
+// Every .gltf/.glb in public/models/<any folder>/ shows up in the Room Studio's furniture library
+// on the next page load. Best: put the original in models-src/<folder>/ and run `npm run models`,
+// which writes a compressed .glb here (a 5 MB model becomes ~200 KB).
 // Size comes from the model itself (glTF units are metres): w = width (x), d = depth (z), h = height (y).
 // The price is a placeholder between 5,000 and 12,000, fixed per model name so it doesn't change on reload.
 
@@ -76,7 +77,8 @@ function measure(g) {
     for (const prim of g.meshes?.[n.mesh]?.primitives || []) {
       const acc = g.accessors?.[prim.attributes?.POSITION];
       if (!acc?.min || !acc?.max) continue;
-      for (const x of [acc.min[0], acc.max[0]]) for (const y of [acc.min[1], acc.max[1]]) for (const z of [acc.min[2], acc.max[2]]) {
+      const [lo, hi] = [acc.min, acc.max].map(v => v.map(n => dequantize(n, acc)));
+      for (const x of [lo[0], hi[0]]) for (const y of [lo[1], hi[1]]) for (const z of [lo[2], hi[2]]) {
         const p = apply(m, x, y, z);
         for (let k = 0; k < 3; k++) { min[k] = Math.min(min[k], p[k]); max[k] = Math.max(max[k], p[k]); }
       }
@@ -86,6 +88,14 @@ function measure(g) {
   for (const i of scene.nodes || []) visit(i, IDENTITY);
   if (!isFinite(min[0])) return null;
   return { x: max[0] - min[0], y: max[1] - min[1], z: max[2] - min[2] };
+}
+
+// Compressed models (KHR_mesh_quantization, e.g. from `npm run models`) store positions as
+// normalized integers; the node's transform then scales them back to metres.
+const NORM = { 5120: 127, 5121: 255, 5122: 32767, 5123: 65535 }; // BYTE, UNSIGNED_BYTE, SHORT, UNSIGNED_SHORT
+function dequantize(n, acc) {
+  if (!acc.normalized || !NORM[acc.componentType]) return n;
+  return Math.max(n / NORM[acc.componentType], acc.componentType % 2 ? 0 : -1);
 }
 
 // 4×4 matrices, column-major (glTF's layout).
