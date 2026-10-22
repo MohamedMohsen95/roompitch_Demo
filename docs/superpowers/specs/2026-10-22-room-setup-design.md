@@ -1,6 +1,6 @@
 # Room setup: build the room by hand or from photos
 
-Date: 2026-10-22 · Status: draft for review · Branch: `room-setup` (based on `studio-pdf-i18n`)
+Date: 2026-10-22 · Status: approved by Mohamed (with cm instead of m) · Branch: `room-setup` (based on `studio-pdf-i18n`)
 
 ## Why
 
@@ -85,6 +85,8 @@ Two clear choices:
 - Photo analysis uses **Cloudflare Workers AI** first, to see how good it is. A stronger model (Gemini was suggested) is a later option if results are poor.
 - Measurements are typed by the designer in both paths.
 - Old pages stay in the repo untouched, but all work happens on the studio.
+- Dimensions in centimetres.
+- This version carries everything built so far: the studio-pdf-i18n work (Arabic/English, settings, own prices, PDF) and the latest `main` (Vercel deploy workflow).
 
 ## Constraints
 
@@ -109,7 +111,7 @@ Two clear choices:
 ## Smaller calls I made (check while reading)
 
 - A brand-new room starts empty: no furniture, plain white paint on the walls and oak parquet on the floor. "Continue last room" keeps everything.
-- Measurements are typed in metres with up to two decimals, in both languages.
+- Measurements are typed and shown in **centimetres** (whole numbers), in both languages: on screen 1, in the studio's room size, in the inspector and on the plan. Areas stay in m² (estimate, PDF). Internally the room model stays in metres; only input and display use cm. (Decided with Mohamed.)
 - Up to 8 photos per room. Each photo is tagged with one wall; if it shows a corner with two walls, the AI only reports openings on the tagged wall, and the screen tells the designer one wall per photo works best.
 - Doors are drawn swinging into the room.
 
