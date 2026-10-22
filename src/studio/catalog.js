@@ -32,9 +32,8 @@ export const FURN = [
 const byId = (arr) => Object.fromEntries(arr.map(o => [o.id, o]));
 export const WM = byId(WALL_MATS), FM = byId(FLOOR_MATS), FU = byId(FURN);
 
-export const WALL_NAMES = {n:"North wall (window)", e:"East wall", s:"South wall (door)", w:"West wall"};
-export const DOOR = {from:.6, w:.9, h:2.1};   // on the south wall, measured from the west corner
-export const WIN  = {w:1.6, sill:.9, h:1.3};  // centred on the north wall
+export const WALL_NAMES = {n:"North wall", e:"East wall", s:"South wall", w:"West wall"};
+// Windows and doors are in openings.js.
 
 // How each finish and piece is described to the AI renderer.
 export const EN = {

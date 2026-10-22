@@ -1,7 +1,8 @@
 // "Photoreal render": snapshot the 3D view, describe the room in words, send both to /api/generate
 // (Cloudflare Workers AI or fal.ai, chosen on the server) and show the result.
-import { S, foot } from "./state.js";
+import { S, foot, wallLen } from "./state.js";
 import { FU, EN } from "./catalog.js";
+import { OT } from "./openings.js";
 import { $ } from "./utils.js";
 import { update } from "./app.js";
 import { renderer, scene, camera } from "./three/scene.js";
@@ -9,8 +10,16 @@ import { buildRoom } from "./three/room.js";
 import { refreshHelper } from "./three/items.js";
 import { getLighting } from "./three/lighting.js";
 
-const WALL_EN = {n:"the back wall with the window", s:"the wall with the door", e:"the right-hand wall (when facing the window)", w:"the left-hand wall (when facing the window)"};
-const FACE_EN = {0:"facing the door wall", 90:"facing the right-hand wall", 180:"facing the window wall", 270:"facing the left-hand wall"};
+const WALL_EN = {n:"the north (back) wall", s:"the south (front) wall", e:"the east (right-hand) wall", w:"the west (left-hand) wall"};
+const FACE_EN = {0:"facing the south wall", 90:"facing the east wall", 180:"facing the north wall", 270:"facing the west wall"};
+const ENDS = {n:["west", "east"], s:["west", "east"], w:["north", "south"], e:["north", "south"]};
+
+function openingEn(o){
+  const t = OT[o.type], c = (o.offset + o.w / 2) / wallLen(o.wall);
+  const where = c < .3 ? `towards its ${ENDS[o.wall][0]} end` : c > .7 ? `towards its ${ENDS[o.wall][1]} end` : "in the middle";
+  const size = `${Math.round(o.w * 100)} cm wide, ${Math.round(o.h * 100)} cm high${o.sill ? `, ${Math.round(o.sill * 100)} cm above the floor` : ""}`;
+  return `${/^[aeiou]/.test(t.desc) ? "an" : "a"} ${t.desc} (${size}) on ${WALL_EN[o.wall]}, ${where}`;
+}
 
 function placeEn(it){
   if (it.type === "rug") return "on the floor";
@@ -25,10 +34,11 @@ export function describeScene(){
   const items = S.items.map(it => { const f = FU[it.type]; return `${EN[it.type]} (${Math.round(f.w * 100)} x ${Math.round(f.d * 100)} cm) ${placeEn(it)}`; }).join("; ");
   return [
     `Turn this simple 3D block model into a photorealistic interior design photograph of a room ${S.L} m long and ${S.W} m wide with a ${S.H} m ceiling.`,
-    "Keep exactly the same camera angle, perspective, room shape, walls, door and window.",
+    "Keep exactly the same camera angle, perspective, room shape, walls, windows and doors.",
     "Each coloured block is a piece of furniture: keep every piece in exactly the same position, size and orientation. Do not add, remove or move any furniture.",
     `Floor: ${EN[S.floor]}.`,
     `Walls: ${walls}.`,
+    S.openings.length ? `Windows and doors: ${S.openings.map(openingEn).join("; ")}.` : "The room has no windows or doors.",
     items ? `Furniture: ${items}.` : "The room has no furniture.",
     `${getLighting().prompt}, realistic materials, textures and soft shadows, professional architectural interior photography, high detail. No people, no text, no watermark.`
   ].join(" ").slice(0, 2900); // the server rejects prompts over 3000 characters

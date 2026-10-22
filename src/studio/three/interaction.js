@@ -3,6 +3,7 @@
 import * as THREE from "three";
 import { S, clampItem, findItem, isSelectedItem } from "../state.js";
 import { FU } from "../catalog.js";
+import { nearestWallAny } from "../openings.js";
 import { snap } from "../utils.js";
 import { update } from "../app.js";
 import { applyPayload } from "../library.js";
@@ -73,6 +74,7 @@ export function initInteraction(){
     const h = hit3D(e.clientX, e.clientY, [...itemGroup.children, ...pickables]);
     if (!h) S.sel = null;
     else if (h.object.userData.itemId) S.sel = {kind:"item", id:h.object.userData.itemId};
+    else if (h.object.userData.kind === "opening") S.sel = {kind:"opening", id:h.object.userData.id};
     else if (h.object.userData.kind === "wall") S.sel = {kind:"wall", id:h.object.userData.id};
     else S.sel = {kind:"floor"};
     update();
@@ -95,8 +97,15 @@ export function initInteraction(){
     }
     const h = hit3D(e.clientX, e.clientY, pickables);
     if (!h) return applyPayload(payload, null);
-    if (payload.startsWith("furn:")) return applyPayload(payload, {kind:"point", x:h.point.x + S.L / 2, y:h.point.z + S.W / 2});
+    const p = {x:h.point.x + S.L / 2, y:h.point.z + S.W / 2};   // room coordinates of the drop
+    if (payload.startsWith("open:")){
+      // onto the wall that was hit (or the nearest wall when dropped on the floor), centred under the pointer
+      const at = nearestWallAny(p.x, p.y);
+      return applyPayload(payload, {kind:"wall", id:at.wall, along:at.along});
+    }
+    if (payload.startsWith("furn:")) return applyPayload(payload, {kind:"point", ...p});
     if (h.object.userData.kind === "wall") return applyPayload(payload, {kind:"wall", id:h.object.userData.id});
+    if (h.object.userData.kind === "opening") return applyPayload(payload, {kind:"wall", id:h.object.userData.wall});
     applyPayload(payload, {kind:"floor"});
   });
 }

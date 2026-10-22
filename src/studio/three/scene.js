@@ -3,7 +3,8 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { S } from "../state.js";
-import { DOOR } from "../catalog.js";
+import { OT } from "../openings.js";
+import { openingFrame } from "./room.js";
 import { $, cssVar } from "../utils.js";
 
 export let host, renderer, scene, camera, controls, sun, fill;
@@ -51,7 +52,12 @@ function themeBg(){ scene.background = new THREE.Color(cssVar("--stage") || "#df
 
 export function setCam(view){
   const {L, W, H} = S; controls.target.set(0, .9, 0);
-  if (view === "door") camera.position.set(DOOR.from + DOOR.w / 2 - L / 2, 1.6, W / 2 + .2);
+  if (view === "door"){
+    // stand just outside the first door looking in (or the middle of the south wall if there's none)
+    const door = S.openings.find(o => OT[o.type].kind === "door");
+    const f = door ? openingFrame(door) : {x:0, z:W / 2, nx:0, nz:-1};
+    camera.position.set(f.x - f.nx * .2, 1.6, f.z - f.nz * .2);
+  }
   else if (view === "top") camera.position.set(0, Math.max(L, W) * 1.7, .01);
   else camera.position.set(L * .85, H * 1.9, W * 1.25);
   controls.update();

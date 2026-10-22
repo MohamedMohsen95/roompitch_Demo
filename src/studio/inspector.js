@@ -1,6 +1,7 @@
 // Inspector: what's selected, and the actions for it (replace, rotate, duplicate, delete...).
 import { S, clampItem, findItem, selectedItem, wallArea } from "./state.js";
 import { FU, WM, FM, WALL_NAMES } from "./catalog.js";
+import { OT, findOpening, refit } from "./openings.js";
 import { $, fmt } from "./utils.js";
 import { update } from "./app.js";
 import { renderLib } from "./library.js";
@@ -26,6 +27,23 @@ export function renderInspect(){
     $("#rotBtn").onclick = () => rotateSel(); $("#delBtn").onclick = () => deleteSel();
     $("#repBtn").onclick = () => { S.replacing = it.id; S.tab = "furn"; renderLib(); renderInspect(); };
     $("#dupBtn").onclick = () => { const c = {...it, id:S.nextId++, x:it.x + .3, y:it.y + .3}; clampItem(c); S.items.push(c); S.sel = {kind:"item", id:c.id}; update(); };
+  } else if (s.kind === "opening"){
+    const o = findOpening(s.id); if (!o){ S.sel = null; return renderInspect(); }
+    const t = OT[o.type], cm = (v) => Math.round(v * 100);
+    const field = (key, label, val) => `<label class="num"><span>${label}</span><input type="number" inputmode="numeric" step="5" min="0" data-k="${key}" value="${val}"><em>cm</em></label>`;
+    box.innerHTML = `<div class="what">${t.name}<em>${WALL_NAMES[o.wall]} · ${(o.w * o.h).toFixed(1)} m² · drag it in the plan to move</em></div>
+      <div class="dims">${field("w", "Width", cm(o.w))}${field("h", "Height", cm(o.h))}${t.kind === "door" ? "" : field("sill", "From floor", cm(o.sill))}</div>
+      <div class="acts"><button class="btn" type="button" id="delBtn">Delete</button></div>`;
+    box.querySelectorAll(".dims input").forEach(inp => inp.addEventListener("change", () => {
+      const before = {...o};
+      o[inp.dataset.k] = (parseFloat(inp.value) || 0) / 100;
+      const ok = refit(o);
+      if (!ok) Object.assign(o, before);
+      update();
+      if (!ok) flashInspect("That size doesn't fit on this wall.");
+    }));
+    $("#delBtn").onclick = () => deleteSel();
+    if (S.tab !== "open"){ S.tab = "open"; renderLib(); }
   } else if (s.kind === "wall"){
     const m = WM[S.walls[s.id]];
     box.innerHTML = `<div class="what">${WALL_NAMES[s.id]}<em>${m.name} · ${wallArea(s.id).toFixed(1)} m²</em></div>
@@ -41,6 +59,12 @@ export function renderInspect(){
   }
 }
 
+// A short message under the inspector title (e.g. a size that doesn't fit).
+function flashInspect(msg){
+  const em = $("#inspect .what em"); if (!em) return;
+  em.textContent = msg; em.style.color = "var(--accent)";
+}
+
 export function rotateSel(){
   const it = selectedItem(); if (!it) return;
   it.rot = (it.rot + 90) % 360; clampItem(it); update();
@@ -50,6 +74,7 @@ export function rotateSel(){
 export function deleteSel(){
   const s = S.sel; if (!s) return;
   if (s.kind === "item"){ S.items = S.items.filter(i => i.id !== s.id); S.sel = null; }
+  else if (s.kind === "opening"){ S.openings = S.openings.filter(o => o.id !== s.id); S.sel = null; }
   else if (s.kind === "wall") S.walls[s.id] = "bare-wall";
   else if (s.kind === "floor") S.floor = "bare-floor";
   update();

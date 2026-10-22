@@ -75,6 +75,8 @@ npm run dev
 
 الـ 3D مبني على **three.js** (أحدث نسخة) و **Vite**، والإضاءة من صورة HDRI حقيقية (Poly Haven) عشان الخامات تبان واقعية. من قائمة **Lighting** في لوحة الـ 3D المصمم يختار الإضاءة: نهار (Daylight)، دافية (Warm interior)، أو ستوديو (Studio). الرندر بالذكاء الاصطناعي بياخد نفس الإضاءة.
 
+**الشبابيك والأبواب:** من تبويب **Windows & doors** اسحب شباك أو باب على أي حيطة (في المسقط أو الـ 3D)، وحركه على الحيطة أو لحيطة تانية بالسحب في المسقط. لما تختاره تقدر تغير العرض والارتفاع والارتفاع من الأرض. مساحة الدهان في الميزانية بتطرح الفتحات لوحدها.
+
 **إضافة أثاث 3D:** حط الموديل الأصلي (`.gltf` بملفاته، أو `.glb`) في `models-src/<فولدر>/` وبعدين شغّل:
 ```bash
 npm run models
@@ -196,6 +198,8 @@ npm run dev
 **3D models:** put the original `.gltf` (with its files) or `.glb` in `models-src/<folder>/` and run `npm run models`. It writes a compressed `.glb` (Meshopt geometry, WebP textures ≤1024 px) to `public/models/<folder>/`; the desk went from 5.25 MB to 185 KB. Everything in `public/models/` appears in the Room Studio library with its real size.
 
 **Lighting:** a **Lighting** picker in the 3D panel offers moods — *Daylight*, *Warm interior* and *Studio (even)*. Each sets an HDRI from Poly Haven (`public/hdri/`, CC0) for ambient light and reflections, the sun's colour and strength (shadows), the fill light and exposure, and how the light is described to the AI renderer. The choice is remembered per browser; `studio.html?lighting=warm` opens with a given mood. Add a mood in `src/studio/three/lighting.js`.
+
+**Windows & doors:** the *Windows & doors* library tab has a window, wide window, glass/balcony door and door. Drop one on any wall (plan or 3D), drag it along a wall or onto another wall in the plan, and set width, height and sill height in the inspector. Openings never overlap or run past a corner, are subtracted from paintable wall area, and are described to the AI renderer. Logic: `src/studio/openings.js`.
 
 **Studio code:** `src/studio/` — one module per concern (catalog, state, library, inspector, plan, estimate, `three/` scene/room/items/models/interaction, AI render). The map is at the top of `src/studio/main.js`.
 

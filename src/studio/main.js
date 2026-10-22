@@ -1,6 +1,7 @@
 // RoomPitch Room Studio: floor plan + 3D room + live estimate + AI render.
 //
 //   catalog.js      finishes, furniture, AI wording          state.js     the room + geometry helpers
+//   openings.js     windows & doors: types, placement rules
 //   library.js      library panel, applying picks/drops      inspector.js selection actions, keyboard
 //   plan.js         2D SVG plan                              estimate.js  live estimate
 //   three/scene.js  renderer, camera, lights, HDRI           three/room.js   floor, walls, openings
@@ -10,9 +11,10 @@
 //   app.js          update(): redraw after any change
 import { S, clampItem } from "./state.js";
 import { addModels } from "./catalog.js";
+import { refitAll } from "./openings.js";
 import { $, clamp } from "./utils.js";
 import { update, rebuildAll } from "./app.js";
-import { renderLib, initLibrary } from "./library.js";
+import { renderLib, initLibrary, flashHint } from "./library.js";
 import { initKeyboard } from "./inspector.js";
 import { initPlan } from "./plan.js";
 import { initScene, setCam, startLoop } from "./three/scene.js";
@@ -28,7 +30,12 @@ function initDimensions(){
       S.W = clamp(parseFloat($("#dimW").value) || 4, 2, 12);
       S.H = clamp(parseFloat($("#dimH").value) || 2.8, 2.2, 5);
       $("#dimL").value = S.L; $("#dimW").value = S.W; $("#dimH").value = S.H;
-      S.items.forEach(clampItem); rebuildAll(); setCam("corner");
+      S.items.forEach(clampItem);
+      const removed = refitAll();
+      rebuildAll(); setCam("corner");
+      if (removed) flashHint(removed === 1
+        ? "A window or door no longer fit the smaller wall and was removed."
+        : `${removed} windows or doors no longer fit the smaller walls and were removed.`);
     });
   }
 }

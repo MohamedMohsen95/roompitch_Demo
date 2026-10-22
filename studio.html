@@ -49,8 +49,8 @@ button{cursor:pointer}
 .panel h2 small{font-weight:400; color:var(--muted); font-size:12px}
 
 /* Library */
-.tabs{display:flex; gap:4px; padding:10px 10px 0}
-.tabs button{flex:1; border:1px solid var(--line); background:var(--sunk); border-radius:7px; padding:6px 4px; font-size:13px}
+.tabs{display:grid; grid-template-columns:1fr 1fr; gap:4px; padding:10px 10px 0}
+.tabs button{min-width:0; border:1px solid var(--line); background:var(--sunk); border-radius:7px; padding:5px 2px; font-size:12.5px; letter-spacing:-.01em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
 .tabs button[aria-selected="true"]{background:var(--accent-soft); border-color:var(--accent); color:var(--ink); font-weight:600}
 .lib{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; padding:10px; max-height:430px; overflow:auto}
 .tile{min-width:0; border:1px solid var(--line); background:var(--sunk); border-radius:8px; padding:6px; text-align:start; display:flex; flex-direction:column; gap:5px; cursor:grab; user-select:none; touch-action:manipulation}
@@ -68,6 +68,11 @@ button{cursor:pointer}
 .inspect .what em{font-style:normal; color:var(--muted); font-size:12px; display:block}
 .inspect .acts{display:flex; gap:6px; flex-wrap:wrap}
 .inspect .acts .btn{padding:4px 10px; font-size:12.5px}
+.inspect .dims{display:flex; gap:6px; flex-wrap:wrap}
+.inspect .num{display:flex; align-items:center; gap:4px; font-size:12px; color:var(--muted)}
+.inspect .num input{width:58px; font:inherit; color:var(--ink); background:var(--sunk); border:1px solid var(--line); border-radius:6px; padding:3px 5px; text-align:end}
+.inspect .num input:focus-visible{outline:none; border-color:var(--accent)}
+.inspect .num em{font-style:normal}
 
 /* Workspace */
 .work{display:grid; grid-template-columns:1fr 1fr; gap:12px; min-width:0}
@@ -153,6 +158,7 @@ details p{margin:6px 0 0; font-family:var(--font-data); font-size:11.5px; line-h
       <div class="inspect" id="inspect"></div>
       <div class="tabs" role="tablist">
         <button role="tab" id="tab-furn" aria-selected="true" data-tab="furn">Furniture</button>
+        <button role="tab" id="tab-open" aria-selected="false" data-tab="open">Windows &amp; doors</button>
         <button role="tab" id="tab-wall" aria-selected="false" data-tab="wall">Walls</button>
         <button role="tab" id="tab-floor" aria-selected="false" data-tab="floor">Floors</button>
       </div>

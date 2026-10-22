@@ -1,7 +1,8 @@
 // The room being designed, plus geometry helpers that only depend on it.
 // Units are metres; x runs west→east (0..L), y runs north→south (0..W).
-import { FU, DOOR, WIN } from "./catalog.js";
+import { FU } from "./catalog.js";
 import { clamp } from "./utils.js";
+import { openingArea } from "./openings.js";
 
 // Example living room
 export const S = {
@@ -16,9 +17,14 @@ export const S = {
     {id:5, type:"armchair", x:2.6,  y:.75,  rot:0},
     {id:6, type:"plant",    x:4.65, y:.4,   rot:0}
   ],
-  sel:null,          // {kind:"item", id} | {kind:"wall", id:"n"|"e"|"s"|"w"} | {kind:"floor"} | null
-  tab:"furn",        // library tab: "furn" | "wall" | "floor"
-  nextId:7,
+  // Windows and doors (see openings.js). offset = metres from the wall's start corner.
+  openings:[
+    {id:7, type:"door",   wall:"s", offset:.6,  w:.9,  h:2.1, sill:0},
+    {id:8, type:"window", wall:"n", offset:1.7, w:1.6, h:1.3, sill:.9}
+  ],
+  sel:null,          // {kind:"item"|"opening", id} | {kind:"wall", id:"n"|"e"|"s"|"w"} | {kind:"floor"} | null
+  tab:"furn",        // library tab: "furn" | "open" | "wall" | "floor"
+  nextId:9,
   replacing:null     // id of the item waiting to be swapped for a library piece
 };
 
@@ -44,10 +50,5 @@ export function nearestWall(x, y){
   return d[k] < Math.min(S.L, S.W) * .3 ? k : null;
 }
 
-// Paintable wall area, minus the door and window openings.
-export function wallArea(k){
-  let a = wallLen(k) * S.H;
-  if (k === "s") a -= DOOR.w * DOOR.h;
-  if (k === "n") a -= WIN.w * WIN.h;
-  return Math.max(0, a);
-}
+// Paintable wall area, minus its windows and doors.
+export const wallArea = (k) => Math.max(0, wallLen(k) * S.H - openingArea(k));

@@ -1,12 +1,14 @@
 // 2D floor plan (SVG, 1 unit = 1 metre): draw, select, drag pieces, accept drops from the library.
 import { S, clampItem, findItem } from "./state.js";
-import { FU, WM, FM, DOOR, WIN } from "./catalog.js";
+import { FU, WM, FM } from "./catalog.js";
+import { OT, wallLine, INWARD, nearestWallAny, findOpening, moveOpening } from "./openings.js";
 import { $, clamp, snap, shade } from "./utils.js";
 import { update } from "./app.js";
 import { applyPayload } from "./library.js";
 import { renderEst } from "./estimate.js";
-import { rotateSel } from "./inspector.js";
+import { rotateSel, renderInspect } from "./inspector.js";
 import { syncItem } from "./three/items.js";
+import { buildRoom } from "./three/room.js";
 
 const PAD = .7;
 let svg;
@@ -38,18 +40,35 @@ export function renderPlan(){
     h += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${on ? "var(--accent)" : shade(m.c, -.35)}" stroke-width="${on ? T * 1.4 : T}" stroke-linecap="square"/>`;
     h += `<line data-wall="${k}" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="transparent" stroke-width=".35" style="cursor:pointer"/>`;
   }
-  // door + window
-  const dx = DOOR.from;
-  h += `<line x1="${dx}" y1="${W}" x2="${dx + DOOR.w}" y2="${W}" stroke="var(--stage)" stroke-width="${T + .02}"/>`;
-  h += `<path d="M${dx} ${W} L${dx} ${W - DOOR.w} A${DOOR.w} ${DOOR.w} 0 0 1 ${dx + DOOR.w} ${W}" fill="none" stroke="var(--muted)" stroke-width=".015"/>`;
-  const wx = L / 2 - WIN.w / 2;
-  h += `<rect x="${wx}" y="-.06" width="${WIN.w}" height=".12" fill="var(--stage)" stroke="var(--muted)" stroke-width=".015"/><line x1="${wx}" y1="0" x2="${wx + WIN.w}" y2="0" stroke="var(--muted)" stroke-width=".015"/>`;
+  // windows and doors
+  for (const o of S.openings) h += openingSvg(o, T, sel && sel.kind === "opening" && sel.id === o.id);
   // dimensions
   const tx = (x, y, s, rot = 0) => `<text x="${x}" y="${y}" transform="rotate(${rot} ${x} ${y})" font-size=".17" fill="var(--muted)" text-anchor="middle" font-family="IBM Plex Mono, monospace" direction="ltr">${s}</text>`;
   h += `<line x1="0" y1="${-.38}" x2="${L}" y2="${-.38}" stroke="var(--muted)" stroke-width=".01"/>` + tx(L / 2, -.45, `${L.toFixed(2)} m`);
   h += `<line x1="${L + .38}" y1="0" x2="${L + .38}" y2="${W}" stroke="var(--muted)" stroke-width=".01"/>` + tx(L + .5, W / 2, `${W.toFixed(2)} m`, 90);
-  h += `<text x="${dx + DOOR.w / 2}" y="${W + .35}" font-size=".15" fill="var(--muted)" text-anchor="middle">Door</text><text x="${L / 2}" y="-.14" font-size=".15" fill="var(--muted)" text-anchor="middle">Window</text>`;
   svg.innerHTML = h;
+}
+
+// A window (double line in the wall) or a door (gap + swing arc into the room).
+function openingSvg(o, T, on){
+  const l = wallLine(o.wall), n = INWARD[o.wall];
+  const a = {x:l.x + l.dx * o.offset, y:l.y + l.dy * o.offset};
+  const b = {x:a.x + l.dx * o.w, y:a.y + l.dy * o.w};
+  const ink = on ? "var(--accent)" : "var(--muted)", sw = on ? .03 : .015;
+  let h = `<g data-opening="${o.id}" style="cursor:move">`;
+  h += `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="var(--stage)" stroke-width="${T + .02}"/>`;
+  if (OT[o.type].kind === "door"){
+    const leaf = {x:a.x + n.x * o.w, y:a.y + n.y * o.w};
+    const sweep = (l.dx * n.y - l.dy * n.x) < 0 ? 1 : 0;
+    h += `<path d="M${a.x} ${a.y} L${leaf.x} ${leaf.y} A${o.w} ${o.w} 0 0 ${sweep} ${b.x} ${b.y}" fill="${on ? "var(--accent-soft)" : "none"}" stroke="${ink}" stroke-width="${sw}"/>`;
+  } else {
+    const off = (s) => `x1="${a.x + n.x * s}" y1="${a.y + n.y * s}" x2="${b.x + n.x * s}" y2="${b.y + n.y * s}"`;
+    h += `<line ${off(-.045)} stroke="${ink}" stroke-width="${sw}"/><line ${off(.045)} stroke="${ink}" stroke-width="${sw}"/><line ${off(0)} stroke="${ink}" stroke-width="${sw * .7}"/>`;
+    if (o.sill === 0) h += `<line ${off(.12)} stroke="${ink}" stroke-width="${sw * .7}" stroke-dasharray=".06 .05"/>`; // full-height glass
+  }
+  // generous invisible hit area so it's easy to grab
+  h += `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="transparent" stroke-width=".4"/></g>`;
+  return h;
 }
 
 function svgPoint(evt){
@@ -59,9 +78,17 @@ function svgPoint(evt){
 
 export function initPlan(){
   svg = $("#plan");
-  let drag = null;
+  let drag = null, dragOpen = null;
   svg.addEventListener("pointerdown", e => {
+    const opEl = e.target.closest("[data-opening]");
     const itEl = e.target.closest("[data-item]"), wEl = e.target.closest("[data-wall]"), fEl = e.target.closest("[data-floor]");
+    if (opEl){
+      // Drag a window/door along its wall, or onto another wall.
+      const o = findOpening(+opEl.dataset.opening), p = svgPoint(e);
+      S.sel = {kind:"opening", id:o.id};
+      dragOpen = {o, grab:nearestWallAny(p.x, p.y).along - o.offset, moved:false};
+      svg.setPointerCapture(e.pointerId); update(); return;
+    }
     if (wEl){ S.sel = {kind:"wall", id:wEl.dataset.wall}; update(); return; }
     if (itEl){
       const it = findItem(+itEl.dataset.item), p = svgPoint(e);
@@ -71,11 +98,24 @@ export function initPlan(){
     S.sel = fEl ? {kind:"floor"} : null; update();
   });
   svg.addEventListener("pointermove", e => {
+    if (dragOpen){
+      const p = svgPoint(e), {wall, along} = nearestWallAny(p.x, p.y), o = dragOpen.o;
+      // keep the grab point under the pointer on the same wall; centre it when switching walls
+      const sameWall = wall === o.wall;
+      if (moveOpening(o, wall, along - (sameWall ? dragOpen.grab : o.w / 2))){
+        if (!sameWall) dragOpen.grab = o.w / 2;
+        dragOpen.moved = true; renderPlan(); buildRoom();
+      }
+      return;
+    }
     if (!drag) return;
     const p = svgPoint(e); drag.it.x = snap(p.x - drag.dx); drag.it.y = snap(p.y - drag.dy); clampItem(drag.it);
     renderPlan(); syncItem(drag.it);
   });
-  const endDrag = () => { if (drag){ drag = null; renderEst(); } };
+  const endDrag = () => {
+    if (dragOpen){ const moved = dragOpen.moved; dragOpen = null; if (moved){ renderEst(); renderInspect(); } }
+    if (drag){ drag = null; renderEst(); }
+  };
   svg.addEventListener("pointerup", endDrag); svg.addEventListener("pointercancel", endDrag);
   svg.addEventListener("dblclick", e => { if (e.target.closest("[data-item]")) rotateSel(); });
 
