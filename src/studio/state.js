@@ -38,11 +38,13 @@ export const isSelectedItem = (id) => Boolean(S.sel && S.sel.kind === "item" && 
 export const foot = (it) => { const f = FU[it.type]; return (it.rot % 180) ? {w:f.d, d:f.w} : {w:f.w, d:f.d}; };
 export const wallLen = (k) => (k === "n" || k === "s") ? S.L : S.W;
 
-// Keep a piece inside the walls.
+// Keep a piece inside the walls, and between the floor and the ceiling.
+// it.z = height of its underside above the floor (metres); 0 or missing = standing on the floor.
 export function clampItem(it){
   const f = foot(it);
   it.x = f.w >= S.L ? S.L / 2 : clamp(it.x, f.w / 2, S.L - f.w / 2);
   it.y = f.d >= S.W ? S.W / 2 : clamp(it.y, f.d / 2, S.W - f.d / 2);
+  it.z = Math.round(clamp(it.z || 0, 0, Math.max(0, S.H - FU[it.type].h)) * 100) / 100;   // whole centimetres
 }
 
 // The wall closest to a point, if it's reasonably close.

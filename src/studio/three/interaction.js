@@ -10,7 +10,7 @@ import { applyPayload } from "../library.js";
 import { renderInspect, rotateSel } from "../inspector.js";
 import { renderPlan } from "../plan.js";
 import { renderEst } from "../estimate.js";
-import { host, renderer, camera, controls, itemGroup, pickables } from "./scene.js";
+import { host, renderer, scene, camera, controls, itemGroup, pickables } from "./scene.js";
 import { syncItem, refreshHelper } from "./items.js";
 
 const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
@@ -21,11 +21,18 @@ function aim(clientX, clientY){
   ndc.set(((clientX - r.left) / r.width) * 2 - 1, -((clientY - r.top) / r.height) * 2 + 1);
   ray.setFromCamera(ndc, camera);
 }
-function hit3D(clientX, clientY, objs){ aim(clientX, clientY); return ray.intersectObjects(objs, true)[0] || null; }
+// World positions are normally refreshed when a frame is drawn; refresh them here too so picking
+// is right even before the next frame (just after a rebuild, or while the tab isn't rendering).
+function hit3D(clientX, clientY, objs){
+  scene.updateMatrixWorld(); camera.updateMatrixWorld();
+  aim(clientX, clientY); return ray.intersectObjects(objs, true)[0] || null;
+}
 
-// Where the pointer meets the floor, in room coordinates (metres from the north-west corner).
-function floorPoint(clientX, clientY){
+// Where the pointer meets a level plane at `height` (0 = the floor), in room coordinates
+// (metres from the back-left corner).
+function levelPoint(clientX, clientY, height = 0){
   aim(clientX, clientY);
+  floorPlane.constant = -height;
   return ray.ray.intersectPlane(floorPlane, floorHit) ? {x:floorHit.x + S.L / 2, y:floorHit.z + S.W / 2} : null;
 }
 
@@ -34,23 +41,42 @@ export function initInteraction(){
   let down = null, drag = null;
 
   // Press on a piece = drag it (the camera stays still; the plan follows live). Anywhere else = orbit.
+  // Shift held = raise/lower it instead (can be pressed or released mid-drag).
   // Capture phase, so this runs before OrbitControls sees the press.
+  // Horizontal moves follow the pointer on a level plane at the height where the piece was grabbed.
+  const startMode = (e) => {
+    if (e.shiftKey){ drag.vertical = true; drag.y0 = e.clientY; drag.z0 = drag.it.z || 0; return; }
+    const p = levelPoint(e.clientX, e.clientY, drag.grabY + (drag.it.z || 0) - drag.z0Grab);
+    drag.vertical = false; if (p){ drag.dx = p.x - drag.it.x; drag.dy = p.y - drag.it.y; }
+  };
   cv.addEventListener("pointerdown", e => {
     down = {x:e.clientX, y:e.clientY};
     const h = hit3D(e.clientX, e.clientY, itemGroup.children), id = h && h.object.userData.itemId;
-    const it = id && findItem(id), p = it && floorPoint(e.clientX, e.clientY);
-    if (!p) return;
-    drag = {it, dx:p.x - it.x, dy:p.y - it.y, moved:false};
+    const it = id && findItem(id);
+    if (!it) return;
+    drag = {it, moved:false, grabY:h.point.y, z0Grab:it.z || 0};
+    startMode(e);
+    if (!drag.vertical && drag.dx === undefined){ drag = null; return; }
     e.stopImmediatePropagation();
-    controls.enabled = false; cv.setPointerCapture(e.pointerId); cv.style.cursor = "grabbing";
+    controls.enabled = false; cv.setPointerCapture(e.pointerId); cv.style.cursor = drag.vertical ? "ns-resize" : "grabbing";
     if (!isSelectedItem(id)){ S.sel = {kind:"item", id}; renderInspect(); renderPlan(); refreshHelper(); }
   }, {capture:true});
 
   cv.addEventListener("pointermove", e => {
     if (drag){
-      const p = floorPoint(e.clientX, e.clientY); if (!p) return;
-      drag.it.x = snap(p.x - drag.dx); drag.it.y = snap(p.y - drag.dy); clampItem(drag.it);
+      if (e.shiftKey !== drag.vertical){ startMode(e); cv.style.cursor = drag.vertical ? "ns-resize" : "grabbing"; }
+      if (drag.vertical){
+        // pointer pixels -> metres at the piece's distance from the camera
+        const r = cv.getBoundingClientRect(), o = new THREE.Vector3(drag.it.x - S.L / 2, drag.it.z || 0, drag.it.y - S.W / 2);
+        const mpp = 2 * camera.position.distanceTo(o) * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) / r.height;
+        drag.it.z = drag.z0 + (drag.y0 - e.clientY) * mpp;
+      } else {
+        const p = levelPoint(e.clientX, e.clientY, drag.grabY + (drag.it.z || 0) - drag.z0Grab); if (!p) return;
+        drag.it.x = snap(p.x - drag.dx); drag.it.y = snap(p.y - drag.dy);
+      }
+      clampItem(drag.it);
       drag.moved = true; syncItem(drag.it); renderPlan();
+      if (drag.vertical) renderInspect();   // live height readout
       return;
     }
     if (e.buttons) return; // orbiting

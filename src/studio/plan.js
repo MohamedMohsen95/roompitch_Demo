@@ -22,12 +22,13 @@ export function renderPlan(){
   h += `<defs><pattern id="g" width=".5" height=".5" patternUnits="userSpaceOnUse"><path d="M.5 0H0V.5" fill="none" stroke="var(--grid)" stroke-width=".01"/></pattern></defs>`;
   h += `<rect x="${-PAD}" y="${-PAD}" width="${L + PAD * 2}" height="${W + PAD * 2}" fill="url(#g)"/>`;
   h += `<rect data-floor="1" x="0" y="0" width="${L}" height="${W}" fill="${fm.c}" fill-opacity=".55" stroke="${sel && sel.kind === "floor" ? "var(--accent)" : "none"}" stroke-width=".04" stroke-dasharray=".12 .08"/>`;
-  // furniture (rugs first so they sit underneath)
-  const items = [...S.items].sort((a, b) => (a.type === "rug" ? -1 : 0) - (b.type === "rug" ? -1 : 0));
+  // furniture: rugs first, then by height so raised pieces draw on top
+  const items = [...S.items].sort((a, b) => (a.type === "rug" ? -1 : 0) - (b.type === "rug" ? -1 : 0) || (a.z || 0) - (b.z || 0));
   for (const it of items){
-    const f = FU[it.type], on = sel && sel.kind === "item" && sel.id === it.id;
+    const f = FU[it.type], on = sel && sel.kind === "item" && sel.id === it.id, z = it.z || 0;
     h += `<g data-item="${it.id}" transform="translate(${it.x} ${it.y}) rotate(${-it.rot})" style="cursor:move">`;
-    h += `<rect x="${-f.w / 2}" y="${-f.d / 2}" width="${f.w}" height="${f.d}" rx=".04" fill="${f.c}" fill-opacity="${it.type === "rug" ? .55 : .92}" stroke="${on ? "var(--accent)" : "rgba(0,0,0,.35)"}" stroke-width="${on ? .05 : .015}"/>`;
+    h += `<rect x="${-f.w / 2}" y="${-f.d / 2}" width="${f.w}" height="${f.d}" rx=".04" fill="${f.c}" fill-opacity="${it.type === "rug" ? .55 : .92}" stroke="${on ? "var(--accent)" : "rgba(0,0,0,.35)"}" stroke-width="${on ? .05 : .015}"${z > 0 ? ` stroke-dasharray=".08 .05"` : ""}/>`;
+    if (z > 0) h += `<text transform="rotate(${it.rot})" y=".05" font-size=".14" font-family="IBM Plex Mono, monospace" text-anchor="middle" fill="#fff" stroke="rgba(0,0,0,.55)" stroke-width=".03" paint-order="stroke">↑${Math.round(z * 100)}</text>`;
     if (it.type === "sofa" || it.type === "armchair") h += `<rect x="${-f.w / 2}" y="${-f.d / 2}" width="${f.w}" height=".2" fill="rgba(0,0,0,.18)"/>`;
     if (it.type === "bed") h += `<rect x="${-f.w / 2 + .1}" y="${-f.d / 2 + .1}" width="${f.w - .2}" height=".35" rx=".06" fill="rgba(255,255,255,.55)"/>`;
     if (it.type === "tvunit") h += `<rect x="-.6" y="${-f.d / 2 + .05}" width="1.2" height=".06" fill="#111"/>`;

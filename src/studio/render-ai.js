@@ -23,11 +23,21 @@ function openingEn(o){
 }
 
 function placeEn(it){
-  if (it.type === "rug") return "on the floor";
+  if (it.type === "rug" && !it.z) return "on the floor";
   const f = foot(it), gaps = {n:it.y - f.d / 2, s:S.W - it.y - f.d / 2, w:it.x - f.w / 2, e:S.L - it.x - f.w / 2};
   const k = Object.keys(gaps).sort((a, b) => gaps[a] - gaps[b])[0];
   const where = gaps[k] < .35 ? `against ${WALL_EN[k]}` : "in the middle of the room";
-  return it.type === "plant" ? where : `${where}, ${FACE_EN[it.rot]}`;
+  return `${heightEn(it)}${it.type === "plant" ? where : `${where}, ${FACE_EN[it.rot]}`}`;
+}
+
+// "on top of the coffee table, " / "raised 120 cm above the floor (wall-mounted), " / ""
+function heightEn(it){
+  const z = it.z || 0; if (z < .02) return "";
+  const a = foot(it);
+  const under = S.items.find(o => o !== it && Math.abs((o.z || 0) + FU[o.type].h - z) < .04 &&
+    Math.abs(o.x - it.x) < (foot(o).w + a.w) / 2 && Math.abs(o.y - it.y) < (foot(o).d + a.d) / 2);
+  if (under) return `standing on top of the ${EN[under.type]}, `;
+  return `raised ${Math.round(z * 100)} cm above the floor${z > .4 ? " (wall-mounted or on a shelf)" : ""}, `;
 }
 
 export function describeScene(){

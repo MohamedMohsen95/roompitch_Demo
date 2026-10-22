@@ -18,7 +18,7 @@ import { update, rebuildAll } from "./app.js";
 import { renderLib, initLibrary, flashHint } from "./library.js";
 import { initKeyboard } from "./inspector.js";
 import { initPlan, renderPlan } from "./plan.js";
-import { initScene, setCam, startLoop, camera } from "./three/scene.js";
+import { initScene, setCam, startLoop, camera, roomGroup, itemGroup } from "./three/scene.js";
 import { cullForCamera } from "./three/room.js";
 import { initSunControls } from "./three/sun.js";
 import { initLighting } from "./three/lighting.js";
@@ -57,5 +57,7 @@ initScene(); initLighting();
 initLibrary(); initKeyboard(); initPlan(); initInteraction(); initDimensions(); initRenderDialog();
 renderLib(); update(); setCam("corner");
 initSunControls(renderPlan);
+// Dev-only handle for debugging in the browser console (removed from production builds).
+if (import.meta.env.DEV) window.__studio = {S, get camera(){ return camera; }, roomGroup, itemGroup};
 startLoop(() => { updateHelper(); cullForCamera(camera); });
 loadModelCatalog();

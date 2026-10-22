@@ -69,7 +69,7 @@ function buildItem(it){
 }
 
 // Room coordinates (metres from the north-west corner) -> scene coordinates (centred).
-function placeObj(obj, it){ obj.position.set(it.x - S.L / 2, 0, it.y - S.W / 2); obj.rotation.y = it.rot * Math.PI / 180; }
+function placeObj(obj, it){ obj.position.set(it.x - S.L / 2, it.z || 0, it.y - S.W / 2); obj.rotation.y = it.rot * Math.PI / 180; }
 
 export function buildItems(){
   while (itemGroup.children.length) disposeTree(itemGroup.children.pop());

@@ -23,7 +23,9 @@ export function renderInspect(){
     const it = findItem(s.id); if (!it){ S.sel = null; return renderInspect(); }
     const f = FU[it.type];
     box.innerHTML = `<div class="what">${f.name}<em>${Math.round(f.w * 100)}×${Math.round(f.d * 100)} cm · EGP ${fmt(f.price)}</em></div>
+      <div class="dims"><label class="num" title="Shift + drag in 3D, or PageUp / PageDown"><span>From floor</span><input type="number" inputmode="numeric" step="5" min="0" id="zIn" value="${Math.round((it.z || 0) * 100)}"><em>cm</em></label></div>
       <div class="acts"><button class="btn" type="button" id="repBtn">Replace</button><button class="btn" type="button" id="rotBtn">Rotate 90°</button><button class="btn" type="button" id="dupBtn">Duplicate</button><button class="btn" type="button" id="delBtn">Delete</button></div>`;
+    $("#zIn").onchange = () => { it.z = (parseFloat($("#zIn").value) || 0) / 100; clampItem(it); update(); };
     $("#rotBtn").onclick = () => rotateSel(); $("#delBtn").onclick = () => deleteSel();
     $("#repBtn").onclick = () => { S.replacing = it.id; S.tab = "furn"; renderLib(); renderInspect(); };
     $("#dupBtn").onclick = () => { const c = {...it, id:S.nextId++, x:it.x + .3, y:it.y + .3}; clampItem(c); S.items.push(c); S.sel = {kind:"item", id:c.id}; update(); };
@@ -85,6 +87,12 @@ export function initKeyboard(){
     if (e.target.tagName === "INPUT") return;
     if (e.key === "Delete" || e.key === "Backspace") deleteSel();
     if (e.key === "r" || e.key === "R") rotateSel();
+    if (e.key === "PageUp" || e.key === "PageDown"){
+      // raise / lower the selected piece by 5 cm
+      const it = selectedItem(); if (!it) return;
+      e.preventDefault();
+      it.z = (it.z || 0) + (e.key === "PageUp" ? .05 : -.05); clampItem(it); update();
+    }
     if (e.key === "Escape"){ S.sel = null; S.replacing = null; renderLib(); update(); $("#modal").hidden = true; }
   });
 }

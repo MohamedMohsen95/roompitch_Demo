@@ -55,7 +55,7 @@ export function applyPayload(payload, target){
     const swapId = target && target.kind === "item" ? target.id : S.replacing;
     const old = swapId && findItem(swapId);
     if (old){
-      const it = {id:S.nextId++, type:id, x:old.x, y:old.y, rot:old.rot};
+      const it = {id:S.nextId++, type:id, x:old.x, y:old.y, z:old.z || 0, rot:old.rot};
       clampItem(it);
       S.items = S.items.map(i => i.id === old.id ? it : i);
       S.sel = {kind:"item", id:it.id}; S.replacing = null; renderLib();
