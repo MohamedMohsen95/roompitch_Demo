@@ -243,6 +243,15 @@ details p{margin:6px 0 0; font-family:var(--font-data); font-size:11.5px; line-h
 .oerr{margin:0; color:#c0392b; font-size:12px}
 .oerr:empty{display:none}
 .btn.small{padding:3px 9px; font-size:12px}
+.dnote.err{color:#c0392b}
+.photos{display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:8px}
+.photos:empty{display:none}
+.ph{margin:0; border:1px solid var(--line); border-radius:8px; overflow:hidden; background:var(--sunk); display:flex; flex-direction:column}
+.ph.on{border-color:var(--accent); box-shadow:0 0 0 2px var(--accent-soft)}
+.ph img{width:100%; aspect-ratio:4 / 3; object-fit:cover; display:block; cursor:pointer}
+.ph figcaption{display:flex; gap:6px; padding:6px; align-items:center}
+.ph select{flex:1; min-width:0; padding:4px 6px; border:1px solid var(--line); border-radius:6px; background:var(--surface); font-size:12.5px}
+#analyzeBtn:disabled{opacity:.45; cursor:not-allowed}
 .col-preview{position:sticky; top:12px; padding:10px; display:flex; flex-direction:column; gap:6px}
 #setupPreview{width:100%; aspect-ratio:4 / 3; display:block; background:var(--stage); border-radius:8px; touch-action:none}
 .setup-actions{display:flex; justify-content:space-between; gap:10px; margin-top:12px}

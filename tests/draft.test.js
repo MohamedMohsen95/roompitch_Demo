@@ -49,3 +49,27 @@ test("roomToDraft brings a saved room back into the form", () => {
   assert.equal(back.heightCm, 280);
   assert.deepEqual(back.openings.map(o => [o.type, o.wall, o.widthCm, o.sillCm]), [["window", 3, 120, 90]]);
 });
+
+import { applyAnalysis, addPhotos, MAX_PHOTOS } from "../src/studio/setup/draft.js";
+
+test("AI openings replace earlier AI ones on that wall and keep hand-made ones", () => {
+  const d = newDraft("photos");
+  const mine = newOpening("door", 0, d);
+  d.openings = [mine, {...newOpening("window", 0, d), fromAI:true}, {...newOpening("window", 1, d), fromAI:true}];
+  applyAnalysis(d, 0, [{type:"window", left:0.3, right:0.6, top:0.25, bottom:0.65}]);
+  const onWall0 = d.openings.filter(o => o.wall === 0);
+  assert.equal(onWall0.length, 2);
+  assert.ok(onWall0.includes(mine));
+  const ai = onWall0.find(o => o.fromAI);
+  assert.deepEqual([ai.type, ai.offsetCm, ai.widthCm, ai.heightCm, ai.sillCm], ["window", 150, 150, 112, 98]);
+  assert.equal(d.openings.filter(o => o.wall === 1).length, 1);
+});
+
+test("at most 8 photos are kept", () => {
+  const d = newDraft("photos");
+  const pics = Array.from({length:10}, (_, i) => ({id:"p" + i, dataUrl:"data:image/jpeg;base64,AA"}));
+  const r = addPhotos(d, pics);
+  assert.equal(MAX_PHOTOS, 8);
+  assert.deepEqual([r.added, r.skipped, d.photos.length], [8, 2, 8]);
+  assert.equal(d.photos[0].wall, null);
+});

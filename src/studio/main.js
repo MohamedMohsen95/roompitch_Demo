@@ -26,6 +26,8 @@ import { S, applyRoom } from "./state.js";
 import { loadRoom, restoreRoom, setSaving } from "./room-store.js";
 import { initSetup, showSetup, showStudio, relabelSetup } from "./setup/screen.js";
 import { roomToDraft } from "./setup/draft.js";
+import { initPhotos } from "./setup/photos.js";
+import { savePhotos, loadPhotos } from "./photo-store.js";
 
 // Add every model in public/models to the furniture library (real size from the file, placeholder price).
 async function loadModelCatalog(){
@@ -48,13 +50,17 @@ renderLib();
 
 // Screen 1 first. Starting or continuing a room switches to the studio and turns saving on.
 function enterStudio(){ setSaving(true); showStudio(); rebuildAll(); setCam("corner"); }
+initPhotos();
 initSetup({
-  onStart:(room, {keepDesign}) => { applyRoom(room, {keepDesign}); enterStudio(); },
+  onStart:(room, {keepDesign, draft}) => { applyRoom(room, {keepDesign}); savePhotos(draft.photos); enterStudio(); },
   onContinue:() => { const saved = loadRoom(); if (saved) restoreRoom(saved); enterStudio(); }
 });
-$("#roomSetupBtn").onclick = () => {
+$("#roomSetupBtn").onclick = async () => {
   setSaving(false);
-  showSetup({keepDesign:true, draft:roomToDraft({form:S.form, openings:S.openings, H:S.H}), canContinue:true});
+  const draft = roomToDraft({form:S.form, openings:S.openings, H:S.H});
+  draft.photos = await loadPhotos();
+  if (draft.photos.length) draft.mode = "photos";
+  showSetup({keepDesign:true, draft, canContinue:true});
 };
 setSaving(false);
 update(); setCam("corner");

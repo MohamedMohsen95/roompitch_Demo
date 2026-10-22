@@ -78,7 +78,13 @@ const STR = {
     previewHint: "Drag doors and windows along their wall.",
     errBeyondWall: "Goes past the end of the wall", errTooTall: "Taller than the ceiling", errOverlap: "Overlaps another door or window",
     errTooSmall: "Under 30 cm", err_tooSmall: "Each side needs at least 100 cm", err_cutTooBig: "The cut-out must be smaller than the room",
-    err_tooLow: "The ceiling needs at least 200 cm"
+    err_tooLow: "The ceiling needs at least 200 cm",
+    photosTitle: "Room photos", photosHint: "One photo per wall, showing the whole wall. Pick the wall for each photo, or select a photo and click its wall in the preview.",
+    addPhotos: "Add photos", whichWall: "Wall…", removePhoto: "Remove", analyze: "Find doors and windows",
+    analyzing: "Photo {i} of {n}…", analyzeDone: "Found {n} doors and windows. Check them below and fix anything that's off.",
+    analyzeNone: "No doors or windows found. Add them by hand below.", untagged: "{n} photo(s) without a wall were skipped.",
+    tooMany: "Only 8 photos per room: {n} not added.", needTag: "Pick the wall for each photo first.",
+    analysisOff: "Photo analysis is off: add CF_ACCOUNT_ID and CF_API_TOKEN to .env and restart the server."
   },
 
   ar: {
@@ -157,7 +163,13 @@ const STR = {
     previewHint: "اسحب الأبواب والشبابيك على حائطها.",
     errBeyondWall: "أطول من الحائط", errTooTall: "أعلى من السقف", errOverlap: "متداخل مع باب أو شباك آخر",
     errTooSmall: "أقل من 30 سم", err_tooSmall: "يجب أن يكون كل ضلع 100 سم على الأقل", err_cutTooBig: "يجب أن يكون الجزء المقطوع أصغر من الغرفة",
-    err_tooLow: "يجب أن يكون السقف 200 سم على الأقل"
+    err_tooLow: "يجب أن يكون السقف 200 سم على الأقل",
+    photosTitle: "صور الغرفة", photosHint: "صورة لكل حائط تُظهر الحائط كاملًا. اختر الحائط لكل صورة، أو اختر صورة ثم اضغط على حائطها في المعاينة.",
+    addPhotos: "إضافة صور", whichWall: "الحائط…", removePhoto: "حذف", analyze: "حدد الأبواب والشبابيك",
+    analyzing: "صورة {i} من {n}…", analyzeDone: "تم العثور على {n} من الأبواب والشبابيك. راجعها بالأسفل وصحّح أي خطأ.",
+    analyzeNone: "لم يتم العثور على أبواب أو شبابيك. أضفها يدويًا بالأسفل.", untagged: "تم تخطي {n} صورة بدون حائط.",
+    tooMany: "الحد 8 صور لكل غرفة: لم تُضف {n}.", needTag: "اختر الحائط لكل صورة أولًا.",
+    analysisOff: "تحليل الصور غير مُفعّل: أضف CF_ACCOUNT_ID و CF_API_TOKEN في ملف .env وأعد تشغيل السيرفر."
   }
 };
 
