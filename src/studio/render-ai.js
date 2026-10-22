@@ -7,6 +7,7 @@ import { update } from "./app.js";
 import { renderer, scene, camera } from "./three/scene.js";
 import { buildRoom } from "./three/room.js";
 import { refreshHelper } from "./three/items.js";
+import { getLighting } from "./three/lighting.js";
 
 const WALL_EN = {n:"the back wall with the window", s:"the wall with the door", e:"the right-hand wall (when facing the window)", w:"the left-hand wall (when facing the window)"};
 const FACE_EN = {0:"facing the door wall", 90:"facing the right-hand wall", 180:"facing the window wall", 270:"facing the left-hand wall"};
@@ -29,7 +30,7 @@ export function describeScene(){
     `Floor: ${EN[S.floor]}.`,
     `Walls: ${walls}.`,
     items ? `Furniture: ${items}.` : "The room has no furniture.",
-    "Soft natural daylight from the window, realistic materials, textures and soft shadows, professional architectural interior photography, high detail. No people, no text, no watermark."
+    `${getLighting().prompt}, realistic materials, textures and soft shadows, professional architectural interior photography, high detail. No people, no text, no watermark.`
   ].join(" ").slice(0, 2900); // the server rejects prompts over 3000 characters
 }
 
