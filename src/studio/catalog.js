@@ -1,38 +1,37 @@
 // What the designer can place: wall and floor finishes, furniture, and how the AI prompt names them.
-// Example prices in EGP.
+// Example prices in EGP; the designer's own prices live in settings.js. `ar` is the Arabic name.
 
 export const WALL_MATS = [
-  {id:"bare-wall",   name:"Bare plaster (unfinished)", price:0, kind:"concrete", c:"#b9b4aa", tile:2},
-  {id:"paint-white", name:"Matte white paint", price:180, kind:"paint", c:"#ecebe6", tile:1},
-  {id:"paint-sage",  name:"Sage green paint", price:200, kind:"paint", c:"#a7b59d", tile:1},
-  {id:"paint-clay",  name:"Terracotta paint", price:200, kind:"paint", c:"#c9917a", tile:1},
-  {id:"wood-panel",  name:"Wood panelling",     price:1400, kind:"panel", c:"#9a6b43", tile:1.2},
-  {id:"marble-wall", name:"Carrara marble",     price:2200, kind:"marble", c:"#e7e6e2", tile:1.4},
-  {id:"wallpaper",   name:"Wallpaper",       price:450, kind:"wallpaper", c:"#d6cbb5", tile:.7}
+  {id:"bare-wall",   name:"Bare plaster (unfinished)", ar:"محارة بدون تشطيب", price:0, kind:"concrete", c:"#b9b4aa", tile:2},
+  {id:"paint-white", name:"Matte white paint", ar:"دهان أبيض مطفي", price:180, kind:"paint", c:"#ecebe6", tile:1},
+  {id:"paint-sage",  name:"Sage green paint", ar:"دهان أخضر زيتي", price:200, kind:"paint", c:"#a7b59d", tile:1},
+  {id:"paint-clay",  name:"Terracotta paint", ar:"دهان طوبي فاتح", price:200, kind:"paint", c:"#c9917a", tile:1},
+  {id:"wood-panel",  name:"Wood panelling", ar:"تجاليد خشب",     price:1400, kind:"panel", c:"#9a6b43", tile:1.2},
+  {id:"marble-wall", name:"Carrara marble", ar:"رخام كرارة",     price:2200, kind:"marble", c:"#e7e6e2", tile:1.4},
+  {id:"wallpaper",   name:"Wallpaper", ar:"ورق حائط",       price:450, kind:"wallpaper", c:"#d6cbb5", tile:.7}
 ];
 export const FLOOR_MATS = [
-  {id:"bare-floor",   name:"Bare screed (unfinished)", price:0, kind:"concrete", c:"#a9a49b", tile:2},
-  {id:"oak",          name:"Oak parquet",     price:900,  kind:"parquet", c:"#b98b5b", tile:1.4},
-  {id:"porcelain",    name:"Porcelain 60×120",  price:650,  kind:"tiles",   c:"#d8d5cf", tile:1.2},
-  {id:"marble-floor", name:"Marble",            price:2400, kind:"marble",  c:"#efeeea", tile:1.6},
-  {id:"concrete",     name:"Polished concrete",   price:550,  kind:"concrete",c:"#9d9f9d", tile:2}
+  {id:"bare-floor",   name:"Bare screed (unfinished)", ar:"لياسة خام بدون تشطيب", price:0, kind:"concrete", c:"#a9a49b", tile:2},
+  {id:"oak",          name:"Oak parquet", ar:"باركيه بلوط",     price:900,  kind:"parquet", c:"#b98b5b", tile:1.4},
+  {id:"porcelain",    name:"Porcelain 60×120", ar:"بورسلين 60×120",  price:650,  kind:"tiles",   c:"#d8d5cf", tile:1.2},
+  {id:"marble-floor", name:"Marble", ar:"رخام",            price:2400, kind:"marble",  c:"#efeeea", tile:1.6},
+  {id:"concrete",     name:"Polished concrete", ar:"خرسانة مصقولة",   price:550,  kind:"concrete",c:"#9d9f9d", tile:2}
 ];
 // Built-in pieces are drawn from boxes; real 3D models from public/models are added by addModels().
 export const FURN = [
-  {id:"sofa",     name:"3-seat sofa",  w:2.2, d:.9,  h:.85, price:18000, c:"#7b898d"},
-  {id:"armchair", name:"Armchair",          w:.85, d:.85, h:.85, price:6500,  c:"#c2a078"},
-  {id:"ctable",   name:"Coffee table",    w:1.2, d:.6,  h:.4,  price:4500,  c:"#5a4030"},
-  {id:"tvunit",   name:"TV unit",   w:1.8, d:.45, h:.5,  price:9000,  c:"#3a3936"},
-  {id:"rug",      name:"Rug",          w:2.4, d:1.7, h:.01, price:5500,  c:"#b5a189"},
-  {id:"dtable",   name:"Dining table (6)",   w:1.8, d:.9,  h:.75, price:14000, c:"#6b4a33"},
-  {id:"bed",      name:"Bed 160",       w:1.7, d:2.1, h:1,   price:16000, c:"#d4cec2"},
-  {id:"plant",    name:"Plant",     w:.45, d:.45, h:1.2, price:1200,  c:"#4e7a4a"}
+  {id:"sofa",     name:"3-seat sofa", ar:"كنبة 3 مقاعد",  w:2.2, d:.9,  h:.85, price:18000, c:"#7b898d"},
+  {id:"armchair", name:"Armchair", ar:"فوتيه",          w:.85, d:.85, h:.85, price:6500,  c:"#c2a078"},
+  {id:"ctable",   name:"Coffee table", ar:"ترابيزة وسط",    w:1.2, d:.6,  h:.4,  price:4500,  c:"#5a4030"},
+  {id:"tvunit",   name:"TV unit", ar:"وحدة تلفزيون",   w:1.8, d:.45, h:.5,  price:9000,  c:"#3a3936"},
+  {id:"rug",      name:"Rug", ar:"سجادة",          w:2.4, d:1.7, h:.01, price:5500,  c:"#b5a189"},
+  {id:"dtable",   name:"Dining table (6)", ar:"سفرة 6 أفراد",   w:1.8, d:.9,  h:.75, price:14000, c:"#6b4a33"},
+  {id:"bed",      name:"Bed 160", ar:"سرير 160",       w:1.7, d:2.1, h:1,   price:16000, c:"#d4cec2"},
+  {id:"plant",    name:"Plant", ar:"نبات طبيعي",     w:.45, d:.45, h:1.2, price:1200,  c:"#4e7a4a"}
 ];
 
 const byId = (arr) => Object.fromEntries(arr.map(o => [o.id, o]));
 export const WM = byId(WALL_MATS), FM = byId(FLOOR_MATS), FU = byId(FURN);
 
-export const WALL_NAMES = {n:"North wall (window)", e:"East wall", s:"South wall (door)", w:"West wall"};
 export const DOOR = {from:.6, w:.9, h:2.1};   // on the south wall, measured from the west corner
 export const WIN  = {w:1.6, sill:.9, h:1.3};  // centred on the north wall
 

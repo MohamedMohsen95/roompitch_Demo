@@ -4,12 +4,11 @@ import { FURN, WALL_MATS, FLOOR_MATS } from "./catalog.js";
 import { swatchURL } from "./textures.js";
 import { $, fmt } from "./utils.js";
 import { update } from "./app.js";
+import { t, nameOf } from "./i18n.js";
+import { priceOf } from "./settings.js";
 
-const HINTS = {
-  furn: "Drag a piece onto the plan or the 3D view, or click it to place it in the middle of the room.",
-  wall: "Drag a finish onto any wall, or select a wall and click a finish.",
-  floor:"Drag a finish onto the floor, or click it."
-};
+const HINT_KEYS = {furn:"hintFurn", wall:"hintWall", floor:"hintFloor"};
+const hint = () => t(HINT_KEYS[S.tab]);
 
 export function renderLib(){
   document.querySelectorAll(".tabs button").forEach(b => b.setAttribute("aria-selected", String(b.dataset.tab === S.tab)));
@@ -17,20 +16,20 @@ export function renderLib(){
   lib.classList.toggle("replacing", Boolean(S.replacing) && S.tab === "furn");
   const list = S.tab === "furn" ? FURN : S.tab === "wall" ? WALL_MATS : FLOOR_MATS;
   for (const o of list){
-    const t = document.createElement("button");
-    t.type = "button"; t.className = "tile"; t.draggable = true; t.title = o.name;
+    const tile = document.createElement("button");
+    tile.type = "button"; tile.className = "tile"; tile.draggable = true; tile.title = nameOf(o);
     if (S.tab === "furn"){
       const k = 38 / Math.max(o.w, o.d);
-      t.innerHTML = `<div class="sw" style="background:var(--stage)"><div class="fp" style="width:${o.w * k}px;height:${o.d * k}px;background:${o.c}"></div></div><b>${o.name}</b><span>${Math.round(o.w * 100)}×${Math.round(o.d * 100)} cm · ${fmt(o.price)}</span>`;
+      tile.innerHTML = `<div class="sw" style="background:var(--stage)"><div class="fp" style="width:${o.w * k}px;height:${o.d * k}px;background:${o.c}"></div></div><b>${nameOf(o)}</b><span>${Math.round(o.w * 100)}×${Math.round(o.d * 100)} ${t("cm")} · ${fmt(priceOf(o.id))}</span>`;
     } else {
-      t.innerHTML = `<div class="sw" style="background-image:url(${swatchURL(o)})"></div><b>${o.name}</b><span>${fmt(o.price)} / m²</span>`;
+      tile.innerHTML = `<div class="sw" style="background-image:url(${swatchURL(o)})"></div><b>${nameOf(o)}</b><span>${fmt(priceOf(o.id))} / ${t("m2")}</span>`;
     }
     const payload = `${S.tab}:${o.id}`;
-    t.addEventListener("dragstart", e => { e.dataTransfer.setData("text/plain", payload); e.dataTransfer.effectAllowed = "copy"; });
-    t.addEventListener("click", () => applyPayload(payload, null));
-    lib.appendChild(t);
+    tile.addEventListener("dragstart", e => { e.dataTransfer.setData("text/plain", payload); e.dataTransfer.effectAllowed = "copy"; });
+    tile.addEventListener("click", () => applyPayload(payload, null));
+    lib.appendChild(tile);
   }
-  $("#hint").textContent = S.replacing && S.tab === "furn" ? "Pick the new piece. It takes the old one's place and direction." : HINTS[S.tab];
+  $("#hint").textContent = S.replacing && S.tab === "furn" ? t("hintReplace") : hint();
 }
 
 // Apply a dragged/clicked library entry ("furn:sofa", "wall:paint-white", "floor:oak").
@@ -55,7 +54,7 @@ export function applyPayload(payload, target){
     let w = target && target.kind === "wall" ? target.id : null;
     if (!w && target && target.kind === "point") w = nearestWall(target.x, target.y);
     if (!w && S.sel && S.sel.kind === "wall") w = S.sel.id;
-    if (!w){ flashHint("Select a wall first in the plan or 3D view, or drag the finish onto it."); return; }
+    if (!w){ flashHint(t("hintWallFirst")); return; }
     S.walls[w] = id; S.sel = {kind:"wall", id:w};
   } else if (kind === "floor"){
     S.floor = id; S.sel = {kind:"floor"};
@@ -65,7 +64,7 @@ export function applyPayload(payload, target){
 
 function flashHint(msg){
   const h = $("#hint"); h.textContent = msg; h.style.color = "var(--accent)";
-  setTimeout(() => { h.style.color = ""; h.textContent = HINTS[S.tab]; }, 2600);
+  setTimeout(() => { h.style.color = ""; h.textContent = hint(); }, 2600);
 }
 
 export function initLibrary(){

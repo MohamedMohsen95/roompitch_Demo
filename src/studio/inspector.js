@@ -1,44 +1,63 @@
-// Inspector: what's selected, and the actions for it (replace, rotate, duplicate, delete...).
+// Inspector: what's selected, its price, and the actions for it (replace, rotate, duplicate, delete...).
 import { S, clampItem, findItem, selectedItem, wallArea } from "./state.js";
-import { FU, WM, FM, WALL_NAMES } from "./catalog.js";
-import { $, fmt } from "./utils.js";
+import { FU, WM, FM } from "./catalog.js";
+import { $ } from "./utils.js";
 import { update } from "./app.js";
 import { renderLib } from "./library.js";
+import { renderEst } from "./estimate.js";
+import { t, nameOf } from "./i18n.js";
+import { settings, priceOf, setPrice } from "./settings.js";
+
+// Editable price for a finish or piece. Saved on change; the estimate and library follow.
+function priceField(id, perKey){
+  return `<label class="pricefield" for="priceIn"><span>${t("price")}</span>
+    <input id="priceIn" type="number" min="0" step="1" inputmode="decimal" value="${priceOf(id)}" data-id="${id}">
+    <span class="unit">${settings.currency} ${t(perKey)}</span></label>`;
+}
+function bindPrice(){
+  const inp = $("#priceIn"); if (!inp) return;
+  inp.addEventListener("change", () => { setPrice(inp.dataset.id, inp.value); inp.value = priceOf(inp.dataset.id); renderEst(); renderLib(); });
+}
 
 export function renderInspect(){
   const box = $("#inspect"); const s = S.sel;
   if (S.replacing){
     const old = findItem(S.replacing);
     if (old){
-      box.innerHTML = `<div class="what">Replacing: ${FU[old.type].name}<em>Pick the new piece from the library</em></div>
-        <div class="acts"><button class="btn" type="button" id="cancelRep">Cancel</button></div>`;
+      box.innerHTML = `<div class="what">${t("replacing", {name:nameOf(FU[old.type])})}<em>${t("pickNew")}</em></div>
+        <div class="acts"><button class="btn" type="button" id="cancelRep">${t("cancel")}</button></div>`;
       $("#cancelRep").onclick = () => { S.replacing = null; renderLib(); update(); };
       return;
     }
     S.replacing = null;
   }
-  if (!s){ box.innerHTML = `<div class="what">Nothing selected<em>Click a piece, a wall or the floor</em></div>`; return; }
+  if (!s){ box.innerHTML = `<div class="what">${t("nothingSel")}<em>${t("nothingHint")}</em></div>`; return; }
   if (s.kind === "item"){
     const it = findItem(s.id); if (!it){ S.sel = null; return renderInspect(); }
     const f = FU[it.type];
-    box.innerHTML = `<div class="what">${f.name}<em>${Math.round(f.w * 100)}×${Math.round(f.d * 100)} cm · EGP ${fmt(f.price)}</em></div>
-      <div class="acts"><button class="btn" type="button" id="repBtn">Replace</button><button class="btn" type="button" id="rotBtn">Rotate 90°</button><button class="btn" type="button" id="dupBtn">Duplicate</button><button class="btn" type="button" id="delBtn">Delete</button></div>`;
+    box.innerHTML = `<div class="what">${nameOf(f)}<em>${Math.round(f.w * 100)}×${Math.round(f.d * 100)} ${t("cm")}</em></div>
+      ${priceField(it.type, "perPiece")}
+      <div class="acts"><button class="btn" type="button" id="repBtn">${t("replace")}</button><button class="btn" type="button" id="rotBtn">${t("rotate")}</button><button class="btn" type="button" id="dupBtn">${t("duplicate")}</button><button class="btn" type="button" id="delBtn">${t("delete")}</button></div>`;
     $("#rotBtn").onclick = () => rotateSel(); $("#delBtn").onclick = () => deleteSel();
     $("#repBtn").onclick = () => { S.replacing = it.id; S.tab = "furn"; renderLib(); renderInspect(); };
     $("#dupBtn").onclick = () => { const c = {...it, id:S.nextId++, x:it.x + .3, y:it.y + .3}; clampItem(c); S.items.push(c); S.sel = {kind:"item", id:c.id}; update(); };
   } else if (s.kind === "wall"){
-    const m = WM[S.walls[s.id]];
-    box.innerHTML = `<div class="what">${WALL_NAMES[s.id]}<em>${m.name} · ${wallArea(s.id).toFixed(1)} m²</em></div>
-      <div class="acts"><button class="btn" type="button" id="allBtn">Apply to all walls</button><button class="btn" type="button" id="delBtn">Remove finish</button></div>`;
+    const id = S.walls[s.id], m = WM[id];
+    box.innerHTML = `<div class="what">${t("wall_" + s.id)}<em>${nameOf(m)} · ${wallArea(s.id).toFixed(1)} ${t("m2")}</em></div>
+      ${m.price || priceOf(id) ? priceField(id, "perM2") : ""}
+      <div class="acts"><button class="btn" type="button" id="allBtn">${t("applyAll")}</button><button class="btn" type="button" id="delBtn">${t("removeFinish")}</button></div>`;
     $("#delBtn").onclick = () => deleteSel();
     $("#allBtn").onclick = () => { for (const k in S.walls) S.walls[k] = S.walls[s.id]; update(); };
     if (S.tab !== "wall"){ S.tab = "wall"; renderLib(); }
   } else {
-    box.innerHTML = `<div class="what">Floor<em>${FM[S.floor].name} · ${(S.L * S.W).toFixed(1)} m²</em></div>
-      <div class="acts"><button class="btn" type="button" id="delBtn">Remove floor finish</button></div>`;
+    const id = S.floor, m = FM[id];
+    box.innerHTML = `<div class="what">${t("floor")}<em>${nameOf(m)} · ${(S.L * S.W).toFixed(1)} ${t("m2")}</em></div>
+      ${m.price || priceOf(id) ? priceField(id, "perM2") : ""}
+      <div class="acts"><button class="btn" type="button" id="delBtn">${t("removeFloor")}</button></div>`;
     $("#delBtn").onclick = () => deleteSel();
     if (S.tab !== "floor"){ S.tab = "floor"; renderLib(); }
   }
+  bindPrice();
 }
 
 export function rotateSel(){
@@ -55,11 +74,16 @@ export function deleteSel(){
   update();
 }
 
+const anyDialogOpen = () => [...document.querySelectorAll(".modal")].some(m => !m.hidden);
+
 export function initKeyboard(){
   document.addEventListener("keydown", e => {
-    if (e.target.tagName === "INPUT") return;
+    if (e.key === "Escape"){
+      if (anyDialogOpen()){ document.querySelectorAll(".modal").forEach(m => { m.hidden = true; }); return; }
+      S.sel = null; S.replacing = null; renderLib(); update(); return;
+    }
+    if (anyDialogOpen() || ["INPUT", "TEXTAREA", "SELECT"].includes(e.target.tagName)) return;
     if (e.key === "Delete" || e.key === "Backspace") deleteSel();
     if (e.key === "r" || e.key === "R") rotateSel();
-    if (e.key === "Escape"){ S.sel = null; S.replacing = null; renderLib(); update(); $("#modal").hidden = true; }
   });
 }

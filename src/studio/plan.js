@@ -4,6 +4,7 @@ import { FU, WM, FM, DOOR, WIN } from "./catalog.js";
 import { $, clamp, snap, shade } from "./utils.js";
 import { update } from "./app.js";
 import { applyPayload } from "./library.js";
+import { t, getLang } from "./i18n.js";
 import { renderEst } from "./estimate.js";
 import { rotateSel } from "./inspector.js";
 import { syncItem } from "./three/items.js";
@@ -11,13 +12,20 @@ import { syncItem } from "./three/items.js";
 const PAD = .7;
 let svg;
 
+export const planViewBox = () => `${-PAD} ${-PAD} ${S.L + PAD * 2} ${S.W + PAD * 2}`;
+
 export function renderPlan(){
-  const {L, W} = S, sel = S.sel;
-  svg.setAttribute("viewBox", `${-PAD} ${-PAD} ${L + PAD * 2} ${W + PAD * 2}`);
+  svg.setAttribute("viewBox", planViewBox());
+  svg.innerHTML = planMarkup();
+}
+
+// SVG content of the plan. The PDF calls it with its own language, no selection and its own pattern id.
+export function planMarkup({lang = getLang(), sel = S.sel, gridId = "g"} = {}){
+  const {L, W} = S;
   const fm = FM[S.floor];
   let h = "";
-  h += `<defs><pattern id="g" width=".5" height=".5" patternUnits="userSpaceOnUse"><path d="M.5 0H0V.5" fill="none" stroke="var(--grid)" stroke-width=".01"/></pattern></defs>`;
-  h += `<rect x="${-PAD}" y="${-PAD}" width="${L + PAD * 2}" height="${W + PAD * 2}" fill="url(#g)"/>`;
+  h += `<defs><pattern id="${gridId}" width=".5" height=".5" patternUnits="userSpaceOnUse"><path d="M.5 0H0V.5" fill="none" stroke="var(--grid)" stroke-width=".01"/></pattern></defs>`;
+  h += `<rect x="${-PAD}" y="${-PAD}" width="${L + PAD * 2}" height="${W + PAD * 2}" fill="url(#${gridId})"/>`;
   h += `<rect data-floor="1" x="0" y="0" width="${L}" height="${W}" fill="${fm.c}" fill-opacity=".55" stroke="${sel && sel.kind === "floor" ? "var(--accent)" : "none"}" stroke-width=".04" stroke-dasharray=".12 .08"/>`;
   // furniture (rugs first so they sit underneath)
   const items = [...S.items].sort((a, b) => (a.type === "rug" ? -1 : 0) - (b.type === "rug" ? -1 : 0));
@@ -46,10 +54,10 @@ export function renderPlan(){
   h += `<rect x="${wx}" y="-.06" width="${WIN.w}" height=".12" fill="var(--stage)" stroke="var(--muted)" stroke-width=".015"/><line x1="${wx}" y1="0" x2="${wx + WIN.w}" y2="0" stroke="var(--muted)" stroke-width=".015"/>`;
   // dimensions
   const tx = (x, y, s, rot = 0) => `<text x="${x}" y="${y}" transform="rotate(${rot} ${x} ${y})" font-size=".17" fill="var(--muted)" text-anchor="middle" font-family="IBM Plex Mono, monospace" direction="ltr">${s}</text>`;
-  h += `<line x1="0" y1="${-.38}" x2="${L}" y2="${-.38}" stroke="var(--muted)" stroke-width=".01"/>` + tx(L / 2, -.45, `${L.toFixed(2)} m`);
-  h += `<line x1="${L + .38}" y1="0" x2="${L + .38}" y2="${W}" stroke="var(--muted)" stroke-width=".01"/>` + tx(L + .5, W / 2, `${W.toFixed(2)} m`, 90);
-  h += `<text x="${dx + DOOR.w / 2}" y="${W + .35}" font-size=".15" fill="var(--muted)" text-anchor="middle">Door</text><text x="${L / 2}" y="-.14" font-size=".15" fill="var(--muted)" text-anchor="middle">Window</text>`;
-  svg.innerHTML = h;
+  h += `<line x1="0" y1="${-.38}" x2="${L}" y2="${-.38}" stroke="var(--muted)" stroke-width=".01"/>` + tx(L / 2, -.45, `${L.toFixed(2)} ${t("m", null, lang)}`);
+  h += `<line x1="${L + .38}" y1="0" x2="${L + .38}" y2="${W}" stroke="var(--muted)" stroke-width=".01"/>` + tx(L + .5, W / 2, `${W.toFixed(2)} ${t("m", null, lang)}`, 90);
+  h += `<text x="${dx + DOOR.w / 2}" y="${W + .35}" font-size=".15" fill="var(--muted)" text-anchor="middle">${t("door", null, lang)}</text><text x="${L / 2}" y="-.14" font-size=".15" fill="var(--muted)" text-anchor="middle">${t("window", null, lang)}</text>`;
+  return h;
 }
 
 function svgPoint(evt){

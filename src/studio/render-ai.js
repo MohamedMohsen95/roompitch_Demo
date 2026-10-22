@@ -7,6 +7,10 @@ import { update } from "./app.js";
 import { renderer, scene, camera } from "./three/scene.js";
 import { buildRoom } from "./three/room.js";
 import { refreshHelper } from "./three/items.js";
+import { t } from "./i18n.js";
+
+// Every successful render this session (newest last); the PDF proposal uses them.
+export const renders = [];
 
 const WALL_EN = {n:"the back wall with the window", s:"the wall with the door", e:"the right-hand wall (when facing the window)", w:"the left-hand wall (when facing the window)"};
 const FACE_EN = {0:"facing the door wall", 90:"facing the right-hand wall", 180:"facing the window wall", 270:"facing the left-hand wall"};
@@ -45,7 +49,7 @@ const getCode = () => { try { return JSON.parse(localStorage.getItem("rp_setting
 const setCode = (v) => { try { const s = JSON.parse(localStorage.getItem("rp_settings") || "{}"); s.accessCode = v; localStorage.setItem("rp_settings", JSON.stringify(s)); } catch {} };
 
 // Capture the 3D view without the selection outline. `small` respects the provider's input size limit.
-function snapshot(maxSide){
+export function snapshot(maxSide = 1600){
   const keep = S.sel; S.sel = null; buildRoom(); refreshHelper(); renderer.render(scene, camera);
   const src = renderer.domElement, k = Math.min(1, maxSide / Math.max(src.width, src.height));
   const c = document.createElement("canvas");
@@ -61,7 +65,7 @@ const providerName = (p) => p === "cloudflare" ? "Cloudflare Workers AI" : p;
 
 async function runRender(){
   $("#codeRow").hidden = true; $("#outImg").hidden = true; $("#saveImg").hidden = true;
-  $("#spin").hidden = false; $("#spin").textContent = "Rendering…"; setStatus("");
+  $("#spin").hidden = false; $("#spin").textContent = t("rendering"); setStatus("");
   const c = await getCfg();
   if (!job){
     const shot = snapshot(c.maxInputSide || 1024);
@@ -72,11 +76,11 @@ async function runRender(){
   $("#shot").src = job.shot.full; $("#promptTxt").textContent = job.prompt;
   if (!c.aiEnabled){
     $("#spin").textContent = c.offline
-      ? "Open this page through the server: run npm run dev and go to /studio.html"
-      : "No AI keys in .env. Add CF_ACCOUNT_ID and CF_API_TOKEN, then restart the server.";
-    setStatus("Rendering is off", true); return;
+      ? t("offline")
+      : t("noKeys");
+    setStatus(t("renderOff"), true); return;
   }
-  setStatus(`Sending to ${providerName(c.provider)}…`);
+  setStatus(t("sending", {p:providerName(c.provider)}));
   const t0 = performance.now();
   try {
     const r = await fetch("/api/generate", {
@@ -84,15 +88,16 @@ async function runRender(){
       headers:{"Content-Type":"application/json", "x-access-code":getCode()},
       body:JSON.stringify({mode:"restyle", image:job.shot.small, prompt:job.prompt, width:job.outW, height:job.outH})
     });
-    if (r.status === 401){ $("#codeRow").hidden = false; $("#spin").textContent = "Access code needed"; setStatus("Enter the code from your .env file", true); $("#accessCode").focus(); return; }
+    if (r.status === 401){ $("#codeRow").hidden = false; $("#spin").textContent = t("codeNeeded"); setStatus(t("enterCode"), true); $("#accessCode").focus(); return; }
     const data = await r.json().catch(() => ({}));
-    if (!r.ok || !data.image){ $("#spin").textContent = data.error || `Something went wrong (${r.status})`; setStatus("Render failed", true); return; }
+    if (!r.ok || !data.image){ $("#spin").textContent = data.error || t("wentWrong", {s:r.status}); setStatus(t("failed"), true); return; }
     const secs = ((performance.now() - t0) / 1000).toFixed(1);
     $("#outImg").src = data.image; $("#outImg").hidden = false; $("#spin").hidden = true;
     $("#saveImg").href = data.image; $("#saveImg").hidden = false;
-    setStatus(`Done in ${secs} s · ${providerName(c.provider)}`);
+    setStatus(t("done", {s:secs, p:providerName(c.provider)}));
+    renders.push({src:data.image, at:Date.now()});
   } catch {
-    $("#spin").textContent = "Could not reach the server. Make sure npm run dev is running."; setStatus("Render failed", true);
+    $("#spin").textContent = t("noServer"); setStatus(t("failed"), true);
   }
 }
 

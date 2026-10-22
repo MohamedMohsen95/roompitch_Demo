@@ -7,6 +7,8 @@
 //   three/items.js  furniture in 3D                          three/models.js glTF loading
 //   three/interaction.js  picking, dragging, drops in 3D     render-ai.js    photoreal render dialog
 //   app.js          update(): redraw after any change
+//   i18n.js         English / Arabic text                    settings.js  designer settings + own prices
+//   dialogs.js      settings and price list dialogs          proposal.js  PDF proposal (print layout)
 import { S, clampItem } from "./state.js";
 import { addModels } from "./catalog.js";
 import { $, clamp } from "./utils.js";
@@ -18,6 +20,9 @@ import { initScene, setCam, startLoop } from "./three/scene.js";
 import { updateHelper } from "./three/items.js";
 import { initInteraction } from "./three/interaction.js";
 import { initRenderDialog } from "./render-ai.js";
+import { applyStatic, setLang, getLang, onLangChange } from "./i18n.js";
+import { initDialogs, relabelDialogs } from "./dialogs.js";
+import { initProposal } from "./proposal.js";
 
 function initDimensions(){
   for (const id of ["dimL", "dimW", "dimH"]){
@@ -41,8 +46,13 @@ async function loadModelCatalog(){
   } catch { /* opened without the server: keep the built-in catalog */ }
 }
 
+applyStatic();
+$("#langBtn").onclick = () => setLang(getLang() === "ar" ? "en" : "ar");
+onLangChange(() => { renderLib(); update(); relabelDialogs(); });
+
 initScene();
 initLibrary(); initKeyboard(); initPlan(); initInteraction(); initDimensions(); initRenderDialog();
+initDialogs(); initProposal();
 renderLib(); update(); setCam("corner");
 startLoop(updateHelper);
 loadModelCatalog();
