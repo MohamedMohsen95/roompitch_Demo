@@ -2,7 +2,7 @@
 // then hand the room to the studio. The photo path (setup/photos.js) plugs into the same form.
 import { $ } from "../utils.js";
 import { t } from "../i18n.js";
-import { newDraft, newOpening, draftWalls, draftToRoom } from "./draft.js";
+import { newDraft, newOpening, draftWalls, draftToRoom, fitDraftToWalls } from "./draft.js";
 import { renderPreview, initPreview } from "./preview.js";
 
 let draft = newDraft("manual");
@@ -48,12 +48,11 @@ function fillShape(){
 
 // Recompute the room, then redraw. full=true also rebuilds the openings list (not while typing in it).
 function refresh(full){
+  fitDraftToWalls(draft);
   last = draftToRoom(draft);
   const walls = draftWalls(draft);
   $("#shapeError").textContent = last.shapeError ? t("err_" + last.shapeError) : "";
   $("#wallList").innerHTML = walls.map(w => `<li><span class="wn">${w.i + 1}</span><bdi dir="ltr">${w.lenCm} ${t("cm")}</bdi></li>`).join("");
-  // Openings on walls that no longer exist (shape changed) move to wall 1.
-  for (const o of draft.openings) if (o.wall >= walls.length && walls.length) o.wall = 0;
   if (full) renderOpenings(walls);
   else markErrors();
   renderPreview($("#setupPreview"), last.room, {errors:last.openingErrors, activeWall:photoHooks ? photoHooks.activeWall() : null});

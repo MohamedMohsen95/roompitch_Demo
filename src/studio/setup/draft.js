@@ -49,6 +49,14 @@ export function roomToDraft({form, openings, H}){
   };
 }
 
+// After the shape changes: openings on walls that no longer exist move to wall 1 (centred),
+// and photos tagged with such walls lose their tag.
+export function fitDraftToWalls(d){
+  const walls = draftWalls(d); if (!walls.length) return;
+  for (const o of d.openings) if (o.wall >= walls.length){ o.wall = 0; o.offsetCm = Math.max(0, Math.round((walls[0].lenCm - o.widthCm) / 2)); }
+  for (const p of d.photos) if (p.wall != null && p.wall >= walls.length) p.wall = null;
+}
+
 export const MAX_PHOTOS = 8;
 
 // Add photos up to the limit; new ones are not tagged with a wall yet.

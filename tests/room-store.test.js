@@ -57,3 +57,16 @@ test("applyRoom keepDesign=true keeps finishes and pulls furniture inside", () =
   assert.equal(S.walls[0], "wood-panel");
   assert.equal(S.walls.length, 4);
 });
+
+test("restoreRoom drops pieces and finishes it doesn't know", async () => {
+  const { restoreRoom } = await import("../src/studio/room-store.js");
+  applyRoom(room({shape:"rect", lengthCm:500, widthCm:400}), {keepDesign:false});
+  const saved = {...JSON.parse(JSON.stringify({v:1, form:S.form, poly:S.poly, openings:[], H:2.8, nextId:3})),
+    walls:["no-such-finish", "wood-panel", "paint-white", "paint-white"], floor:"no-such-floor",
+    items:[{id:1, type:"sofa", x:2, y:2, rot:0}, {id:2, type:"m-gone-model", x:3, y:3, rot:0}]};
+  const r = restoreRoom(saved);
+  assert.equal(r.dropped, 1);
+  assert.deepEqual(S.items.map(i => i.type), ["sofa"]);
+  assert.deepEqual(S.walls, ["paint-white", "wood-panel", "paint-white", "paint-white"]);
+  assert.equal(S.floor, "oak");
+});

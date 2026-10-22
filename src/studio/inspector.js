@@ -79,6 +79,9 @@ const anyDialogOpen = () => [...document.querySelectorAll(".modal")].some(m => !
 
 export function initKeyboard(){
   document.addEventListener("keydown", e => {
+    // Shortcuts only act on the studio, never while the New room screen is showing.
+    const studio = document.getElementById("studioScreen");
+    if (studio && studio.hidden) return;
     if (e.key === "Escape"){
       if (anyDialogOpen()){ document.querySelectorAll(".modal").forEach(m => { m.hidden = true; }); return; }
       S.sel = null; S.replacing = null; renderLib(); update(); return;

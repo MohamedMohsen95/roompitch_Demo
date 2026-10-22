@@ -12,14 +12,14 @@
 import { addModels } from "./catalog.js";
 import { $ } from "./utils.js";
 import { update, rebuildAll } from "./app.js";
-import { renderLib, initLibrary } from "./library.js";
+import { renderLib, initLibrary, flashHint } from "./library.js";
 import { initKeyboard } from "./inspector.js";
 import { initPlan } from "./plan.js";
 import { initScene, setCam, startLoop } from "./three/scene.js";
 import { updateHelper } from "./three/items.js";
 import { initInteraction } from "./three/interaction.js";
 import { initRenderDialog } from "./render-ai.js";
-import { applyStatic, setLang, getLang, onLangChange } from "./i18n.js";
+import { applyStatic, setLang, getLang, onLangChange, t } from "./i18n.js";
 import { initDialogs, relabelDialogs } from "./dialogs.js";
 import { initProposal } from "./proposal.js";
 import { S, applyRoom } from "./state.js";
@@ -50,13 +50,21 @@ renderLib();
 
 // Screen 1 first. Starting or continuing a room switches to the studio and turns saving on.
 function enterStudio(){ setSaving(true); showStudio(); rebuildAll(); setCam("corner"); }
+const catalogReady = loadModelCatalog();
 initPhotos();
 initSetup({
   onStart:(room, {keepDesign, draft}) => { applyRoom(room, {keepDesign}); savePhotos(draft.photos); enterStudio(); },
-  onContinue:() => { const saved = loadRoom(); if (saved) restoreRoom(saved); enterStudio(); }
+  // Wait for the 3D model pieces (at most 5 s) so saved model furniture is recognised.
+  onContinue:async () => {
+    await Promise.race([catalogReady, new Promise(r => setTimeout(r, 5000))]);
+    const saved = loadRoom(), r = saved ? restoreRoom(saved) : {dropped:0};
+    enterStudio();
+    if (r.dropped) flashHint(t("droppedPieces", {n:r.dropped}), 8000);
+  }
 });
 $("#roomSetupBtn").onclick = async () => {
   setSaving(false);
+  S.sel = null; S.replacing = null;
   const draft = roomToDraft({form:S.form, openings:S.openings, H:S.H});
   draft.photos = await loadPhotos();
   if (draft.photos.length) draft.mode = "photos";
@@ -66,4 +74,3 @@ setSaving(false);
 update(); setCam("corner");
 showSetup({canContinue:Boolean(loadRoom())});
 startLoop(updateHelper);
-loadModelCatalog();

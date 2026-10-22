@@ -73,3 +73,17 @@ test("at most 8 photos are kept", () => {
   assert.deepEqual([r.added, r.skipped, d.photos.length], [8, 2, 8]);
   assert.equal(d.photos[0].wall, null);
 });
+
+import { fitDraftToWalls } from "../src/studio/setup/draft.js";
+
+test("after a shape change, openings and photo tags on walls that are gone move or reset", () => {
+  const d = {...newDraft("photos"), shape:"L", lengthCm:600, widthCm:500};
+  d.openings = [newOpening("door", 5, d)];
+  d.photos = [{id:"p1", dataUrl:"x", wall:5}, {id:"p2", dataUrl:"x", wall:1}];
+  d.shape = "rect";
+  fitDraftToWalls(d);
+  assert.equal(d.openings[0].wall, 0);
+  assert.equal(d.openings[0].offsetCm, 255);       // centred on the 600 cm wall
+  assert.deepEqual(d.photos.map(p => p.wall), [null, 1]);
+  assert.equal(draftToRoom(d).ok, true);
+});

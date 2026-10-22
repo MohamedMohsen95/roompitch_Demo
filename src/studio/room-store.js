@@ -1,6 +1,7 @@
 // Save the current room and design in this browser, and bring it back on the next visit.
 import { S } from "./state.js";
 import { bbox } from "./geometry.js";
+import { FU, WM, FM } from "./catalog.js";
 
 const KEY = "rp_room";
 let paused = false;
@@ -25,10 +26,15 @@ export function loadRoom(){
   } catch { return null; }
 }
 
+// Pieces and finishes the catalog doesn't know (a model file removed since, or not loaded) are left out.
+// Returns {dropped}: how many pieces were left out.
 export function restoreRoom(d){
   S.poly = d.poly; S.form = d.form; S.openings = d.openings; S.H = d.H;
   const box = bbox(d.poly); S.L = box.L; S.W = box.W;
-  S.walls = d.poly.map((_, i) => d.walls[i] || "paint-white");
-  S.floor = d.floor || "oak"; S.items = d.items; S.nextId = d.nextId || (Math.max(0, ...d.items.map(i => i.id)) + 1);
+  S.walls = d.poly.map((_, i) => WM[d.walls[i]] ? d.walls[i] : "paint-white");
+  S.floor = FM[d.floor] ? d.floor : "oak";
+  S.items = d.items.filter(it => FU[it.type]);
+  S.nextId = d.nextId || (Math.max(0, ...d.items.map(i => i.id)) + 1);
   S.sel = null; S.replacing = null;
+  return {dropped:d.items.length - S.items.length};
 }

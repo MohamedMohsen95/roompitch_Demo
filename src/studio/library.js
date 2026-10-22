@@ -62,9 +62,9 @@ export function applyPayload(payload, target){
   update();
 }
 
-function flashHint(msg){
+export function flashHint(msg, ms = 2600){
   const h = $("#hint"); h.textContent = msg; h.style.color = "var(--accent)";
-  setTimeout(() => { h.style.color = ""; h.textContent = hint(); }, 2600);
+  setTimeout(() => { h.style.color = ""; h.textContent = hint(); }, ms);
 }
 
 export function initLibrary(){

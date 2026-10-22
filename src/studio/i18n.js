@@ -83,7 +83,7 @@ const STR = {
     addPhotos: "Add photos", whichWall: "Wall…", removePhoto: "Remove", analyze: "Find doors and windows",
     analyzing: "Photo {i} of {n}…", analyzeDone: "Found {n} doors and windows. Check them below and fix anything that's off.",
     analyzeNone: "No doors or windows found. Add them by hand below.", untagged: "{n} photo(s) without a wall were skipped.",
-    tooMany: "Only 8 photos per room: {n} not added.", needTag: "Pick the wall for each photo first.",
+    tooMany: "Only 8 photos per room: {n} not added.", droppedPieces: "{n} piece(s) from the saved room are no longer in the library and were left out.", needTag: "Pick the wall for each photo first.",
     analysisOff: "Photo analysis is off: add CF_ACCOUNT_ID and CF_API_TOKEN to .env and restart the server."
   },
 
@@ -168,7 +168,7 @@ const STR = {
     addPhotos: "إضافة صور", whichWall: "الحائط…", removePhoto: "حذف", analyze: "حدد الأبواب والشبابيك",
     analyzing: "صورة {i} من {n}…", analyzeDone: "تم العثور على {n} من الأبواب والشبابيك. راجعها بالأسفل وصحّح أي خطأ.",
     analyzeNone: "لم يتم العثور على أبواب أو شبابيك. أضفها يدويًا بالأسفل.", untagged: "تم تخطي {n} صورة بدون حائط.",
-    tooMany: "الحد 8 صور لكل غرفة: لم تُضف {n}.", needTag: "اختر الحائط لكل صورة أولًا.",
+    tooMany: "الحد 8 صور لكل غرفة: لم تُضف {n}.", droppedPieces: "{n} قطعة من الغرفة المحفوظة لم تعد في المكتبة وتم استبعادها.", needTag: "اختر الحائط لكل صورة أولًا.",
     analysisOff: "تحليل الصور غير مُفعّل: أضف CF_ACCOUNT_ID و CF_API_TOKEN في ملف .env وأعد تشغيل السيرفر."
   }
 };

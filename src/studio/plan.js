@@ -9,6 +9,7 @@ import { t, getLang } from "./i18n.js";
 import { renderEst } from "./estimate.js";
 import { rotateSel } from "./inspector.js";
 import { syncItem } from "./three/items.js";
+import { saveRoom } from "./room-store.js";
 
 const PAD = .7;
 let svg;
@@ -102,7 +103,7 @@ export function initPlan(){
     const p = svgPoint(e); drag.it.x = snap(p.x - drag.dx); drag.it.y = snap(p.y - drag.dy); clampItem(drag.it);
     renderPlan(); syncItem(drag.it);
   });
-  const endDrag = () => { if (drag){ drag = null; renderEst(); } };
+  const endDrag = () => { if (drag){ drag = null; renderEst(); saveRoom(); } };
   svg.addEventListener("pointerup", endDrag); svg.addEventListener("pointercancel", endDrag);
   svg.addEventListener("dblclick", e => { if (e.target.closest("[data-item]")) rotateSel(); });
 
