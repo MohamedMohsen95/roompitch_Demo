@@ -63,7 +63,22 @@ const STR = {
     item: "Item", qty: "Qty", unitPrice: "Unit price", amount: "Amount", pNotes: "Notes",
     valid: "This proposal is valid for {d} days from its date.",
     visual: "Images are concept visualisations. Final finishes and furniture may differ slightly.",
-    signClient: "Client signature", signDesigner: "Designer signature", yourStudio: "Your studio"
+    signClient: "Client signature", signDesigner: "Designer signature", yourStudio: "Your studio",
+    // Screen 1: new room
+    newRoom: "New room", newRoomSub: "How do you want to start?",
+    chooseManual: "I'll build the room myself", chooseManualSub: "Type the measurements, then place the doors and windows.",
+    choosePhotos: "I have photos of the room", choosePhotosSub: "Upload photos and type the measurements. AI finds the doors and windows.",
+    continueLast: "Continue last room", backChoice: "Back", startDesign: "Start designing",
+    shapeTitle: "Room shape", shapeRect: "Rectangle", shapeL: "L-shape",
+    lengthCm: "Length", widthCm: "Width", heightCm: "Ceiling height", cutLength: "Cut-out length", cutWidth: "Cut-out width",
+    cutCorner: "Cut-out corner", corner_nw: "Top left", corner_ne: "Top right", corner_se: "Bottom right", corner_sw: "Bottom left",
+    wallsTitle: "Walls", openingsTitle: "Doors and windows", addDoor: "Add door", addWindow: "Add window",
+    door1: "Door", window1: "Window", onWall: "Wall", fromCorner: "From corner", oWidth: "Width", oHeight: "Height", oSill: "Sill",
+    remove: "Remove", foundByAI: "found by AI", noOpenings: "No doors or windows yet.",
+    previewHint: "Drag doors and windows along their wall.",
+    errBeyondWall: "Goes past the end of the wall", errTooTall: "Taller than the ceiling", errOverlap: "Overlaps another door or window",
+    errTooSmall: "Under 30 cm", err_tooSmall: "Each side needs at least 100 cm", err_cutTooBig: "The cut-out must be smaller than the room",
+    err_tooLow: "The ceiling needs at least 200 cm"
   },
 
   ar: {
@@ -127,7 +142,22 @@ const STR = {
     item: "البند", qty: "الكمية", unitPrice: "سعر الوحدة", amount: "القيمة", pNotes: "ملاحظات",
     valid: "هذا العرض سارٍ لمدة {d} يومًا من تاريخه.",
     visual: "الصور تصوّر مبدئي للتصميم، وقد تختلف التشطيبات والأثاث النهائية اختلافًا بسيطًا.",
-    signClient: "توقيع العميل", signDesigner: "توقيع المصمم", yourStudio: "اسم المكتب"
+    signClient: "توقيع العميل", signDesigner: "توقيع المصمم", yourStudio: "اسم المكتب",
+    // الشاشة الأولى: غرفة جديدة
+    newRoom: "غرفة جديدة", newRoomSub: "كيف تريد أن تبدأ؟",
+    chooseManual: "سأبني الغرفة بنفسي", chooseManualSub: "اكتب المقاسات، ثم ضع الأبواب والشبابيك.",
+    choosePhotos: "لدي صور للغرفة", choosePhotosSub: "ارفع الصور واكتب المقاسات، وسيحدد الـ AI الأبواب والشبابيك.",
+    continueLast: "أكمل آخر غرفة", backChoice: "رجوع", startDesign: "ابدأ التصميم",
+    shapeTitle: "شكل الغرفة", shapeRect: "مستطيل", shapeL: "حرف L",
+    lengthCm: "الطول", widthCm: "العرض", heightCm: "ارتفاع السقف", cutLength: "طول الجزء المقطوع", cutWidth: "عرض الجزء المقطوع",
+    cutCorner: "مكان الجزء المقطوع", corner_nw: "أعلى الشمال", corner_ne: "أعلى اليمين", corner_se: "أسفل اليمين", corner_sw: "أسفل الشمال",
+    wallsTitle: "الحوائط", openingsTitle: "الأبواب والشبابيك", addDoor: "إضافة باب", addWindow: "إضافة شباك",
+    door1: "باب", window1: "شباك", onWall: "الحائط", fromCorner: "من الركن", oWidth: "العرض", oHeight: "الارتفاع", oSill: "من الأرض",
+    remove: "حذف", foundByAI: "حدده الـ AI", noOpenings: "لا توجد أبواب أو شبابيك بعد.",
+    previewHint: "اسحب الأبواب والشبابيك على حائطها.",
+    errBeyondWall: "أطول من الحائط", errTooTall: "أعلى من السقف", errOverlap: "متداخل مع باب أو شباك آخر",
+    errTooSmall: "أقل من 30 سم", err_tooSmall: "يجب أن يكون كل ضلع 100 سم على الأقل", err_cutTooBig: "يجب أن يكون الجزء المقطوع أصغر من الغرفة",
+    err_tooLow: "يجب أن يكون السقف 200 سم على الأقل"
   }
 };
 

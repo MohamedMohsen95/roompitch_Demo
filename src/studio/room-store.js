@@ -3,8 +3,13 @@ import { S } from "./state.js";
 import { bbox } from "./geometry.js";
 
 const KEY = "rp_room";
+let paused = false;
+
+// While screen 1 is showing nothing is saved, so an untouched sample room never becomes "the last room".
+export const setSaving = (on) => { paused = !on; };
 
 export function saveRoom(){
+  if (paused) return;
   const data = {v:1, form:S.form, poly:S.poly, openings:S.openings, H:S.H, walls:S.walls, floor:S.floor, items:S.items, nextId:S.nextId};
   try { localStorage.setItem(KEY, JSON.stringify(data)); } catch { /* storage full or blocked: keep working */ }
 }

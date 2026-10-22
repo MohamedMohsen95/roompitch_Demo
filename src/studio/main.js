@@ -22,6 +22,10 @@ import { initRenderDialog } from "./render-ai.js";
 import { applyStatic, setLang, getLang, onLangChange } from "./i18n.js";
 import { initDialogs, relabelDialogs } from "./dialogs.js";
 import { initProposal } from "./proposal.js";
+import { S, applyRoom } from "./state.js";
+import { loadRoom, restoreRoom, setSaving } from "./room-store.js";
+import { initSetup, showSetup, showStudio, relabelSetup } from "./setup/screen.js";
+import { roomToDraft } from "./setup/draft.js";
 
 // Add every model in public/models to the furniture library (real size from the file, placeholder price).
 async function loadModelCatalog(){
@@ -34,12 +38,26 @@ async function loadModelCatalog(){
 }
 
 applyStatic();
-$("#langBtn").onclick = () => setLang(getLang() === "ar" ? "en" : "ar");
-onLangChange(() => { renderLib(); update(); relabelDialogs(); });
+document.querySelectorAll(".langbtn").forEach(b => { b.onclick = () => setLang(getLang() === "ar" ? "en" : "ar"); });
+onLangChange(() => { renderLib(); update(); relabelDialogs(); relabelSetup(); });
 
 initScene();
 initLibrary(); initKeyboard(); initPlan(); initInteraction(); initRenderDialog();
 initDialogs(); initProposal();
-renderLib(); update(); setCam("corner");
+renderLib();
+
+// Screen 1 first. Starting or continuing a room switches to the studio and turns saving on.
+function enterStudio(){ setSaving(true); showStudio(); rebuildAll(); setCam("corner"); }
+initSetup({
+  onStart:(room, {keepDesign}) => { applyRoom(room, {keepDesign}); enterStudio(); },
+  onContinue:() => { const saved = loadRoom(); if (saved) restoreRoom(saved); enterStudio(); }
+});
+$("#roomSetupBtn").onclick = () => {
+  setSaving(false);
+  showSetup({keepDesign:true, draft:roomToDraft({form:S.form, openings:S.openings, H:S.H}), canContinue:true});
+};
+setSaving(false);
+update(); setCam("corner");
+showSetup({canContinue:Boolean(loadRoom())});
 startLoop(updateHelper);
 loadModelCatalog();

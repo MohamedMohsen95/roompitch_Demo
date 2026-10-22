@@ -122,7 +122,7 @@ details p{margin:6px 0 0; font-family:var(--font-data); font-size:11.5px; line-h
 
 .tools{display:flex; gap:6px; flex-wrap:wrap}
 .tools .btn{padding:6px 10px; font-size:13px}
-#langBtn{font-weight:600}
+.langbtn{font-weight:600}
 
 /* Price field in the inspector */
 .pricefield{display:flex; align-items:center; gap:6px; font-size:12.5px; color:var(--muted); flex-wrap:wrap}
@@ -199,6 +199,56 @@ details p{margin:6px 0 0; font-family:var(--font-data); font-size:11.5px; line-h
   .pp-sign div{flex:1; font-size:9pt; color:#1d2321}
   .pp-sign span{display:block; border-bottom:1px solid #1d2321; height:28px; margin-bottom:4px}
 }
+
+/* ───────── Screen 1: new room ───────── */
+.choose{max-width:880px; width:100%; margin:6vh auto 0; display:flex; flex-direction:column; gap:14px; align-items:flex-start}
+.choose h1{margin:0; font-size:28px; font-weight:600; text-wrap:balance}
+.choices{display:grid; grid-template-columns:1fr 1fr; gap:14px; width:100%}
+.choice{display:flex; flex-direction:column; gap:8px; align-items:flex-start; text-align:start; padding:22px; border:1px solid var(--line); border-radius:12px; background:var(--surface); min-height:180px}
+.choice:hover{border-color:var(--accent); background:var(--accent-soft)}
+.choice svg{width:44px; height:44px; color:var(--accent)}
+.choice b{font-size:17px; font-weight:600}
+.choice span{color:var(--muted); font-size:13.5px}
+.setup-grid{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.1fr); gap:12px; align-items:start}
+.col-form{display:flex; flex-direction:column}
+.sblock{padding:14px; border-bottom:1px solid var(--line); display:flex; flex-direction:column; gap:10px}
+.sblock:last-child{border-bottom:none}
+.sblock h2{font-size:14px; margin:0; padding:0; border:none}
+.sblock h3{font-size:12.5px; margin:4px 0 0; color:var(--muted); font-weight:600}
+.seg{display:inline-flex; border:1px solid var(--line); border-radius:8px; overflow:hidden; align-self:flex-start}
+.seg label{display:flex}
+.seg input{position:absolute; opacity:0; pointer-events:none}
+.seg span{padding:7px 16px; cursor:pointer; font-size:13.5px}
+.seg input:checked + span{background:var(--accent); color:var(--accent-ink); font-weight:600}
+.seg input:focus-visible + span{outline:2px solid var(--accent); outline-offset:-2px}
+.fgrid{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px}
+.fgrid label, .ofields label{display:grid; grid-template-columns:1fr auto; gap:3px 6px; align-items:center; font-size:12.5px; color:var(--muted)}
+.fgrid label > span, .ofields label > span{grid-column:1 / -1}
+.fgrid input, .fgrid select, .ofields input, .owall select{width:100%; padding:7px 8px; border:1px solid var(--line); border-radius:7px; background:var(--sunk); font-family:var(--font-data); direction:ltr; text-align:end}
+.fgrid select{grid-column:1 / -1; font-family:var(--font-body); direction:inherit; text-align:start}
+.fgrid small, .ofields small{font-size:11.5px}
+.serr{margin:0; color:#c0392b; font-size:12.5px; min-height:0}
+.serr:empty{display:none}
+.wall-list{display:flex; flex-wrap:wrap; gap:6px; margin:0; padding:0; list-style:none}
+.wall-list li{display:flex; gap:6px; align-items:center; border:1px solid var(--line); border-radius:20px; padding:2px 10px 2px 3px; font-family:var(--font-data); font-size:12.5px; background:var(--sunk)}
+.wall-list .wn{width:20px; height:20px; border-radius:50%; background:var(--surface); border:1px solid var(--muted); display:inline-flex; align-items:center; justify-content:center; font-size:11px}
+.orow{border:1px solid var(--line); border-radius:9px; padding:8px 10px; display:flex; flex-direction:column; gap:8px; margin-bottom:8px; background:var(--sunk)}
+.orow.bad{border-color:#c0392b}
+.ohead{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+.ohead strong{font-size:13.5px}
+.owall{display:flex; gap:6px; align-items:center; font-size:12.5px; color:var(--muted); margin-inline-start:auto}
+.owall select{width:64px}
+.aitag{font-size:11px; background:var(--accent-soft); color:var(--ink); border-radius:20px; padding:1px 8px}
+.ofields{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px}
+.oerr{margin:0; color:#c0392b; font-size:12px}
+.oerr:empty{display:none}
+.btn.small{padding:3px 9px; font-size:12px}
+.col-preview{position:sticky; top:12px; padding:10px; display:flex; flex-direction:column; gap:6px}
+#setupPreview{width:100%; aspect-ratio:4 / 3; display:block; background:var(--stage); border-radius:8px; touch-action:none}
+.setup-actions{display:flex; justify-content:space-between; gap:10px; margin-top:12px}
+.setup-actions .primary:disabled{opacity:.45; cursor:not-allowed}
+@media (max-width:900px){ .setup-grid{grid-template-columns:1fr} .col-preview{position:static; order:-1} .choices{grid-template-columns:1fr} }
+@media (max-width:560px){ .fgrid, .ofields{grid-template-columns:repeat(2,minmax(0,1fr))} }
 @media (max-width:1150px){
   .app{grid-template-columns:240px minmax(0,1fr)}
   .budget{grid-column:1 / -1}
@@ -215,7 +265,77 @@ details p{margin:6px 0 0; font-family:var(--font-data); font-size:11.5px; line-h
 </style>
 </head>
 <body>
-<div class="wrap">
+<section class="setup wrap" id="setupScreen">
+  <header class="bar">
+    <div class="brand"><strong>RoomPitch</strong><span class="tag" data-i18n="newRoom">New room</span></div>
+    <div class="tools"><button class="btn langbtn" type="button" data-i18n="langBtn">عربي</button></div>
+  </header>
+
+  <div class="choose" id="setupChoose">
+    <h1 data-i18n="newRoom">New room</h1>
+    <p class="dnote" data-i18n="newRoomSub">How do you want to start?</p>
+    <div class="choices">
+      <button class="choice" id="chooseManual" type="button">
+        <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M8 40V8h32v32z M8 30h10v10 M30 8v8" fill="none" stroke="currentColor" stroke-width="2.4"/></svg>
+        <b data-i18n="chooseManual">I'll build the room myself</b><span data-i18n="chooseManualSub"></span>
+      </button>
+      <button class="choice" id="choosePhotos" type="button">
+        <svg viewBox="0 0 48 48" aria-hidden="true"><rect x="6" y="12" width="36" height="26" rx="3" fill="none" stroke="currentColor" stroke-width="2.4"/><circle cx="24" cy="25" r="7" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M17 12l3-5h8l3 5" fill="none" stroke="currentColor" stroke-width="2.4"/></svg>
+        <b data-i18n="choosePhotos">I have photos of the room</b><span data-i18n="choosePhotosSub"></span>
+      </button>
+    </div>
+    <button class="btn" id="continueLast" type="button" data-i18n="continueLast" hidden>Continue last room</button>
+  </div>
+
+  <div class="setup-form" id="setupForm" hidden>
+    <div class="setup-grid">
+      <div class="panel col-form">
+        <section class="sblock">
+          <h2 data-i18n="shapeTitle">Room shape</h2>
+          <div class="seg" role="radiogroup">
+            <label><input type="radio" name="suShape" value="rect" checked><span data-i18n="shapeRect">Rectangle</span></label>
+            <label><input type="radio" name="suShape" value="L"><span data-i18n="shapeL">L-shape</span></label>
+          </div>
+          <div class="fgrid">
+            <label for="suLength"><span data-i18n="lengthCm">Length</span><input id="suLength" type="number" min="100" step="1" inputmode="numeric"><small data-i18n="cm">cm</small></label>
+            <label for="suWidth"><span data-i18n="widthCm">Width</span><input id="suWidth" type="number" min="100" step="1" inputmode="numeric"><small data-i18n="cm">cm</small></label>
+            <label for="suHeight"><span data-i18n="heightCm">Ceiling height</span><input id="suHeight" type="number" min="200" step="1" inputmode="numeric"><small data-i18n="cm">cm</small></label>
+          </div>
+          <div class="fgrid" id="cutFields" hidden>
+            <label for="suCutLength"><span data-i18n="cutLength">Cut-out length</span><input id="suCutLength" type="number" min="1" step="1" inputmode="numeric"><small data-i18n="cm">cm</small></label>
+            <label for="suCutWidth"><span data-i18n="cutWidth">Cut-out width</span><input id="suCutWidth" type="number" min="1" step="1" inputmode="numeric"><small data-i18n="cm">cm</small></label>
+            <label for="suCorner"><span data-i18n="cutCorner">Cut-out corner</span>
+              <select id="suCorner"><option value="nw" data-i18n="corner_nw">Top left</option><option value="ne" data-i18n="corner_ne">Top right</option><option value="se" data-i18n="corner_se">Bottom right</option><option value="sw" data-i18n="corner_sw">Bottom left</option></select></label>
+          </div>
+          <p class="serr" id="shapeError" role="alert"></p>
+          <h3 data-i18n="wallsTitle">Walls</h3>
+          <ol class="wall-list" id="wallList"></ol>
+        </section>
+
+        <section class="sblock" id="photoSection" hidden></section>
+
+        <section class="sblock">
+          <h2 data-i18n="openingsTitle">Doors and windows</h2>
+          <div id="openList"></div>
+          <div class="acts2">
+            <button class="btn" id="addDoor" type="button" data-i18n="addDoor">Add door</button>
+            <button class="btn" id="addWindow" type="button" data-i18n="addWindow">Add window</button>
+          </div>
+        </section>
+      </div>
+      <div class="panel col-preview">
+        <svg id="setupPreview" aria-hidden="true"></svg>
+        <p class="dnote" data-i18n="previewHint">Drag doors and windows along their wall.</p>
+      </div>
+    </div>
+    <div class="setup-actions">
+      <button class="btn" id="setupBack" type="button" data-i18n="backChoice">Back</button>
+      <button class="btn primary" id="startDesign" type="button" data-i18n="startDesign">Start designing</button>
+    </div>
+  </div>
+</section>
+
+<div class="wrap" id="studioScreen" hidden>
   <header class="bar">
     <div class="brand"><strong>RoomPitch</strong><span class="tag" data-i18n="tag">Real render test · Cloudflare</span></div>
     <div class="dims">
@@ -223,7 +343,7 @@ details p{margin:6px 0 0; font-family:var(--font-data); font-size:11.5px; line-h
       <button class="btn" id="roomSetupBtn" type="button" data-i18n="roomSetup">Room setup</button>
     </div>
     <div class="tools">
-      <button class="btn" id="langBtn" type="button" data-i18n="langBtn">عربي</button>
+      <button class="btn langbtn" id="langBtn" type="button" data-i18n="langBtn">عربي</button>
       <button class="btn" id="settingsBtn" type="button" data-i18n="settings">Settings</button>
       <button class="btn" id="pricesBtn" type="button" data-i18n="priceList">Price list</button>
       <button class="btn" id="pdfBtn" type="button" data-i18n="exportPdf">Export PDF</button>
