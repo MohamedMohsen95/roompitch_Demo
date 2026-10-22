@@ -6,15 +6,72 @@
 
 ---
 
-## 🧪 تجربة: استوديو الأوضة (فرع `room-studio-test`)
+## ⚙️ Requirements & setup · المتطلبات والتشغيل
 
-صفحة تجربة منفصلة: المصمم يبني أوضة فاضية من المقاسات، يسحب الخامات والأثاث على المسقط أو الـ 3D، والميزانية بتتحسب لوحدها. زرار **ريندر واقعي** بيبعت لقطة الـ 3D للـ AI (Cloudflare) ويرجع صورة واقعية.
+### Requirements · المتطلبات
+| | Version | Check |
+|---|---|---|
+| **Node.js** | **20.19 or newer** (Vite 8 needs it) | `node -v` |
+| **npm** | comes with Node | `npm -v` |
+| **Git** | any recent version | `git --version` |
 
+No database and no other services. AI keys are optional: without them the app runs in **demo mode**.
+
+### First-time setup · أول مرة
+```bash
+git clone https://github.com/MohamedMohsen95/roompitch_Demo.git
+cd roompitch_Demo
+npm install
+```
+Optional, for real AI renders (see [section 2](#-2-شغّل-الذكاء-الاصطناعي-الحقيقي)):
+```bash
+cp .env.example .env
+```
+Then fill in `CF_ACCOUNT_ID` and `CF_API_TOKEN` (free) or `FAL_KEY` (paid) in `.env`. Never commit `.env`; it's already in `.gitignore`.
+
+### Run · التشغيل
+```bash
+npm run dev
+```
+| Page | URL |
+|---|---|
+| Main app (photo restyle, budget, PDF) | <http://localhost:5173> |
+| Room Studio (2D plan + 3D) | <http://localhost:5173/studio.html> |
+
+The top-right badge says **AI live** when keys are set, **Demo mode** otherwise. After editing `.env`, stop the server (Ctrl+C) and run it again.
+
+### All commands
+| Command | What it does |
+|---|---|
+| `npm run dev` | Development server with instant reload; also runs the `api/` functions locally |
+| `npm run build` | Production build into `dist/` (what Vercel runs) |
+| `npm run preview` | Serves the production build locally, to test it before deploying |
+| `npm run models` | Compresses 3D models from `models-src/` into `public/models/` |
+
+### Already had an older copy? · عندك نسخة قديمة؟
+The project moved from `node dev-server.mjs` to Vite. After `git pull`:
 ```bash
 npm install
 npm run dev
 ```
-وافتح <http://localhost:5173/studio.html>. ده نموذج للتجربة بس، مش الكود النهائي.
+`dev-server.mjs` is gone, and the port changed from 3000 to **5173**.
+
+### Troubleshooting
+- **`npm run dev` fails with a Node version error:** update Node to 20.19+ (<https://nodejs.org>, LTS).
+- **Port 5173 is busy:** Vite picks the next free port; use the URL it prints.
+- **Badge says Demo mode although `.env` has keys:** restart `npm run dev`; `.env` is only read at startup.
+- **"AI key rejected":** the Cloudflare token needs the *Workers AI* permission and must match `CF_ACCOUNT_ID`.
+- **"Today's free AI allowance is used up":** Cloudflare's free 10,000 neurons/day reset at 00:00 UTC.
+
+**بالعربي باختصار:** محتاج Node.js 20.19 أو أحدث. أول مرة: `npm install`، وبعدها كل مرة: `npm run dev` وافتح <http://localhost:5173> (التطبيق) أو <http://localhost:5173/studio.html> (استوديو الأوضة). لو عايز رندر حقيقي بالذكاء الاصطناعي، انسخ `.env.example` لـ `.env` وحط المفاتيح (شوف القسم 2). لو عندك نسخة قديمة: بعد `git pull` شغّل `npm install` مرة، و`node dev-server.mjs` اتشال.
+
+---
+
+## 🧪 استوديو الأوضة (تجربة)
+
+صفحة تجربة منفصلة: المصمم يبني أوضة فاضية من المقاسات، يسحب الخامات والأثاث على المسقط أو الـ 3D، والميزانية بتتحسب لوحدها. زرار **ريندر واقعي** بيبعت لقطة الـ 3D للـ AI (Cloudflare) ويرجع صورة واقعية.
+
+افتح <http://localhost:5173/studio.html> بعد `npm run dev`. ده نموذج للتجربة بس، مش الكود النهائي.
 
 الـ 3D مبني على **three.js** (أحدث نسخة) و **Vite**، والإضاءة من صورة HDRI حقيقية (Poly Haven) عشان الخامات تبان واقعية.
 
@@ -44,14 +101,14 @@ npm run models
 | `vite.config.js` | إعدادات Vite (بيشغل الصفحتين و `api/` على جهازك) |
 | `.env.example` | مثال للإعدادات السرية |
 
-محتاج **Node.js 20.19 أو أحدث**، وأول مرة بس: `npm install`.
+المتطلبات وطريقة التشغيل في [أول الملف](#️-requirements--setup--المتطلبات-والتشغيل).
 
 ---
 
 ## ▶️ 1. شغّله على جهازك (وضع تجريبي)
 
 ```bash
-cd roompitch
+cd roompitch_Demo
 npm install
 npm run dev
 ```
@@ -90,8 +147,8 @@ npm run dev
 
 ## 🚀 3. ارفعه على Vercel
 
-1. ارفع فولدر `roompitch` على GitHub (repo جديد). **الملف `.env` مش هيترفع** — وده مقصود عشان مفتاحك يفضل سري.
-2. ادخل <https://vercel.com/new> واختار الـ repo. سيب كل الإعدادات زي ما هي واضغط **Deploy**.
+1. الكود على GitHub بالفعل. **الملف `.env` مش بيترفع** — وده مقصود عشان مفتاحك يفضل سري.
+2. ادخل <https://vercel.com/new> واختار الـ repo. Vercel هيعرف إنه مشروع Vite لوحده؛ سيب كل الإعدادات زي ما هي واضغط **Deploy**.
 3. من **Project → Settings → Environment Variables** ضيف:
    - `CF_ACCOUNT_ID` و `CF_API_TOKEN` (أو `FAL_KEY`)
    - `ACCESS_CODE` = أي كود سري (اختياري لكن **مهم جداً**: من غيره أي حد يعرف اللينك يقدر يصرف من رصيدك)
