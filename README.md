@@ -47,6 +47,7 @@ The top-right badge says **AI live** when keys are set, **Demo mode** otherwise.
 | `npm run build` | Production build into `dist/` (what Vercel runs) |
 | `npm run preview` | Serves the production build locally, to test it before deploying |
 | `npm run models` | Compresses 3D models from `models-src/` into `public/models/` |
+| `npm test` | Runs the automated tests (room geometry, saving, photo analysis); needs no install |
 
 ### Already had an older copy? · عندك نسخة قديمة؟
 The project moved from `node dev-server.mjs` to Vite. After `git pull`:
@@ -69,7 +70,11 @@ npm run dev
 
 ## 🧪 استوديو الأوضة (تجربة)
 
-صفحة تجربة منفصلة: المصمم يبني أوضة فاضية من المقاسات، يسحب الخامات والأثاث على المسقط أو الـ 3D، والميزانية بتتحسب لوحدها. زرار **ريندر واقعي** بيبعت لقطة الـ 3D للـ AI (Cloudflare) ويرجع صورة واقعية.
+أول ما تفتح الاستوديو بتظهر شاشة **"أوضة جديدة"** فيها طريقين:
+- **"هبني الأوضة بنفسي":** تختار مستطيل أو حرف L، وتكتب المقاسات **بالسنتيمتر**، وتضيف أبواب وشبابيك بالعدد اللي عايزه (وتسحبهم على الحيطة في المعاينة). البرنامج بيمنعك تكمّل لو فيه باب أطول من الحيطة أو فتحتين فوق بعض.
+- **"معايا صور للأوضة":** نفس اللي فوق، بس ترفع صورة لكل حيطة (لحد 8 صور) وتحدد كل صورة لأنهي حيطة، وتدوس **"حدد الأبواب والشبابيك"**: موديل Cloudflare بيدوّر عليهم في الصور، والنتيجة بتظهر في الفورم متعلّمة "حدده الـ AI" عشان تراجعها. الموديل بيتغير من `CF_VISION_MODEL` في `.env`.
+
+بعد "ابدأ التصميم" بتدخل الاستوديو: المصمم يسحب الخامات والأثاث على المسقط أو الـ 3D، والحيطان مترقّمة، والميزانية بتتحسب لوحدها. زرار **"إعدادات الأوضة"** بيرجّعك للشاشة الأولى من غير ما يضيع الأثاث. الأوضة بتتحفظ في المتصفح، ولما تفتح تاني هتلاقي **"أكمل آخر غرفة"**. زرار **ريندر واقعي** بيبعت لقطة الـ 3D للـ AI (Cloudflare) ويرجع صورة واقعية.
 
 افتح <http://localhost:5173/studio.html> بعد `npm run dev`. ده نموذج للتجربة بس، مش الكود النهائي.
 
@@ -194,6 +199,8 @@ npm run dev
 **Run locally:** `npm install`, then `npm run dev` → http://localhost:5173 (main app) and `/studio.html` (Room Studio). Needs Node 20.19+. Vite also runs the `api/` functions locally, like Vercel does. `npm run build` + `npm run preview` serves the production build. Without any AI keys it runs in demo mode.
 
 **3D models:** put the original `.gltf` (with its files) or `.glb` in `models-src/<folder>/` and run `npm run models`. It writes a compressed `.glb` (Meshopt geometry, WebP textures ≤1024 px) to `public/models/<folder>/`; the desk went from 5.25 MB to 185 KB. Everything in `public/models/` appears in the Room Studio library with its real size.
+
+**Room Studio first screen:** "New room" — build a rectangle or L-shape in centimetres with any number of doors and windows, or upload up to 8 photos (one per wall), tag each with its wall and let a Cloudflare vision model (`CF_VISION_MODEL`, default `@cf/meta/llama-4-scout-17b-16e-instruct`, via `api/analyze.js`) place the doors and windows for review. The room is saved in the browser (photos in IndexedDB). `npm test` runs the Node tests in `tests/`.
 
 **Lighting:** image-based lighting from a Poly Haven HDRI (`public/hdri/`, CC0), with a generated environment as an instant fallback. Compare others with `studio.html?hdri=lebombo_1k` or `?hdri=none`.
 
