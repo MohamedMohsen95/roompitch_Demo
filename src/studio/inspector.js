@@ -7,6 +7,7 @@ import { renderLib } from "./library.js";
 import { renderEst } from "./estimate.js";
 import { t, nameOf } from "./i18n.js";
 import { settings, priceOf, setPrice } from "./settings.js";
+import { polyArea } from "./geometry.js";
 
 // Editable price for a finish or piece. Saved on change; the estimate and library follow.
 function priceField(id, perKey){
@@ -43,15 +44,15 @@ export function renderInspect(){
     $("#dupBtn").onclick = () => { const c = {...it, id:S.nextId++, x:it.x + .3, y:it.y + .3}; clampItem(c); S.items.push(c); S.sel = {kind:"item", id:c.id}; update(); };
   } else if (s.kind === "wall"){
     const id = S.walls[s.id], m = WM[id];
-    box.innerHTML = `<div class="what">${t("wall_" + s.id)}<em>${nameOf(m)} · ${wallArea(s.id).toFixed(1)} ${t("m2")}</em></div>
+    box.innerHTML = `<div class="what">${t("wallN", {n:s.id + 1})}<em>${nameOf(m)} · ${wallArea(s.id).toFixed(1)} ${t("m2")}</em></div>
       ${m.price || priceOf(id) ? priceField(id, "perM2") : ""}
       <div class="acts"><button class="btn" type="button" id="allBtn">${t("applyAll")}</button><button class="btn" type="button" id="delBtn">${t("removeFinish")}</button></div>`;
     $("#delBtn").onclick = () => deleteSel();
-    $("#allBtn").onclick = () => { for (const k in S.walls) S.walls[k] = S.walls[s.id]; update(); };
+    $("#allBtn").onclick = () => { S.walls = S.walls.map(() => S.walls[s.id]); update(); };
     if (S.tab !== "wall"){ S.tab = "wall"; renderLib(); }
   } else {
     const id = S.floor, m = FM[id];
-    box.innerHTML = `<div class="what">${t("floor")}<em>${nameOf(m)} · ${(S.L * S.W).toFixed(1)} ${t("m2")}</em></div>
+    box.innerHTML = `<div class="what">${t("floor")}<em>${nameOf(m)} · ${polyArea(S.poly).toFixed(1)} ${t("m2")}</em></div>
       ${m.price || priceOf(id) ? priceField(id, "perM2") : ""}
       <div class="acts"><button class="btn" type="button" id="delBtn">${t("removeFloor")}</button></div>`;
     $("#delBtn").onclick = () => deleteSel();

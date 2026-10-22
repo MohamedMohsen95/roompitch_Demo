@@ -41,9 +41,24 @@ export function wallsOf(poly){
   });
 }
 
+// Unit direction of a wall and its normal pointing into the room (corners run clockwise on screen).
+export function wallFrame({a, b, len}){
+  const dir = [(b[0] - a[0]) / len + 0, (b[1] - a[1]) / len + 0];
+  return {dir, normal:[-dir[1] + 0, dir[0] + 0]};
+}
+
+// Point at distance s along a wall from its start corner.
+export const alongWall = (w, s) => { const {dir} = wallFrame(w); return [w.a[0] + dir[0] * s, w.a[1] + dir[1] * s]; };
+
 export function bbox(poly){
   const xs = poly.map(p => p[0]), ys = poly.map(p => p[1]);
   return {L:Math.max(...xs) - Math.min(...xs), W:Math.max(...ys) - Math.min(...ys)};
+}
+
+export function polyArea(poly){
+  let a = 0;
+  poly.forEach((p, i) => { const q = poly[(i + 1) % poly.length]; a += p[0] * q[1] - q[0] * p[1]; });
+  return Math.abs(a) / 2;
 }
 
 export function pointInPoly(x, y, poly){

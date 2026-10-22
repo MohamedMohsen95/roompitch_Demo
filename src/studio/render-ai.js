@@ -8,32 +8,55 @@ import { renderer, scene, camera } from "./three/scene.js";
 import { buildRoom } from "./three/room.js";
 import { refreshHelper } from "./three/items.js";
 import { t } from "./i18n.js";
+import { wallsOf, wallFrame, nearestWall, toCm } from "./geometry.js";
 
 // Every successful render this session (newest last); the PDF proposal uses them.
 export const renders = [];
 
-const WALL_EN = {n:"the back wall with the window", s:"the wall with the door", e:"the right-hand wall (when facing the window)", w:"the left-hand wall (when facing the window)"};
-const FACE_EN = {0:"facing the door wall", 90:"facing the right-hand wall", 180:"facing the window wall", 270:"facing the left-hand wall"};
+// Walls are numbered 1..n going clockwise from the top-left corner of the plan.
+function wallText(w){
+  const ops = S.openings.filter(o => o.wall === w.i);
+  const nd = ops.filter(o => o.type === "door").length, nw = ops.length - nd;
+  const bits = [nd && `${nd} door${nd > 1 ? "s" : ""}`, nw && `${nw} window${nw > 1 ? "s" : ""}`].filter(Boolean);
+  return `wall ${w.i + 1} (${toCm(w.len)} cm${bits.length ? ", with " + bits.join(" and ") : ""}): ${EN[S.walls[w.i]]}`;
+}
 
-function placeEn(it){
+// Which wall a point in front of a piece looks at: the wall hit first along the piece's front direction.
+function facingWall(it, ws){
+  const r = it.rot * Math.PI / 180, f = [Math.sin(r), Math.cos(r)];
+  let best = null, bestT = Infinity;
+  for (const w of ws){
+    const {normal} = wallFrame(w); if (normal[0] * f[0] + normal[1] * f[1] > -.5) continue;
+    const t = ((w.a[0] - it.x) * normal[0] + (w.a[1] - it.y) * normal[1]) / (f[0] * normal[0] + f[1] * normal[1]);
+    if (!(t > 0 && t < bestT)) continue;
+    // the hit point must lie on the wall segment, not just on its line
+    const hx = it.x + f[0] * t, hy = it.y + f[1] * t, {dir} = wallFrame(w);
+    const s = (hx - w.a[0]) * dir[0] + (hy - w.a[1]) * dir[1];
+    if (s >= -1e-6 && s <= w.len + 1e-6){ bestT = t; best = w.i; }
+  }
+  return best;
+}
+
+function placeEn(it, ws){
   if (it.type === "rug") return "on the floor";
-  const f = foot(it), gaps = {n:it.y - f.d / 2, s:S.W - it.y - f.d / 2, w:it.x - f.w / 2, e:S.L - it.x - f.w / 2};
-  const k = Object.keys(gaps).sort((a, b) => gaps[a] - gaps[b])[0];
-  const where = gaps[k] < .35 ? `against ${WALL_EN[k]}` : "in the middle of the room";
-  return it.type === "plant" ? where : `${where}, ${FACE_EN[it.rot]}`;
+  const fp = foot(it), near = nearestWall(it.x, it.y, S.poly, Math.max(fp.w, fp.d) / 2 + .35);
+  const where = near == null ? "in the middle of the room" : `against wall ${near + 1}`;
+  const face = facingWall(it, ws);
+  return it.type === "plant" || face == null ? where : `${where}, facing wall ${face + 1}`;
 }
 
 export function describeScene(){
-  const walls = ["n", "e", "s", "w"].map(k => `${WALL_EN[k]}: ${EN[S.walls[k]]}`).join("; ");
-  const items = S.items.map(it => { const f = FU[it.type]; return `${EN[it.type]} (${Math.round(f.w * 100)} x ${Math.round(f.d * 100)} cm) ${placeEn(it)}`; }).join("; ");
+  const ws = wallsOf(S.poly);
+  const shape = S.poly.length === 4 ? "rectangular" : "L-shaped";
+  const items = S.items.map(it => { const f = FU[it.type]; return `${EN[it.type]} (${Math.round(f.w * 100)} x ${Math.round(f.d * 100)} cm) ${placeEn(it, ws)}`; }).join("; ");
   return [
-    `Turn this simple 3D block model into a photorealistic interior design photograph of a room ${S.L} m long and ${S.W} m wide with a ${S.H} m ceiling.`,
-    "Keep exactly the same camera angle, perspective, room shape, walls, door and window.",
+    `Turn this simple 3D block model into a photorealistic interior design photograph of a ${shape} room, ${toCm(S.L)} x ${toCm(S.W)} cm, with a ${toCm(S.H)} cm ceiling.`,
+    "Keep exactly the same camera angle, perspective, room shape, walls, doors and windows.",
     "Each coloured block is a piece of furniture: keep every piece in exactly the same position, size and orientation. Do not add, remove or move any furniture.",
     `Floor: ${EN[S.floor]}.`,
-    `Walls: ${walls}.`,
+    `Walls, numbered clockwise: ${ws.map(wallText).join("; ")}.`,
     items ? `Furniture: ${items}.` : "The room has no furniture.",
-    "Soft natural daylight from the window, realistic materials, textures and soft shadows, professional architectural interior photography, high detail. No people, no text, no watermark."
+    "Soft natural daylight from the windows, realistic materials, textures and soft shadows, professional architectural interior photography, high detail. No people, no text, no watermark."
   ].join(" ").slice(0, 2900); // the server rejects prompts over 3000 characters
 }
 

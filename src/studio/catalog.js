@@ -32,8 +32,6 @@ export const FURN = [
 const byId = (arr) => Object.fromEntries(arr.map(o => [o.id, o]));
 export const WM = byId(WALL_MATS), FM = byId(FLOOR_MATS), FU = byId(FURN);
 
-export const DOOR = {from:.6, w:.9, h:2.1};   // on the south wall, measured from the west corner
-export const WIN  = {w:1.6, sill:.9, h:1.3};  // centred on the north wall
 
 // How each finish and piece is described to the AI renderer.
 export const EN = {

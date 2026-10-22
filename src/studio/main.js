@@ -9,9 +9,8 @@
 //   app.js          update(): redraw after any change
 //   i18n.js         English / Arabic text                    settings.js  designer settings + own prices
 //   dialogs.js      settings and price list dialogs          proposal.js  PDF proposal (print layout)
-import { S, clampItem } from "./state.js";
 import { addModels } from "./catalog.js";
-import { $, clamp } from "./utils.js";
+import { $ } from "./utils.js";
 import { update, rebuildAll } from "./app.js";
 import { renderLib, initLibrary } from "./library.js";
 import { initKeyboard } from "./inspector.js";
@@ -23,18 +22,6 @@ import { initRenderDialog } from "./render-ai.js";
 import { applyStatic, setLang, getLang, onLangChange } from "./i18n.js";
 import { initDialogs, relabelDialogs } from "./dialogs.js";
 import { initProposal } from "./proposal.js";
-
-function initDimensions(){
-  for (const id of ["dimL", "dimW", "dimH"]){
-    $("#" + id).addEventListener("change", () => {
-      S.L = clamp(parseFloat($("#dimL").value) || 5, 2, 12);
-      S.W = clamp(parseFloat($("#dimW").value) || 4, 2, 12);
-      S.H = clamp(parseFloat($("#dimH").value) || 2.8, 2.2, 5);
-      $("#dimL").value = S.L; $("#dimW").value = S.W; $("#dimH").value = S.H;
-      S.items.forEach(clampItem); rebuildAll(); setCam("corner");
-    });
-  }
-}
 
 // Add every model in public/models to the furniture library (real size from the file, placeholder price).
 async function loadModelCatalog(){
@@ -51,7 +38,7 @@ $("#langBtn").onclick = () => setLang(getLang() === "ar" ? "en" : "ar");
 onLangChange(() => { renderLib(); update(); relabelDialogs(); });
 
 initScene();
-initLibrary(); initKeyboard(); initPlan(); initInteraction(); initDimensions(); initRenderDialog();
+initLibrary(); initKeyboard(); initPlan(); initInteraction(); initRenderDialog();
 initDialogs(); initProposal();
 renderLib(); update(); setCam("corner");
 startLoop(updateHelper);

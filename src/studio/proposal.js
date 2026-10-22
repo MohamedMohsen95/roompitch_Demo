@@ -8,6 +8,7 @@ import { computeEstimate, qtyText } from "./estimate.js";
 import { planMarkup, planViewBox } from "./plan.js";
 import { renders, snapshot } from "./render-ai.js";
 import { openDialog, closeDialog } from "./dialogs.js";
+import { toCm, polyArea } from "./geometry.js";
 
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;"}[c]));
 
@@ -52,7 +53,7 @@ function buildProposal(l){
     <div class="pp-meta">
       <div><span>${esc(T("preparedFor"))}</span><strong>${esc($("#pdfClient").value.trim() || "—")}</strong></div>
       <div><span>${esc(T("pProject"))}</span><strong>${esc($("#pdfProject").value.trim() || "—")}</strong></div>
-      <div><span>${esc(T("pRoom"))}</span><strong><bdi dir="ltr">${S.L} × ${S.W} × ${S.H}</bdi> ${esc(T("m"))} · <bdi>${(S.L * S.W).toFixed(1)}</bdi> ${esc(T("m2"))}</strong></div>
+      <div><span>${esc(T("pRoom"))}</span><strong><bdi dir="ltr">${toCm(S.L)} × ${toCm(S.W)} × ${toCm(S.H)}</bdi> ${esc(T("cm"))} · <bdi>${polyArea(S.poly).toFixed(1)}</bdi> ${esc(T("m2"))}</strong></div>
     </div>
 
     <figure class="pp-hero"><img src="${hero}" alt=""><figcaption>${esc(renders.length ? T("proposed") : T("concept3d"))}</figcaption></figure>

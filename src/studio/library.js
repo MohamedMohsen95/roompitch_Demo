@@ -52,9 +52,9 @@ export function applyPayload(payload, target){
     clampItem(it); S.items.push(it); S.sel = {kind:"item", id:it.id};
   } else if (kind === "wall"){
     let w = target && target.kind === "wall" ? target.id : null;
-    if (!w && target && target.kind === "point") w = nearestWall(target.x, target.y);
-    if (!w && S.sel && S.sel.kind === "wall") w = S.sel.id;
-    if (!w){ flashHint(t("hintWallFirst")); return; }
+    if (w == null && target && target.kind === "point") w = nearestWall(target.x, target.y);
+    if (w == null && S.sel && S.sel.kind === "wall") w = S.sel.id;
+    if (w == null){ flashHint(t("hintWallFirst")); return; }
     S.walls[w] = id; S.sel = {kind:"wall", id:w};
   } else if (kind === "floor"){
     S.floor = id; S.sel = {kind:"floor"};

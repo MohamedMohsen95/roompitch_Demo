@@ -25,7 +25,7 @@ const STR = {
     nothingSel: "Nothing selected", nothingHint: "Click a piece, a wall or the floor",
     replace: "Replace", rotate: "Rotate 90°", duplicate: "Duplicate", delete: "Delete",
     applyAll: "Apply to all walls", removeFinish: "Remove finish", removeFloor: "Remove floor finish",
-    floor: "Floor", wall_n: "North wall (window)", wall_e: "East wall", wall_s: "South wall (door)", wall_w: "West wall",
+    floor: "Floor", wallN: "Wall {n}", roomSetup: "Room setup",
     price: "Price", perM2: "per m²", perPiece: "per piece", cm: "cm", m2: "m²", pc: "pc",
 
     finishes: "Finishes", furniture: "Furniture", floorLine: "Floor: {name}", wallsLine: "Walls: {name}",
@@ -89,7 +89,7 @@ const STR = {
     nothingSel: "لا يوجد شيء مختار", nothingHint: "اضغط على قطعة أو حائط أو الأرضية",
     replace: "استبدال", rotate: "لف 90°", duplicate: "تكرار", delete: "حذف",
     applyAll: "نفس الخامة لكل الحوائط", removeFinish: "إزالة الخامة", removeFloor: "إزالة تشطيب الأرضية",
-    floor: "الأرضية", wall_n: "الحائط الشمالي (الشباك)", wall_e: "الحائط الشرقي", wall_s: "الحائط الجنوبي (الباب)", wall_w: "الحائط الغربي",
+    floor: "الأرضية", wallN: "حائط {n}", roomSetup: "إعدادات الغرفة",
     price: "السعر", perM2: "للمتر²", perPiece: "للقطعة", cm: "سم", m2: "م²", pc: "قطعة",
 
     finishes: "التشطيبات", furniture: "الأثاث", floorLine: "أرضية: {name}", wallsLine: "حوائط: {name}",

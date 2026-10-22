@@ -4,7 +4,7 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { HDRLoader } from "three/addons/loaders/HDRLoader.js";
 import { S } from "../state.js";
-import { DOOR } from "../catalog.js";
+import { wallsOf, wallFrame, alongWall } from "../geometry.js";
 import { $, cssVar } from "../utils.js";
 
 // Real photographed lighting (Poly Haven, CC0) for reflections and soft ambient light.
@@ -74,7 +74,12 @@ function themeBg(){ scene.background = new THREE.Color(cssVar("--stage") || "#df
 
 export function setCam(view){
   const {L, W, H} = S; controls.target.set(0, .9, 0);
-  if (view === "door") camera.position.set(DOOR.from + DOOR.w / 2 - L / 2, 1.6, W / 2 + .2);
+  const door = S.openings.find(o => o.type === "door"), dw = door && wallsOf(S.poly)[door.wall];
+  if (view === "door" && dw){
+    // Stand just outside the first door, looking in.
+    const {normal} = wallFrame(dw), c = alongWall(dw, door.offset + door.width / 2);
+    camera.position.set(c[0] - normal[0] * .2 - L / 2, 1.6, c[1] - normal[1] * .2 - W / 2);
+  }
   else if (view === "top") camera.position.set(0, Math.max(L, W) * 1.7, .01);
   else camera.position.set(L * .85, H * 1.9, W * 1.25);
   controls.update();

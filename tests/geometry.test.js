@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   shapePoly, wallsOf, bbox, pointInPoly, rectInside, fitInside,
-  nearestWall, wallArea, validateOpenings, toM, toCm
+  nearestWall, wallArea, validateOpenings, toM, toCm, polyArea, wallFrame
 } from "../src/studio/geometry.js";
 
 const rect = () => shapePoly({shape:"rect", lengthCm:500, widthCm:400}).poly;
@@ -81,4 +81,18 @@ test("nearestWall finds a close wall and ignores the middle", () => {
 test("centimetre conversions round to whole cm", () => {
   assert.equal(toCm(2.346), 235);
   assert.equal(toM(235), 2.35);
+});
+
+test("polyArea of the L is the box minus the cut", () => {
+  assert.ok(Math.abs(polyArea(ell()) - 27) < 1e-9);
+  assert.ok(Math.abs(polyArea(rect()) - 20) < 1e-9);
+});
+
+test("wallFrame gives the wall direction and the normal pointing into the room", () => {
+  const w = wallsOf(rect());
+  assert.deepEqual(wallFrame(w[0]), {dir:[1, 0], normal:[0, 1]});
+  assert.deepEqual(wallFrame(w[1]), {dir:[0, 1], normal:[-1, 0]});
+  const l = wallsOf(ell());
+  // the notch's inner vertical wall (from (4,0) down to (4,1.5)) faces west, into the room
+  assert.deepEqual(wallFrame(l[1]).normal, [-1, 0]);
 });
