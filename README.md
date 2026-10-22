@@ -77,6 +77,8 @@ npm run dev
 
 **الشبابيك والأبواب:** من تبويب **Windows & doors** اسحب شباك أو باب على أي حيطة (في المسقط أو الـ 3D)، وحركه على الحيطة أو لحيطة تانية بالسحب في المسقط. لما تختاره تقدر تغير العرض والارتفاع والارتفاع من الأرض. مساحة الدهان في الميزانية بتطرح الفتحات لوحدها.
 
+**الشمس:** الحيطان بقت حيطان حقيقية بسُمك وفتحات، فالشمس بتدخل من الشبابيك بس. من شريط **Sun** تحت الـ 3D اختار الساعة، واتجاه الحيطة اللي فوق في المسقط (Back wall faces)، والموسم — وبقعة الشمس بتتحرك على الأرضية زي الحقيقة (محسوبة لخط عرض القاهرة).
+
 **إضافة أثاث 3D:** حط الموديل الأصلي (`.gltf` بملفاته، أو `.glb`) في `models-src/<فولدر>/` وبعدين شغّل:
 ```bash
 npm run models
@@ -199,7 +201,9 @@ npm run dev
 
 **Lighting:** a **Lighting** picker in the 3D panel offers moods — *Daylight*, *Warm interior* and *Studio (even)*. Each sets an HDRI from Poly Haven (`public/hdri/`, CC0) for ambient light and reflections, the sun's colour and strength (shadows), the fill light and exposure, and how the light is described to the AI renderer. The choice is remembered per browser; `studio.html?lighting=warm` opens with a given mood. Add a mood in `src/studio/three/lighting.js`.
 
-**Windows & doors:** the *Windows & doors* library tab has a window, wide window, glass/balcony door and door. Drop one on any wall (plan or 3D), drag it along a wall or onto another wall in the plan, and set width, height and sill height in the inspector. Openings never overlap or run past a corner, are subtracted from paintable wall area, and are described to the AI renderer. Logic: `src/studio/openings.js`.
+**Windows & doors:** the *Windows & doors* library tab has a window, wide window, glass/balcony door and door. Drop one on any wall (plan or 3D), drag it along a wall or onto another wall in the plan, and set width, height and sill height in the inspector. Openings are real holes in the walls, never overlap or run past a corner, are subtracted from paintable wall area, and are described to the AI renderer. Logic: `src/studio/openings.js`.
+
+**Sun:** walls are solid (12 cm) with real openings and, with a hidden ceiling, cast shadows, so sunlight only enters through windows and glass doors. The **Sun** bar under the 3D header sets the time of day, which way the back wall (top of the plan) faces, and the season; the sun follows a real solar path for Cairo's latitude (`src/studio/three/sun.js`) and the plan shows a north arrow. Walls between the camera and the room are hidden dollhouse-style but still cast shadows. The lighting mood tints the sun, and the AI prompt says where the sun is and which windows it shines through.
 
 **Studio code:** `src/studio/` — one module per concern (catalog, state, library, inspector, plan, estimate, `three/` scene/room/items/models/interaction, AI render). The map is at the top of `src/studio/main.js`.
 

@@ -1,25 +1,26 @@
 // Lighting moods the designer can pick in the 3D panel.
-// Each preset sets the HDRI (image-based light and reflections), the sun through the window
-// (the only light that casts shadows), the soft fill light and the camera exposure,
-// plus how the light is described to the AI renderer.
+// Each preset sets the HDRI (image-based light and reflections), a tint and strength for the sun
+// (whose position and natural colour come from the time of day, see sun.js), the soft fill light
+// and the camera exposure, plus how the light is described to the AI renderer.
 //
 // Add a mood: download a 1K .hdr from https://polyhaven.com/hdris into public/hdri/
 // and add an entry below. `hdri: null` uses a neutral environment generated in code.
 import * as THREE from "three";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { HDRLoader } from "three/addons/loaders/HDRLoader.js";
-import { renderer, scene, sun, fill } from "./scene.js";
+import { renderer, scene, fill } from "./scene.js";
+import { updateSun } from "./sun.js";
 import { $ } from "../utils.js";
 
 export const LIGHTING = [
-  {id:"daylight", name:"Daylight", hdri:"photo_studio_loft_hall_1k", env:.5, exposure:.9,
-   sun:{color:0xfff3e2, intensity:1.5}, fill:{sky:0xffffff, ground:0x8a8178, intensity:.6},
+  {id:"daylight", name:"Daylight", hdri:"photo_studio_loft_hall_1k", env:.75, exposure:1.1,
+   sun:{color:0xffffff, intensity:3}, fill:{sky:0xffffff, ground:0x8a8178, intensity:.85},
    prompt:"Soft natural daylight from the window"},
-  {id:"warm", name:"Warm interior", hdri:"lebombo_1k", env:.55, exposure:1,
-   sun:{color:0xffb366, intensity:1.6}, fill:{sky:0xffe0bd, ground:0x8a6248, intensity:.55},
+  {id:"warm", name:"Warm interior", hdri:"lebombo_1k", env:.75, exposure:1.15,
+   sun:{color:0xffd2a6, intensity:3}, fill:{sky:0xffe0bd, ground:0x8a6248, intensity:.75},
    prompt:"Warm, cosy late-afternoon light with golden tones"},
-  {id:"studio", name:"Studio (even)", hdri:null, env:.6, exposure:1,
-   sun:{color:0xffffff, intensity:.7}, fill:{sky:0xffffff, ground:0xb8b8b8, intensity:1},
+  {id:"studio", name:"Studio (even)", hdri:null, env:.8, exposure:1.05,
+   sun:{color:0xffffff, intensity:1.2}, fill:{sky:0xffffff, ground:0xb8b8b8, intensity:1.2},
    prompt:"Bright, even, neutral studio lighting with soft shadows"}
 ];
 const DEFAULT_ID = "daylight";
@@ -53,7 +54,7 @@ export async function setLighting(id){
   const sel = $("#lighting"); if (sel) sel.value = p.id;
 
   renderer.toneMappingExposure = p.exposure;
-  sun.color.setHex(p.sun.color); sun.intensity = p.sun.intensity;
+  updateSun();   // sun tint/strength
   fill.color.setHex(p.fill.sky); fill.groundColor.setHex(p.fill.ground); fill.intensity = p.fill.intensity;
 
   if (!p.hdri){ scene.environment = generatedEnv; scene.environmentIntensity = p.env; return; }

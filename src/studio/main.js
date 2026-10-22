@@ -7,7 +7,8 @@
 //   three/scene.js  renderer, camera, lights, HDRI           three/room.js   floor, walls, openings
 //   three/items.js  furniture in 3D                          three/models.js glTF loading
 //   three/interaction.js  picking, dragging, drops in 3D     render-ai.js    photoreal render dialog
-//   three/lighting.js     lighting moods (HDRI, sun, exposure) and the picker
+//   three/lighting.js     lighting moods (HDRI, sun tint, exposure) and the picker
+//   three/sun.js          sun position from time of day, orientation, season; the Sun bar
 //   app.js          update(): redraw after any change
 import { S, clampItem } from "./state.js";
 import { addModels } from "./catalog.js";
@@ -16,8 +17,10 @@ import { $, clamp } from "./utils.js";
 import { update, rebuildAll } from "./app.js";
 import { renderLib, initLibrary, flashHint } from "./library.js";
 import { initKeyboard } from "./inspector.js";
-import { initPlan } from "./plan.js";
-import { initScene, setCam, startLoop } from "./three/scene.js";
+import { initPlan, renderPlan } from "./plan.js";
+import { initScene, setCam, startLoop, camera } from "./three/scene.js";
+import { cullForCamera } from "./three/room.js";
+import { initSunControls } from "./three/sun.js";
 import { initLighting } from "./three/lighting.js";
 import { updateHelper } from "./three/items.js";
 import { initInteraction } from "./three/interaction.js";
@@ -53,5 +56,6 @@ async function loadModelCatalog(){
 initScene(); initLighting();
 initLibrary(); initKeyboard(); initPlan(); initInteraction(); initDimensions(); initRenderDialog();
 renderLib(); update(); setCam("corner");
-startLoop(updateHelper);
+initSunControls(renderPlan);
+startLoop(() => { updateHelper(); cullForCamera(camera); });
 loadModelCatalog();

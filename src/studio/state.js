@@ -22,6 +22,8 @@ export const S = {
     {id:7, type:"door",   wall:"s", offset:.6,  w:.9,  h:2.1, sill:0},
     {id:8, type:"window", wall:"n", offset:1.7, w:1.6, h:1.3, sill:.9}
   ],
+  // Sunlight (see three/sun.js): time of day, which way the back wall faces, season.
+  sun:{time:15, facing:"S", season:"equinox"},
   sel:null,          // {kind:"item"|"opening", id} | {kind:"wall", id:"n"|"e"|"s"|"w"} | {kind:"floor"} | null
   tab:"furn",        // library tab: "furn" | "open" | "wall" | "floor"
   nextId:9,

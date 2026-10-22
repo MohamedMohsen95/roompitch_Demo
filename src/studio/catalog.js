@@ -32,7 +32,8 @@ export const FURN = [
 const byId = (arr) => Object.fromEntries(arr.map(o => [o.id, o]));
 export const WM = byId(WALL_MATS), FM = byId(FLOOR_MATS), FU = byId(FURN);
 
-export const WALL_NAMES = {n:"North wall", e:"East wall", s:"South wall", w:"West wall"};
+// Walls are named as seen in the plan (back = top). Their real compass direction is set by the sun controls.
+export const WALL_NAMES = {n:"Back wall", e:"Right wall", s:"Front wall", w:"Left wall"};
 // Windows and doors are in openings.js.
 
 // How each finish and piece is described to the AI renderer.

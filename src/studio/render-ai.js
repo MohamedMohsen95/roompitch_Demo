@@ -9,10 +9,11 @@ import { renderer, scene, camera } from "./three/scene.js";
 import { buildRoom } from "./three/room.js";
 import { refreshHelper } from "./three/items.js";
 import { getLighting } from "./three/lighting.js";
+import { sunWords } from "./three/sun.js";
 
-const WALL_EN = {n:"the north (back) wall", s:"the south (front) wall", e:"the east (right-hand) wall", w:"the west (left-hand) wall"};
-const FACE_EN = {0:"facing the south wall", 90:"facing the east wall", 180:"facing the north wall", 270:"facing the west wall"};
-const ENDS = {n:["west", "east"], s:["west", "east"], w:["north", "south"], e:["north", "south"]};
+const WALL_EN = {n:"the back wall", s:"the front wall", e:"the right-hand wall", w:"the left-hand wall"};
+const FACE_EN = {0:"facing the front wall", 90:"facing the right-hand wall", 180:"facing the back wall", 270:"facing the left-hand wall"};
+const ENDS = {n:["left", "right"], s:["left", "right"], w:["back", "front"], e:["back", "front"]};
 
 function openingEn(o){
   const t = OT[o.type], c = (o.offset + o.w / 2) / wallLen(o.wall);
@@ -40,7 +41,8 @@ export function describeScene(){
     `Walls: ${walls}.`,
     S.openings.length ? `Windows and doors: ${S.openings.map(openingEn).join("; ")}.` : "The room has no windows or doors.",
     items ? `Furniture: ${items}.` : "The room has no furniture.",
-    `${getLighting().prompt}, realistic materials, textures and soft shadows, professional architectural interior photography, high detail. No people, no text, no watermark.`
+    `Light: ${getLighting().prompt}; ${sunWords()}.`,
+    "Realistic materials, textures and shadows, professional architectural interior photography, high detail. No people, no text, no watermark."
   ].join(" ").slice(0, 2900); // the server rejects prompts over 3000 characters
 }
 

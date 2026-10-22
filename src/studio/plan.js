@@ -9,6 +9,7 @@ import { renderEst } from "./estimate.js";
 import { rotateSel, renderInspect } from "./inspector.js";
 import { syncItem } from "./three/items.js";
 import { buildRoom } from "./three/room.js";
+import { FACINGS } from "./three/sun.js";
 
 const PAD = .7;
 let svg;
@@ -46,6 +47,11 @@ export function renderPlan(){
   const tx = (x, y, s, rot = 0) => `<text x="${x}" y="${y}" transform="rotate(${rot} ${x} ${y})" font-size=".17" fill="var(--muted)" text-anchor="middle" font-family="IBM Plex Mono, monospace" direction="ltr">${s}</text>`;
   h += `<line x1="0" y1="${-.38}" x2="${L}" y2="${-.38}" stroke="var(--muted)" stroke-width=".01"/>` + tx(L / 2, -.45, `${L.toFixed(2)} m`);
   h += `<line x1="${L + .38}" y1="0" x2="${L + .38}" y2="${W}" stroke="var(--muted)" stroke-width=".01"/>` + tx(L + .5, W / 2, `${W.toFixed(2)} m`, 90);
+  // compass: north arrow, turned by the direction the back wall faces (set in the Sun bar)
+  const north = -FACINGS.indexOf(S.sun.facing) * 45;
+  h += `<g transform="translate(${-PAD / 2} ${-PAD / 2}) rotate(${north})" opacity=".8"><title>North</title>` +
+    `<circle r=".2" fill="none" stroke="var(--muted)" stroke-width=".012"/><path d="M0 -.17 L.06 .05 L0 .01 L-.06 .05 Z" fill="var(--accent)"/>` +
+    `<text y="-.24" font-size=".13" fill="var(--muted)" text-anchor="middle" transform="rotate(${-north} 0 -.28)">N</text></g>`;
   svg.innerHTML = h;
 }
 
