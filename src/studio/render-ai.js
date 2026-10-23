@@ -5,7 +5,7 @@ import { FU, EN } from "./catalog.js";
 import { $ } from "./utils.js";
 import { update } from "./app.js";
 import { renderer, scene, camera } from "./three/scene.js";
-import { buildRoom } from "./three/room.js";
+import { buildRoom, cullForCamera } from "./three/room.js";
 import { refreshHelper } from "./three/items.js";
 import { t } from "./i18n.js";
 import { wallsOf, wallFrame, nearestWall, toCm } from "./geometry.js";
@@ -92,7 +92,9 @@ const setCode = (v) => { try { const s = JSON.parse(localStorage.getItem("rp_set
 
 // Capture the 3D view without the selection outline. `small` respects the provider's input size limit.
 export function snapshot(maxSide = 1600){
-  const keep = S.sel; S.sel = null; buildRoom(); refreshHelper(); renderer.render(scene, camera);
+  // Rebuilding the room makes fresh wall meshes, so hide the walls/ceiling in front of the camera
+  // again before this one-off render (the render loop normally does that every frame).
+  const keep = S.sel; S.sel = null; buildRoom(); refreshHelper(); cullForCamera(camera); renderer.render(scene, camera);
   const src = renderer.domElement, k = Math.min(1, maxSide / Math.max(src.width, src.height));
   const c = document.createElement("canvas");
   c.width = Math.max(8, Math.floor(src.width * k / 8) * 8); c.height = Math.max(8, Math.floor(src.height * k / 8) * 8);
