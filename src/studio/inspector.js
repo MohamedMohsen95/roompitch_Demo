@@ -28,6 +28,8 @@ const cmField = (key, label, m, title = "") =>
 
 export function renderInspect(){
   const box = $("#inspect"); const s = S.sel;
+  // the bar only shows while something is selected (or a piece is being replaced)
+  box.hidden = !s && !S.replacing;
   if (S.replacing){
     const old = findItem(S.replacing);
     if (old){
@@ -38,7 +40,7 @@ export function renderInspect(){
     }
     S.replacing = null;
   }
-  if (!s){ box.innerHTML = `<div class="what">${t("nothingSel")}<em>${t("nothingHint")}</em></div>`; return; }
+  if (!s){ box.innerHTML = ""; return; }
   if (s.kind === "item"){
     const it = findItem(s.id); if (!it){ S.sel = null; return renderInspect(); }
     const f = FU[it.type];

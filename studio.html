@@ -71,22 +71,19 @@ button{cursor:pointer}
 .tile span{font-size:11.5px; color:var(--muted); font-family:var(--font-data); direction:ltr; text-align:end}
 .hint{font-size:12px; color:var(--muted); padding:0 12px 12px; margin:0}
 
-.inspect{padding:10px 12px; border-bottom:1px solid var(--line); display:flex; flex-direction:column; gap:8px; min-height:62px}
-.inspect .what{font-size:13px}
-.inspect .what em{font-style:normal; color:var(--muted); font-size:12px; display:block}
-.inspect .acts{display:flex; gap:6px; flex-wrap:wrap}
+/* Selection bar: what's selected and its settings, in one row under the view settings */
+.inspect{display:flex; flex-wrap:wrap; align-items:center; gap:8px 18px; padding:8px 14px; background:var(--surface); border:1px solid var(--line); border-inline-start:3px solid var(--accent); border-radius:10px}
+.inspect .what{font-size:13px; font-weight:600; display:flex; align-items:baseline; gap:8px; flex-wrap:wrap}
+.inspect .what em{font-style:normal; font-weight:400; color:var(--muted); font-size:12px}
+.inspect .acts{display:flex; gap:6px; flex-wrap:wrap; margin-inline-start:auto}
 .inspect .acts .btn{padding:4px 10px; font-size:12.5px}
-.inspect .dims{display:flex; gap:6px; flex-wrap:wrap}
-.inspect .num{display:flex; align-items:center; gap:4px; font-size:12px; color:var(--muted)}
-.inspect .num input{width:58px; font:inherit; color:var(--ink); background:var(--sunk); border:1px solid var(--line); border-radius:6px; padding:3px 5px; text-align:end}
+.inspect .dims, .inspect .sizes{display:flex; gap:6px 12px; flex-wrap:wrap; align-items:center}
+.inspect .num{display:flex; align-items:center; gap:5px; font-size:12px; color:var(--muted)}
+.inspect .num input{width:62px; font:inherit; color:var(--ink); background:var(--sunk); border:1px solid var(--line); border-radius:6px; padding:3px 5px; text-align:end}
 .inspect .num input:focus-visible{outline:none; border-color:var(--accent)}
 .inspect .num em{font-style:normal}
 .inspect .rests{font-size:12px; color:var(--muted); align-self:center}
 .inspect .dims .btn{padding:2px 8px; font-size:12px}
-.inspect .sizes{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px}
-.inspect .sizes .num{display:grid; grid-template-columns:minmax(0,1fr) auto; gap:2px 3px; align-items:center; font-size:11.5px; white-space:nowrap}
-.inspect .sizes .num span{grid-column:1 / -1; overflow:hidden; text-overflow:ellipsis}
-.inspect .sizes .num input{width:100%; min-width:0}
 
 /* Workspace */
 .work{display:grid; grid-template-columns:1fr 1fr; gap:12px; min-width:0}
@@ -425,10 +422,11 @@ details p{margin:6px 0 0; font-family:var(--font-data); font-size:11.5px; line-h
     <span class="cams"><span data-i18n="camView">View</span><span class="seg"><button class="btn" type="button" id="camCorner" data-i18n="camCorner">Corner</button><button class="btn" type="button" id="camDoor" data-i18n="camDoor">From door</button><button class="btn" type="button" id="camTop" data-i18n="camTop">Top</button></span></span>
   </div>
 
+  <div class="inspect" id="inspect" role="region" aria-label="Selection" data-i18n-aria="selection" hidden></div>
+
   <main class="app" id="app">
     <aside class="panel">
       <h2><span data-i18n="library">Library</span> <small data-i18n="dragDrop">Drag and drop</small></h2>
-      <div class="inspect" id="inspect"></div>
       <div class="tabs" role="tablist">
         <button role="tab" id="tab-furn" aria-selected="true" data-tab="furn" data-i18n="tabFurn">Furniture</button>
         <button role="tab" id="tab-open" aria-selected="false" data-tab="open" data-i18n="tabOpen">Windows &amp; doors</button>

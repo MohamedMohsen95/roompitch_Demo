@@ -36,7 +36,7 @@ const STR = {
     floor: "Floor", wallN: "Wall {n}", roomSetup: "Room setup",
     fromFloor: "From floor", raiseHint: "Shift + drag in 3D, or PageUp / PageDown", fixedHeight: "Fixed height",
     onFloor: "On the floor", restsOn: "On the {name}", restOnSurface: "Rest on surface", restOnSurfaceHint: "Let it sit on the floor or the surface below it",
-    dragToMove: "drag it in the plan to move", centerOnWall: "Center on wall", openingNoFit: "That size doesn't fit on this wall.",
+    dragToMove: "drag it in the plan to move", centerOnWall: "Center on wall", selection: "Selection", openingNoFit: "That size doesn't fit on this wall.",
     price: "Price", perM2: "per m²", perPiece: "per piece", cm: "cm", m2: "m²", pc: "pc",
 
     finishes: "Finishes", furniture: "Furniture", floorLine: "Floor: {name}", wallsLine: "Walls: {name}",
@@ -132,7 +132,7 @@ const STR = {
     floor: "الأرضية", wallN: "حائط {n}", roomSetup: "إعدادات الغرفة",
     fromFloor: "من الأرض", raiseHint: "Shift + سحب في الـ 3D، أو PageUp / PageDown", fixedHeight: "ارتفاع ثابت",
     onFloor: "على الأرض", restsOn: "على {name}", restOnSurface: "ينزل على السطح", restOnSurfaceHint: "خلّيه يقعد على الأرض أو على السطح اللي تحته",
-    dragToMove: "اسحبه في المسقط لتحريكه", centerOnWall: "في نص الحائط", openingNoFit: "المقاس ده مش هيدخل على الحائط ده.",
+    dragToMove: "اسحبه في المسقط لتحريكه", centerOnWall: "في نص الحائط", selection: "العنصر المختار", openingNoFit: "المقاس ده مش هيدخل على الحائط ده.",
     price: "السعر", perM2: "للمتر²", perPiece: "للقطعة", cm: "سم", m2: "م²", pc: "قطعة",
 
     finishes: "التشطيبات", furniture: "الأثاث", floorLine: "أرضية: {name}", wallsLine: "حوائط: {name}",
