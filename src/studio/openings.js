@@ -76,6 +76,22 @@ export function addOpening(presetId, wall, along){
   return o;
 }
 
+// A copy of an opening on the same wall, in the nearest free spot after it (null if the wall is full).
+export function duplicateOpening(o){
+  const c = {...o, id:newId()};
+  const off = freeOffset(c, o.offset + o.width + GAP);
+  if (off === null) return null;
+  c.offset = off; S.openings.push(c);
+  return c;
+}
+
+// Slide an opening to the middle of its wall, or as close as the neighbours allow.
+export function centerOpening(o){
+  const off = freeOffset(o, (wallLen(o.wall) - o.width) / 2);
+  if (off === null) return false;
+  o.offset = off; return true;
+}
+
 // Move an opening to (wall, wanted offset). Stays where it was if the spot isn't free.
 export function moveOpening(o, wall, wantedOffset){
   const prev = {wall:o.wall, offset:o.offset, width:o.width, height:o.height, sill:o.sill};

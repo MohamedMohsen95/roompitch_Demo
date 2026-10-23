@@ -1,7 +1,7 @@
 // Inspector: what's selected, its price, and the actions for it (replace, rotate, duplicate, delete...).
 import { S, clampItem, findItem, selectedItem, wallArea } from "./state.js";
 import { FU, WM, FM } from "./catalog.js";
-import { OP, findOpening, refit, openingKind } from "./openings.js";
+import { OP, findOpening, refit, openingKind, duplicateOpening, centerOpening } from "./openings.js";
 import { isAuto, supportUnder } from "./stacking.js";
 import { $ } from "./utils.js";
 import { update } from "./app.js";
@@ -50,7 +50,7 @@ export function renderInspect(){
       ${priceField(it.type, "perPiece")}
       <div class="dims">${cmField("z", t("fromFloor"), it.z || 0, t("raiseHint"))}
         <span class="rests">${rests}</span>${isAuto(it) ? "" : `<button class="btn" type="button" id="autoZ" title="${t("restOnSurfaceHint")}">${t("restOnSurface")}</button>`}</div>
-      <div class="acts"><button class="btn" type="button" id="repBtn">${t("replace")}</button><button class="btn" type="button" id="rotBtn">${t("rotate")}</button><button class="btn" type="button" id="dupBtn">${t("duplicate")}</button><button class="btn" type="button" id="delBtn">${t("delete")}</button></div>`;
+      <div class="acts"><button class="btn" type="button" id="repBtn">${t("replace")}</button><button class="btn" type="button" id="rotBtn">${t("rotate")}</button><button class="btn" type="button" id="dupBtn">${t("duplicate")}</button><button class="btn danger" type="button" id="delBtn">${t("delete")}</button></div>`;
     // typing a height pins it there (e.g. a wall-mounted TV); "Rest on surface" lets it settle again
     box.querySelector('[data-k="z"]').onchange = (e) => { it.z = toM(e.target.value || 0); it.zAuto = false; clampItem(it); update(); };
     if (!isAuto(it)) $("#autoZ").onclick = () => { it.zAuto = true; update(); };
@@ -60,9 +60,9 @@ export function renderInspect(){
   } else if (s.kind === "opening"){
     const o = findOpening(s.id); if (!o){ S.sel = null; return renderInspect(); }
     box.innerHTML = `<div class="what">${nameOf(OP[openingKind(o)])}<em>${t("wallN", {n:o.wall + 1})} · ${(o.width * o.height).toFixed(1)} ${t("m2")} · ${t("dragToMove")}</em></div>
-      <div class="dims">${cmField("width", t("width"), o.width)}${cmField("height", t("height"), o.height)}${o.type === "door" ? "" : cmField("sill", t("fromFloor"), o.sill)}</div>
-      <div class="acts"><button class="btn" type="button" id="delBtn">${t("delete")}</button></div>`;
-    box.querySelectorAll(".dims input").forEach(inp => inp.addEventListener("change", () => {
+      <div class="sizes">${cmField("width", t("width"), o.width)}${cmField("height", t("height"), o.height)}${o.type === "door" ? "" : cmField("sill", t("fromFloor"), o.sill)}</div>
+      <div class="acts"><button class="btn" type="button" id="dupBtn">${t("duplicate")}</button><button class="btn" type="button" id="centerBtn">${t("centerOnWall")}</button><button class="btn danger" type="button" id="delBtn">${t("delete")}</button></div>`;
+    box.querySelectorAll(".sizes input").forEach(inp => inp.addEventListener("change", () => {
       const before = {...o};
       o[inp.dataset.k] = toM(inp.value || 0);
       const ok = refit(o);
@@ -71,6 +71,12 @@ export function renderInspect(){
       if (!ok) flashInspect(t("openingNoFit"));
     }));
     $("#delBtn").onclick = () => deleteSel();
+    $("#dupBtn").onclick = () => {
+      const c = duplicateOpening(o);
+      if (!c) return flashInspect(t("hintNoRoomOnWall"));
+      S.sel = {kind:"opening", id:c.id}; update();
+    };
+    $("#centerBtn").onclick = () => { if (centerOpening(o)) update(); };
     if (S.tab !== "open"){ S.tab = "open"; renderLib(); }
   } else if (s.kind === "wall"){
     const id = S.walls[s.id], m = WM[id];
