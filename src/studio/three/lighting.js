@@ -11,6 +11,7 @@ import { HDRLoader } from "three/addons/loaders/HDRLoader.js";
 import { renderer, scene, fill } from "./scene.js";
 import { updateSun } from "./sun.js";
 import { $ } from "../utils.js";
+import { t } from "../i18n.js";
 
 export const LIGHTING = [
   {id:"daylight", name:"Daylight", hdri:"photo_studio_loft_hall_1k", env:.75, exposure:1.1,
@@ -73,10 +74,17 @@ export function initLighting(){
   generatedEnv = pmrem.fromScene(new RoomEnvironment(), .04).texture;
 
   const sel = $("#lighting");
-  sel.innerHTML = LIGHTING.map(l => `<option value="${l.id}">${l.name}</option>`).join("");
+  relabelLighting();
   sel.addEventListener("change", () => setLighting(sel.value));
 
   // ?lighting=warm in the address wins, then the last choice on this device, then Daylight.
   let saved = null; try { saved = localStorage.getItem(STORE_KEY); } catch {}
   setLighting(new URLSearchParams(location.search).get("lighting") || saved || DEFAULT_ID);
+}
+
+// Mood names in the interface language (call after the language changes).
+export function relabelLighting(){
+  const sel = $("#lighting"); if (!sel) return;
+  sel.innerHTML = LIGHTING.map(l => `<option value="${l.id}">${t("light_" + l.id)}</option>`).join("");
+  sel.value = current.id;
 }

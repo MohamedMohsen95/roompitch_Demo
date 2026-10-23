@@ -6,6 +6,9 @@ import { renderInspect } from "./inspector.js";
 import { renderEst } from "./estimate.js";
 import { buildRoom } from "./three/room.js";
 import { buildItems, syncItem, refreshHelper } from "./three/items.js";
+import { saveRoom } from "./room-store.js";
+import { toCm } from "./geometry.js";
+import { t } from "./i18n.js";
 
 let lastItemsKey = "";
 
@@ -14,6 +17,9 @@ let lastItemsKey = "";
 export function update(){
   settleAll();   // pieces rest on the floor or on the surface below them
   renderPlan(); renderInspect(); renderEst();
+  const size = document.getElementById("roomSize");
+  if (size) size.textContent = `${toCm(S.L)} × ${toCm(S.W)} × ${toCm(S.H)} ${t("cm")}`;
+  saveRoom();
   buildRoom(); // also refreshes the selected-wall highlight
   const key = S.items.map(i => `${i.id}:${i.type}:${i.rot}`).join("|");
   if (key !== lastItemsKey){ lastItemsKey = key; buildItems(); }

@@ -1,19 +1,24 @@
-// Windows and doors: types, where they sit on a wall, and the rules for placing them.
-//
-// An opening lives on one wall: {id, type, wall:"n"|"e"|"s"|"w", offset, w, h, sill}
-//   offset = metres from the wall's start corner to the opening's left edge (seen in the plan:
-//            north/south walls start at the west corner, east/west walls at the north corner)
-//   sill   = height of the bottom edge above the floor (0 for doors)
-import { S, wallLen } from "./state.js";
+// Windows and doors in the studio: library presets, and the rules for placing and moving them.
+// The opening model is the room setup's: {id, type:"door"|"window", wall, offset, width, height, sill}
+//   wall   = wall index (wall i runs from corner i to corner i+1 of S.poly)
+//   offset = metres from the wall's start corner to the opening's near edge
+//   sill   = height of the bottom edge above the floor (0 for doors; a window with sill 0 is a glass door)
+import { S, walls, wallLen } from "./state.js";
 import { clamp, snap } from "./utils.js";
 
-export const OPENING_TYPES = [
-  {id:"window",      kind:"window", name:"Window",              w:1.2, h:1.3, sill:.9, desc:"window"},
-  {id:"wide-window", kind:"window", name:"Wide window",         w:2.4, h:1.4, sill:.6, desc:"wide window"},
-  {id:"glass-door",  kind:"window", name:"Glass / balcony door", w:1.6, h:2.2, sill:0,  desc:"floor-to-ceiling glass balcony door"},
-  {id:"door",        kind:"door",   name:"Door",                w:.9,  h:2.1, sill:0,  desc:"interior door"}
+// Library presets (sizes in metres). A preset is a starting point; the inspector edits sizes after.
+export const OPENING_PRESETS = [
+  {id:"window",      type:"window", name:"Window",               ar:"شباك",              width:1.2, height:1.3, sill:.9},
+  {id:"wide-window", type:"window", name:"Wide window",          ar:"شباك عريض",          width:2.4, height:1.4, sill:.6},
+  {id:"glass-door",  type:"window", name:"Glass / balcony door", ar:"باب زجاج / بلكونة",  width:1.6, height:2.2, sill:0},
+  {id:"door",        type:"door",   name:"Door",                 ar:"باب",               width:.9,  height:2.1, sill:0}
 ];
-export const OT = Object.fromEntries(OPENING_TYPES.map(t => [t.id, t]));
+export const OP = Object.fromEntries(OPENING_PRESETS.map(p => [p.id, p]));
+
+// What kind of opening this is, for names and the AI prompt.
+export const isGlassDoor = (o) => o.type === "window" && o.sill < .05;
+export const openingKind = (o) => o.type === "door" ? "door" : isGlassDoor(o) ? "glass-door" : o.width >= 2 ? "wide-window" : "window";
+export const openingDesc = (o) => ({door:"interior door", "glass-door":"floor-to-ceiling glass balcony door", "wide-window":"wide window", window:"window"})[openingKind(o)];
 
 const GAP = .05;          // minimum distance to a corner or another opening
 const TOP_GAP = .05;      // minimum distance below the ceiling
@@ -21,52 +26,51 @@ const TOP_GAP = .05;      // minimum distance below the ceiling
 export const findOpening = (id) => S.openings.find(o => o.id === id);
 export const openingsOn = (wall, exceptId) => S.openings.filter(o => o.wall === wall && o.id !== exceptId);
 
-// Wall lines in plan coordinates: start corner and direction (unit vector along the wall).
-export function wallLine(k){
-  const {L, W} = S;
-  return {n:{x:0, y:0, dx:1, dy:0}, s:{x:0, y:W, dx:1, dy:0}, w:{x:0, y:0, dx:0, dy:1}, e:{x:L, y:0, dx:0, dy:1}}[k];
-}
-// Direction pointing into the room from each wall.
-export const INWARD = {n:{x:0, y:1}, s:{x:0, y:-1}, w:{x:1, y:0}, e:{x:-1, y:0}};
+let seq = 0;
+const newId = () => `o${Date.now().toString(36)}${(seq++).toString(36)}`;
 
-// Nearest wall to a plan point and the distance along it.
+// Nearest wall to a plan point and the distance along it from the wall's start corner.
 export function nearestWallAny(x, y){
-  const d = {n:Math.abs(y), s:Math.abs(S.W - y), w:Math.abs(x), e:Math.abs(S.L - x)};
-  const k = Object.keys(d).sort((a, b) => d[a] - d[b])[0];
-  return {wall:k, along:(k === "n" || k === "s") ? x : y};
+  let best = null, bestD = Infinity;
+  for (const w of walls()){
+    const t = clamp(((x - w.a[0]) * (w.b[0] - w.a[0]) + (y - w.a[1]) * (w.b[1] - w.a[1])) / (w.len * w.len), 0, 1);
+    const d = Math.hypot(w.a[0] + t * (w.b[0] - w.a[0]) - x, w.a[1] + t * (w.b[1] - w.a[1]) - y);
+    if (d < bestD){ bestD = d; best = {wall:w.i, along:t * w.len}; }
+  }
+  return best;
 }
 
-// Keep size and height sensible for the room.
+// Keep size and height sensible for the wall and ceiling.
 export function clampSize(o){
   const len = wallLen(o.wall);
-  o.w = clamp(snap(o.w), .4, Math.max(.4, len - 2 * GAP));
-  o.sill = clamp(snap(o.sill), 0, S.H - .4);
-  o.h = clamp(snap(o.h), .3, S.H - TOP_GAP - o.sill);
+  o.width = clamp(snap(o.width), .4, Math.max(.4, len - 2 * GAP));
+  o.sill = o.type === "door" ? 0 : clamp(snap(o.sill), 0, S.H - .4);
+  o.height = clamp(snap(o.height), .3, S.H - TOP_GAP - o.sill);
 }
 
-const fitsAt = (o, offset) => offset >= GAP - 1e-6 && offset + o.w <= wallLen(o.wall) - GAP + 1e-6 &&
-  openingsOn(o.wall, o.id).every(p => offset + o.w + GAP <= p.offset + 1e-6 || p.offset + p.w + GAP <= offset + 1e-6);
+const fitsAt = (o, offset) => offset >= GAP - 1e-6 && offset + o.width <= wallLen(o.wall) - GAP + 1e-6 &&
+  openingsOn(o.wall, o.id).every(p => offset + o.width + GAP <= p.offset + 1e-6 || p.offset + p.width + GAP <= offset + 1e-6);
 
 // The free offset closest to `wanted` on the opening's wall, or null if it doesn't fit anywhere.
 export function freeOffset(o, wanted){
   const len = wallLen(o.wall);
-  if (o.w > len - 2 * GAP) return null;
-  const want = clamp(snap(wanted), GAP, len - GAP - o.w);
+  if (o.width > len - 2 * GAP) return null;
+  const want = clamp(snap(wanted), GAP, len - GAP - o.width);
   if (fitsAt(o, want)) return want;
   // candidate spots: right after or right before each neighbour, and both ends of the wall
-  const cands = [GAP, len - GAP - o.w];
-  for (const p of openingsOn(o.wall, o.id)) cands.push(p.offset + p.w + GAP, p.offset - GAP - o.w);
+  const cands = [GAP, len - GAP - o.width];
+  for (const p of openingsOn(o.wall, o.id)) cands.push(p.offset + p.width + GAP, p.offset - GAP - o.width);
   const ok = cands.map(c => Math.round(c * 1000) / 1000).filter(c => fitsAt(o, c));
   if (!ok.length) return null;
   return ok.sort((a, b) => Math.abs(a - want) - Math.abs(b - want))[0];
 }
 
-// Add an opening of `typeId` centred near `along` on `wall`. Returns it, or null if there's no room.
-export function addOpening(typeId, wall, along){
-  const t = OT[typeId];
-  const o = {id:S.nextId++, type:typeId, wall, offset:0, w:t.w, h:t.h, sill:t.sill};
+// Add an opening from preset `presetId`, centred near `along` on `wall`. Returns it, or null if there's no room.
+export function addOpening(presetId, wall, along){
+  const p = OP[presetId];
+  const o = {id:newId(), type:p.type, wall, offset:0, width:p.width, height:p.height, sill:p.sill};
   clampSize(o);
-  const off = freeOffset(o, along - o.w / 2);
+  const off = freeOffset(o, along - o.width / 2);
   if (off === null) return null;
   o.offset = off; S.openings.push(o);
   return o;
@@ -74,11 +78,11 @@ export function addOpening(typeId, wall, along){
 
 // Move an opening to (wall, wanted offset). Stays where it was if the spot isn't free.
 export function moveOpening(o, wall, wantedOffset){
-  const prev = {wall:o.wall, offset:o.offset};
+  const prev = {wall:o.wall, offset:o.offset, width:o.width, height:o.height, sill:o.sill};
   o.wall = wall; clampSize(o);
-  const len = wallLen(wall), want = clamp(snap(wantedOffset), GAP, len - GAP - o.w);
-  if (fitsAt(o, want)){ o.offset = want; return true; }
-  Object.assign(o, prev); clampSize(o);
+  const want = clamp(snap(wantedOffset), GAP, wallLen(wall) - GAP - o.width);
+  if (fitsAt(o, want)){ o.offset = want; delete o.fromAI; return true; }
+  Object.assign(o, prev);
   return false;
 }
 
@@ -86,17 +90,6 @@ export function moveOpening(o, wall, wantedOffset){
 export function refit(o){
   clampSize(o);
   const off = freeOffset(o, o.offset);
-  if (off !== null){ o.offset = off; return true; }
+  if (off !== null){ o.offset = off; delete o.fromAI; return true; }
   return false;
 }
-
-// After the room size changed: shrink/shift openings to fit, drop the ones that can't.
-// Returns how many were removed.
-export function refitAll(){
-  let removed = 0;
-  for (const o of [...S.openings]) if (!refit(o)){ S.openings = S.openings.filter(p => p !== o); removed++; }
-  return removed;
-}
-
-// Opening area per wall (for the paintable wall area).
-export const openingArea = (wall) => openingsOn(wall).reduce((a, o) => a + o.w * o.h, 0);

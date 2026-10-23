@@ -4,6 +4,7 @@ import * as THREE from "three";
 import { S, clampItem, findItem, isSelectedItem } from "../state.js";
 import { FU } from "../catalog.js";
 import { nearestWallAny } from "../openings.js";
+import { saveRoom } from "../room-store.js";
 import { snap } from "../utils.js";
 import { update } from "../app.js";
 import { applyPayload } from "../library.js";
@@ -90,7 +91,7 @@ export function initInteraction(){
     if (!drag) return false;
     const moved = drag.moved; drag = null;
     controls.enabled = true; cv.style.cursor = "grab";
-    if (moved){ renderEst(); renderInspect(); }
+    if (moved){ renderEst(); renderInspect(); saveRoom(); }
     return true;
   };
   cv.addEventListener("pointercancel", () => { endDrag(); down = null; });

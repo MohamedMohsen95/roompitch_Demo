@@ -2,18 +2,19 @@
 //
 // S.sun = {time, facing, season}
 //   time    hours, e.g. 15.5 = 15:30 (solar time)
-//   facing  compass direction the back wall (top of the plan) faces outwards: "N", "NE", ... "NW"
+//   facing  compass direction the top of the plan faces: "N", "NE", ... "NW"
 //   season  "summer" | "equinox" | "winter"
 // Latitude is Cairo's; the lighting mood (lighting.js) tints and scales the sun on top of this.
 import * as THREE from "three";
 import { S } from "../state.js";
 import { sun } from "./scene.js";
 import { getLighting } from "./lighting.js";
+import { wallsOf, wallFrame } from "../geometry.js";
+import { t } from "../i18n.js";
 
 export const LATITUDE = 30.04;
 export const FACINGS = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
-export const FACING_NAMES = {N:"North", NE:"North-east", E:"East", SE:"South-east", S:"South", SW:"South-west", W:"West", NW:"North-west"};
-export const SEASONS = {summer:{name:"Summer", decl:23.44}, equinox:{name:"Spring / autumn", decl:0}, winter:{name:"Winter", decl:-23.44}};
+export const SEASONS = {summer:{decl:23.44}, equinox:{decl:0}, winter:{decl:-23.44}};   // sun declination
 
 const rad = (d) => d * Math.PI / 180, deg = (r) => r * 180 / Math.PI;
 
@@ -60,33 +61,37 @@ export function sunWords(){
   if (alt <= 0) return "after sunset, no direct sunlight";
   const t = S.sun.time, when = t < 9 ? "early-morning" : t < 11.5 ? "morning" : t < 14 ? "midday" : t < 16.5 ? "afternoon" : "late-afternoon";
   const rel = sunRelative();
-  const sides = ["back", "back-right", "right", "front-right", "front", "front-left", "left", "back-left"];
-  const from = sides[Math.round(rel / 45) % 8];
-  // which walls with windows face the sun (back wall faces 0°, right 90°, front 180°, left 270°)
-  const wallAngle = {n:0, e:90, s:180, w:270}, wallWord = {n:"back", e:"right-hand", s:"front", w:"left-hand"};
-  const lit = [...new Set(S.openings.filter(o => o.type !== "door" && Math.cos(rad(rel - wallAngle[o.wall])) > .15).map(o => o.wall))];
+  // Each wall's outward direction as an angle like the sun's (0° = top of the plan, clockwise).
+  const ws = wallsOf(S.poly), out = ws.map(w => { const {normal} = wallFrame(w); return deg(Math.atan2(-normal[0], normal[1])); });
+  const facingSun = (i) => Math.cos(rad(rel - out[i]));
+  const from = ws.reduce((b, w) => facingSun(w.i) > facingSun(b.i) ? w : b, ws[0]).i;
+  // walls with windows (or glass doors) that face the sun
+  const lit = [...new Set(S.openings.filter(o => o.type !== "door" && facingSun(o.wall) > .15).map(o => o.wall))].sort((a, b) => a - b);
   const enters = lit.length
-    ? `, shining in through the window${lit.length > 1 ? "s" : ""} on the ${lit.map(k => wallWord[k]).join(" and ")} wall${lit.length > 1 ? "s" : ""}`
+    ? `, shining in through the window${lit.length > 1 ? "s" : ""} on wall${lit.length > 1 ? "s" : ""} ${lit.map(i => i + 1).join(" and ")}`
     : ", outside the windows, so no direct sunlight enters";
-  return `${when} sun (${formatTime(t)}) coming from the ${from} of the room${alt < 20 ? ", low and warm, casting long shadows" : ""}${enters}`;
+  return `${when} sun (${formatTime(t)}) coming from beyond wall ${from + 1}${alt < 20 ? ", low and warm, casting long shadows" : ""}${enters}`;
 }
 
-// The Sun bar under the 3D header. `onChange` lets the plan redraw its compass.
+// The Sun bar under the 3D header. `onChange` runs after every change (plan compass, saving).
+// Returns `refresh`, to call after the language changes or a saved room is restored.
 export function initSunControls(onChange){
   const time = document.getElementById("sunTime"), out = document.getElementById("sunTimeOut");
   const facing = document.getElementById("sunFacing"), season = document.getElementById("sunSeason");
-  facing.innerHTML = FACINGS.map(f => `<option value="${f}">${FACING_NAMES[f]}</option>`).join("");
-  season.innerHTML = Object.entries(SEASONS).map(([k, v]) => `<option value="${k}">${v.name}</option>`).join("");
   const show = () => {
+    facing.innerHTML = FACINGS.map(f => `<option value="${f}">${t("dir" + f)}</option>`).join("");
+    season.innerHTML = Object.keys(SEASONS).map(k => `<option value="${k}">${t("season_" + k)}</option>`).join("");
     time.value = S.sun.time; facing.value = S.sun.facing; season.value = S.sun.season;
     const {alt} = sunAngles(S.sun.time, S.sun.season);
     out.textContent = alt > 0 ? formatTime(S.sun.time) : `${formatTime(S.sun.time)} ☾`;
-    out.title = alt > 0 ? `Sun ${Math.round(alt)}° above the horizon` : "The sun has set";
+    out.title = alt > 0 ? t("sunUp", {n:Math.round(alt)}) : t("sunSet");
   };
-  time.addEventListener("input", () => { S.sun.time = +time.value; show(); updateSun(); });
-  facing.addEventListener("change", () => { S.sun.facing = facing.value; show(); updateSun(); onChange?.(); });
-  season.addEventListener("change", () => { S.sun.season = season.value; show(); updateSun(); });
+  const changed = () => { show(); updateSun(); onChange?.(); };
+  time.addEventListener("input", () => { S.sun.time = +time.value; changed(); });
+  facing.addEventListener("change", () => { S.sun.facing = facing.value; changed(); });
+  season.addEventListener("change", () => { S.sun.season = season.value; changed(); });
   show();
+  return show;
 }
 
 export const formatTime = (t) => `${String(Math.floor(t)).padStart(2, "0")}:${String(Math.round((t % 1) * 60)).padStart(2, "0")}`;
