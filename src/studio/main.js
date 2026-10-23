@@ -18,6 +18,7 @@ import { $ } from "./utils.js";
 import { update, rebuildAll } from "./app.js";
 import { renderLib, initLibrary, flashHint } from "./library.js";
 import { initKeyboard } from "./inspector.js";
+import { initEstToggle, relabelEst } from "./estimate.js";
 import { initPlan, renderPlan } from "./plan.js";
 import { initScene, setCam, startLoop, camera, roomGroup, itemGroup } from "./three/scene.js";
 import { cullForCamera } from "./three/room.js";
@@ -51,10 +52,10 @@ document.querySelectorAll(".langbtn").forEach(b => { b.onclick = () => setLang(g
 
 initScene(); initLighting();
 initLibrary(); initKeyboard(); initPlan(); initInteraction(); initRenderDialog();
-initDialogs(); initProposal();
+initDialogs(); initProposal(); initEstToggle();
 // Sun bar: the plan's north arrow follows it, and the choice is saved with the room.
 const refreshSun = initSunControls(() => { renderPlan(); saveRoom(); });
-onLangChange(() => { renderLib(); update(); relabelDialogs(); relabelSetup(); relabelLighting(); refreshSun(); });
+onLangChange(() => { renderLib(); update(); relabelDialogs(); relabelSetup(); relabelLighting(); refreshSun(); relabelEst(); });
 renderLib();
 
 // Screen 1 first. Starting or continuing a room switches to the studio and turns saving on.

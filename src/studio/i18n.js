@@ -17,8 +17,8 @@ const STR = {
     dirN: "North", dirNE: "North-east", dirE: "East", dirSE: "South-east", dirS: "South", dirSW: "South-west", dirW: "West", dirNW: "North-west",
     season_summer: "Summer", season_equinox: "Spring / autumn", season_winter: "Winter",
     sunUp: "Sun {n}° above the horizon", sunSet: "The sun has set", north: "North", northLetter: "N",
-    camCorner: "Corner", camDoor: "From door", camTop: "Top",
-    estTitle: "Estimate", estHint: "Updates as you design",
+    camCorner: "Corner", camDoor: "From door", camTop: "Top", camView: "View", viewSettings: "View settings",
+    estTitle: "Estimate", estHint: "Updates as you design", estHide: "Hide estimate", estShow: "Show estimate",
 
     hintFurn: "Drag a piece onto the plan or the 3D view, or click it to place it in the middle of the room.",
     hintWall: "Drag a finish onto any wall, or select a wall and click a finish.",
@@ -113,8 +113,8 @@ const STR = {
     dirN: "الشمال", dirNE: "الشمال الشرقي", dirE: "الشرق", dirSE: "الجنوب الشرقي", dirS: "الجنوب", dirSW: "الجنوب الغربي", dirW: "الغرب", dirNW: "الشمال الغربي",
     season_summer: "الصيف", season_equinox: "الربيع / الخريف", season_winter: "الشتاء",
     sunUp: "الشمس على ارتفاع {n}° فوق الأفق", sunSet: "الشمس غربت", north: "الشمال", northLetter: "ش",
-    camCorner: "زاوية", camDoor: "من الباب", camTop: "من أعلى",
-    estTitle: "الميزانية", estHint: "تتحدث أثناء التصميم",
+    camCorner: "زاوية", camDoor: "من الباب", camTop: "من أعلى", camView: "العرض", viewSettings: "إعدادات العرض",
+    estTitle: "الميزانية", estHint: "تتحدث أثناء التصميم", estHide: "إخفاء الميزانية", estShow: "عرض الميزانية",
 
     hintFurn: "اسحب القطعة على المسقط أو الـ 3D، أو اضغط عليها لتوضع في منتصف الغرفة.",
     hintWall: "اسحب الخامة على أي حائط، أو اختر حائطًا ثم اضغط على الخامة.",

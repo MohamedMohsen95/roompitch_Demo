@@ -50,6 +50,8 @@ button{cursor:pointer}
 .panel{background:var(--surface); border:1px solid var(--line); border-radius:10px; min-width:0}
 .panel h2{font-size:13px; font-weight:600; margin:0; padding:10px 14px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center; gap:8px}
 .panel h2 small{font-weight:400; color:var(--muted); font-size:12px}
+.view h2 > span:first-child{white-space:nowrap}
+.view h2 small{text-align:end}
 
 /* Library */
 .tabs{display:grid; grid-template-columns:1fr 1fr; gap:4px; padding:10px 10px 0}
@@ -87,20 +89,36 @@ button{cursor:pointer}
 #three{position:absolute; inset:0}
 #three canvas{display:block}
 .drop-on{outline:2px dashed var(--accent); outline-offset:-6px}
-.views{display:flex; gap:4px; flex-wrap:wrap; justify-content:flex-end; align-items:center}
-.views .btn{padding:2px 8px; font-size:12px; white-space:nowrap}
-.sunbar{display:flex; flex-wrap:wrap; align-items:center; gap:6px 14px; padding:7px 14px; border-bottom:1px solid var(--line); font-size:12px; color:var(--muted)}
-.sunbar label{display:flex; align-items:center; gap:6px}
-.sunbar select{font:inherit; color:var(--ink); background:var(--sunk); border:1px solid var(--line); border-radius:7px; padding:2px 6px; cursor:pointer}
-.sunbar select:hover, .sunbar select:focus-visible{border-color:var(--accent)}
-.sun-time{flex:1 1 220px}
+/* View settings bar (full width, above the panels) */
+.viewbar{display:flex; flex-wrap:wrap; align-items:center; gap:8px 16px; padding:8px 14px; background:var(--surface); border:1px solid var(--line); border-radius:10px; font-size:12.5px; color:var(--muted)}
+.viewbar label, .viewbar .cams{display:flex; align-items:center; gap:6px}
+.viewbar select{font:inherit; color:var(--ink); background:var(--sunk); border:1px solid var(--line); border-radius:7px; padding:3px 6px; cursor:pointer}
+.viewbar select:hover, .viewbar select:focus-visible{border-color:var(--accent)}
+.viewbar .sep{width:1px; align-self:stretch; background:var(--line)}
+.sun-time{flex:1 1 260px}
 .sun-time input{flex:1; min-width:120px; accent-color:var(--accent)}
 .sun-time output{font-family:var(--font-data); color:var(--ink); min-width:3.2em; text-align:end}
-.light-pick{display:flex; align-items:center; gap:6px; margin-inline-end:6px; font-size:12px; font-weight:400; color:var(--muted)}
-.light-pick select{font:inherit; color:var(--ink); background:var(--sunk); border:1px solid var(--line); border-radius:7px; padding:2px 6px; cursor:pointer}
-.light-pick select:hover, .light-pick select:focus-visible{border-color:var(--accent)}
+.seg{display:flex}
+.seg .btn{padding:3px 10px; font-size:12.5px; white-space:nowrap; border-radius:0; margin-inline-start:-1px}
+.seg .btn:first-child{border-start-start-radius:7px; border-end-start-radius:7px; margin-inline-start:0}
+.seg .btn:last-child{border-start-end-radius:7px; border-end-end-radius:7px}
+.seg .btn:hover{position:relative}
 
-/* Budget */
+/* Budget: collapsible to a slim strip showing the total */
+.app{transition:grid-template-columns .2s}
+.budget h2{padding-inline-end:8px}
+.est-title{display:flex; align-items:baseline; gap:8px; flex:1; min-width:0}
+.est-toggle{padding:3px 5px; line-height:0; color:var(--muted)}
+.est-toggle svg{transition:transform .2s}
+[dir="rtl"] .est-toggle svg{transform:scaleX(-1)}
+.est-mini{display:none; border:0; background:none; padding:0; font:inherit; font-family:var(--font-data); font-weight:600; color:var(--ink); cursor:pointer; direction:ltr; white-space:nowrap}
+.app.est-closed{grid-template-columns:250px minmax(0,1fr) 46px}
+.est-closed .est, .est-closed .est-title{display:none}
+.est-closed .budget h2{flex-direction:column; justify-content:flex-start; padding:8px 0; border-bottom:0; gap:12px}
+.est-closed .est-mini{display:block; writing-mode:vertical-rl; transform:rotate(180deg)}
+.est-closed .est-toggle{order:-1}
+.est-closed .est-toggle svg{transform:scaleX(-1)}
+[dir="rtl"] .est-closed .est-toggle svg{transform:none}
 .est{padding:4px 0 0}
 .est table{width:100%; border-collapse:collapse; font-size:12.5px}
 .est td{padding:6px 14px; border-bottom:1px solid var(--line); vertical-align:top}
@@ -281,9 +299,20 @@ details p{margin:6px 0 0; font-family:var(--font-data); font-size:11.5px; line-h
   .budget{grid-column:1 / -1}
   .work{grid-template-columns:1fr}
   .stage{height:380px}
+  /* the estimate sits below the views here, so it folds up instead of sideways */
+  .app.est-closed{grid-template-columns:240px minmax(0,1fr)}
+  .est-toggle svg{transform:rotate(-90deg)}
+  [dir="rtl"] .est-toggle svg{transform:rotate(-90deg)}
+  .est-closed .est-toggle svg, [dir="rtl"] .est-closed .est-toggle svg{transform:rotate(90deg)}
+  .est-closed .budget h2{flex-direction:row; padding:10px 8px 10px 14px; gap:8px}
+  .est-closed .est-toggle{order:0}
+  .est-closed .est-title{display:flex}
+  .est-closed .est-title small{display:none}
+  .est-closed .est-mini{writing-mode:horizontal-tb; transform:none}
 }
 @media (max-width:760px){
-  .app{grid-template-columns:1fr}
+  .app, .app.est-closed{grid-template-columns:1fr}
+  .viewbar .sep{display:none}
   .lib{grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); max-height:none}
   .stage{height:330px}
   .pair{grid-template-columns:1fr}
@@ -378,7 +407,18 @@ details p{margin:6px 0 0; font-family:var(--font-data); font-size:11.5px; line-h
     <button class="btn primary" id="renderBtn" type="button" data-i18n="render">Photoreal render</button>
   </header>
 
-  <main class="app">
+  <!-- View settings: lighting, sun and camera, shared by the plan and the 3D view -->
+  <div class="viewbar" role="toolbar" aria-label="View settings" data-i18n-aria="viewSettings">
+    <label><span data-i18n="lighting">Lighting</span><select id="lighting" aria-label="Lighting" data-i18n-aria="lighting"></select></label>
+    <span class="sep" aria-hidden="true"></span>
+    <label class="sun-time"><span data-i18n="sun">Sun</span><input type="range" id="sunTime" min="5" max="20" step="0.25" aria-label="Time of day" data-i18n-aria="sunTimeAria"><output id="sunTimeOut">15:00</output></label>
+    <label><span data-i18n="facing">Top of plan faces</span><select id="sunFacing" aria-label="Direction the top of the plan faces" data-i18n-aria="facing"></select></label>
+    <label><span data-i18n="season">Season</span><select id="sunSeason" aria-label="Season" data-i18n-aria="season"></select></label>
+    <span class="sep" aria-hidden="true"></span>
+    <span class="cams"><span data-i18n="camView">View</span><span class="seg"><button class="btn" type="button" id="camCorner" data-i18n="camCorner">Corner</button><button class="btn" type="button" id="camDoor" data-i18n="camDoor">From door</button><button class="btn" type="button" id="camTop" data-i18n="camTop">Top</button></span></span>
+  </div>
+
+  <main class="app" id="app">
     <aside class="panel">
       <h2><span data-i18n="library">Library</span> <small data-i18n="dragDrop">Drag and drop</small></h2>
       <div class="inspect" id="inspect"></div>
@@ -398,18 +438,15 @@ details p{margin:6px 0 0; font-family:var(--font-data); font-size:11.5px; line-h
         <div class="stage"><svg id="plan" aria-label="Room floor plan" data-i18n-aria="planAria"></svg></div>
       </div>
       <div class="panel view">
-        <h2>3D <small data-i18n="threeHint">Drag to move · Shift+drag to raise · double-click or R to rotate</small> <span class="views"><label class="light-pick"><span data-i18n="lighting">Lighting</span><select id="lighting" aria-label="Lighting" data-i18n-aria="lighting"></select></label><button class="btn" type="button" id="camCorner" data-i18n="camCorner">Corner</button><button class="btn" type="button" id="camDoor" data-i18n="camDoor">From door</button><button class="btn" type="button" id="camTop" data-i18n="camTop">Top</button></span></h2>
-        <div class="sunbar">
-          <label class="sun-time"><span data-i18n="sun">Sun</span><input type="range" id="sunTime" min="5" max="20" step="0.25" aria-label="Time of day" data-i18n-aria="sunTimeAria"><output id="sunTimeOut">15:00</output></label>
-          <label><span data-i18n="facing">Top of plan faces</span><select id="sunFacing" aria-label="Direction the top of the plan faces" data-i18n-aria="facing"></select></label>
-          <label><span data-i18n="season">Season</span><select id="sunSeason" aria-label="Season" data-i18n-aria="season"></select></label>
-        </div>
+        <h2>3D <small data-i18n="threeHint">Drag to move · Shift+drag to raise · double-click or R to rotate</small></h2>
         <div class="stage"><div id="three"></div></div>
       </div>
     </section>
 
     <aside class="panel budget">
-      <h2><span data-i18n="estTitle">Estimate</span> <small data-i18n="estHint">Updates as you design</small></h2>
+      <h2><span class="est-title"><span data-i18n="estTitle">Estimate</span> <small data-i18n="estHint">Updates as you design</small></span>
+        <button class="est-mini" type="button" id="estMini" tabindex="-1"></button>
+        <button class="btn est-toggle" type="button" id="estToggle" aria-controls="est" aria-expanded="true"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></h2>
       <div class="est" id="est"></div>
     </aside>
   </main>

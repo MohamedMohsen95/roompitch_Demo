@@ -48,4 +48,25 @@ export function renderEst(){
       ${extra}</tbody></table>
     <div class="total"><span>${t("total")}</span><span class="n">${money(e.total)}</span></div>
     <p class="note">${t("estNote")}</p>`;
+  $("#estMini").textContent = money(e.total);
+}
+
+// The estimate panel folds to a slim strip with just the total, giving the views more room.
+// The choice is remembered in this browser.
+const EST_KEY = "rp_est_closed";
+let estClosed = (() => { try { return localStorage.getItem(EST_KEY) === "1"; } catch { return false; } })();
+
+export function relabelEst(){
+  $("#app").classList.toggle("est-closed", estClosed);
+  const b = $("#estToggle"), label = t(estClosed ? "estShow" : "estHide");
+  b.setAttribute("aria-expanded", String(!estClosed)); b.setAttribute("aria-label", label); b.title = label;
+}
+function setEstClosed(v){
+  estClosed = v; relabelEst();
+  try { localStorage.setItem(EST_KEY, v ? "1" : "0"); } catch { /* private window: lasts until reload */ }
+}
+export function initEstToggle(){
+  $("#estToggle").onclick = () => setEstClosed(!estClosed);
+  $("#estMini").onclick = () => setEstClosed(false);
+  relabelEst();
 }
