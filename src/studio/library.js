@@ -3,6 +3,7 @@ import { S, clampItem, findItem, nearestWall } from "./state.js";
 import { FURN, WALL_MATS, FLOOR_MATS } from "./catalog.js";
 import { OPENING_TYPES, addOpening, nearestWallAny } from "./openings.js";
 import { swatchURL } from "./textures.js";
+import { canRestOn } from "./stacking.js";
 import { $, fmt } from "./utils.js";
 import { update } from "./app.js";
 
@@ -52,10 +53,17 @@ export function applyPayload(payload, target){
   const [kind, id] = payload.split(":");
   if (kind === "furn"){
     // Swap: dropped on an existing piece, or "replace" mode is on
+    // Dropped on a piece: if the new piece can sit on it (a vase on a table) it's placed on top,
+    // otherwise it replaces that piece (same spot and direction).
+    // Rugs are never swapped: pieces go on top of them.
+    if (target && target.kind === "item" && target.x !== undefined){
+      const under = findItem(target.id);
+      if (under && (canRestOn(id, under) || under.type === "rug")) target = {kind:"point", x:target.x, y:target.y};
+    }
     const swapId = target && target.kind === "item" ? target.id : S.replacing;
     const old = swapId && findItem(swapId);
     if (old){
-      const it = {id:S.nextId++, type:id, x:old.x, y:old.y, z:old.z || 0, rot:old.rot};
+      const it = {id:S.nextId++, type:id, x:old.x, y:old.y, z:old.z || 0, zAuto:old.zAuto, rot:old.rot};
       clampItem(it);
       S.items = S.items.map(i => i.id === old.id ? it : i);
       S.sel = {kind:"item", id:it.id}; S.replacing = null; renderLib();

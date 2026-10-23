@@ -79,6 +79,8 @@ export function buildItems(){
 }
 
 export function syncItem(it){ const o = itemObjs.get(it.id); if (o){ placeObj(o, it); refreshHelper(); } }
+// Reposition every piece (after a move that may have carried or re-stacked others).
+export function syncAll(){ for (const it of S.items){ const o = itemObjs.get(it.id); if (o) placeObj(o, it); } refreshHelper(); }
 
 export function refreshHelper(){
   if (selHelper){ scene.remove(selHelper); selHelper.geometry.dispose(); selHelper = null; }

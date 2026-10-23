@@ -11,7 +11,8 @@ import { renderInspect, rotateSel } from "../inspector.js";
 import { renderPlan } from "../plan.js";
 import { renderEst } from "../estimate.js";
 import { host, renderer, scene, camera, controls, itemGroup, pickables } from "./scene.js";
-import { syncItem, refreshHelper } from "./items.js";
+import { syncAll, refreshHelper } from "./items.js";
+import { startCarry, carry } from "../stacking.js";
 
 const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
 const floorPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), floorHit = new THREE.Vector3();
@@ -45,8 +46,8 @@ export function initInteraction(){
   // Capture phase, so this runs before OrbitControls sees the press.
   // Horizontal moves follow the pointer on a level plane at the height where the piece was grabbed.
   const startMode = (e) => {
-    if (e.shiftKey){ drag.vertical = true; drag.y0 = e.clientY; drag.z0 = drag.it.z || 0; return; }
-    const p = levelPoint(e.clientX, e.clientY, drag.grabY + (drag.it.z || 0) - drag.z0Grab);
+    if (e.shiftKey){ drag.vertical = true; drag.y0 = e.clientY; drag.z0 = drag.it.z || 0; drag.it.zAuto = false; return; }
+    const p = levelPoint(e.clientX, e.clientY, drag.grabY);
     drag.vertical = false; if (p){ drag.dx = p.x - drag.it.x; drag.dy = p.y - drag.it.y; }
   };
   cv.addEventListener("pointerdown", e => {
@@ -54,7 +55,7 @@ export function initInteraction(){
     const h = hit3D(e.clientX, e.clientY, itemGroup.children), id = h && h.object.userData.itemId;
     const it = id && findItem(id);
     if (!it) return;
-    drag = {it, moved:false, grabY:h.point.y, z0Grab:it.z || 0};
+    drag = {it, moved:false, grabY:h.point.y, riders:startCarry(it)};
     startMode(e);
     if (!drag.vertical && drag.dx === undefined){ drag = null; return; }
     e.stopImmediatePropagation();
@@ -71,11 +72,12 @@ export function initInteraction(){
         const mpp = 2 * camera.position.distanceTo(o) * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) / r.height;
         drag.it.z = drag.z0 + (drag.y0 - e.clientY) * mpp;
       } else {
-        const p = levelPoint(e.clientX, e.clientY, drag.grabY + (drag.it.z || 0) - drag.z0Grab); if (!p) return;
+        const p = levelPoint(e.clientX, e.clientY, drag.grabY); if (!p) return;
         drag.it.x = snap(p.x - drag.dx); drag.it.y = snap(p.y - drag.dy);
       }
       clampItem(drag.it);
-      drag.moved = true; syncItem(drag.it); renderPlan();
+      carry(drag.it, drag.riders);   // things on it come along; it lands on whatever is below
+      drag.moved = true; syncAll(); renderPlan();
       if (drag.vertical) renderInspect();   // live height readout
       return;
     }
@@ -119,7 +121,8 @@ export function initInteraction(){
     const payload = e.dataTransfer.getData("text/plain"); if (!payload) return;
     if (payload.startsWith("furn:")){
       const hi = hit3D(e.clientX, e.clientY, itemGroup.children), id = hi && hi.object.userData.itemId;
-      if (id && FU[findItem(id).type].id !== "rug") return applyPayload(payload, {kind:"item", id}); // swap
+      // onto a piece: stacks on top if it fits there, otherwise swaps (see applyPayload)
+      if (id) return applyPayload(payload, {kind:"item", id, x:hi.point.x + S.L / 2, y:hi.point.z + S.W / 2});
     }
     const h = hit3D(e.clientX, e.clientY, pickables);
     if (!h) return applyPayload(payload, null);

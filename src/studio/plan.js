@@ -7,7 +7,8 @@ import { update } from "./app.js";
 import { applyPayload } from "./library.js";
 import { renderEst } from "./estimate.js";
 import { rotateSel, renderInspect } from "./inspector.js";
-import { syncItem } from "./three/items.js";
+import { syncAll } from "./three/items.js";
+import { startCarry, carry } from "./stacking.js";
 import { buildRoom } from "./three/room.js";
 import { FACINGS } from "./three/sun.js";
 
@@ -99,7 +100,7 @@ export function initPlan(){
     if (wEl){ S.sel = {kind:"wall", id:wEl.dataset.wall}; update(); return; }
     if (itEl){
       const it = findItem(+itEl.dataset.item), p = svgPoint(e);
-      S.sel = {kind:"item", id:it.id}; drag = {it, dx:p.x - it.x, dy:p.y - it.y};
+      S.sel = {kind:"item", id:it.id}; drag = {it, dx:p.x - it.x, dy:p.y - it.y, riders:startCarry(it)};
       svg.setPointerCapture(e.pointerId); update(); return;
     }
     S.sel = fEl ? {kind:"floor"} : null; update();
@@ -117,11 +118,12 @@ export function initPlan(){
     }
     if (!drag) return;
     const p = svgPoint(e); drag.it.x = snap(p.x - drag.dx); drag.it.y = snap(p.y - drag.dy); clampItem(drag.it);
-    renderPlan(); syncItem(drag.it);
+    carry(drag.it, drag.riders);   // things on it come along; it lands on whatever is below
+    renderPlan(); syncAll();
   });
   const endDrag = () => {
     if (dragOpen){ const moved = dragOpen.moved; dragOpen = null; if (moved){ renderEst(); renderInspect(); } }
-    if (drag){ drag = null; renderEst(); }
+    if (drag){ drag = null; renderEst(); renderInspect(); }
   };
   svg.addEventListener("pointerup", endDrag); svg.addEventListener("pointercancel", endDrag);
   svg.addEventListener("dblclick", e => { if (e.target.closest("[data-item]")) rotateSel(); });
@@ -135,8 +137,8 @@ export function initPlan(){
     const payload = e.dataTransfer.getData("text/plain"); if (!payload) return;
     const over = document.elementFromPoint(e.clientX, e.clientY);
     const itEl = over && over.closest && over.closest("[data-item]");
-    if (itEl && payload.startsWith("furn:")) return applyPayload(payload, {kind:"item", id:+itEl.dataset.item});
     const p = svgPoint(e);
+    if (itEl && payload.startsWith("furn:")) return applyPayload(payload, {kind:"item", id:+itEl.dataset.item, x:p.x, y:p.y});
     applyPayload(payload, {kind:"point", x:clamp(p.x, 0, S.L), y:clamp(p.y, 0, S.W)});
   });
 }
