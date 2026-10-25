@@ -70,3 +70,16 @@ test("restoreRoom drops pieces and finishes it doesn't know", async () => {
   assert.deepEqual(S.walls, ["paint-white", "wood-panel", "paint-white", "paint-white"]);
   assert.equal(S.floor, "oak");
 });
+
+test("saveRoom stamps savedAt and hands the room to onSaved", async () => {
+  const { onSaved, setSaving, validRoom } = await import("../src/studio/room-store.js");
+  let got = null;
+  onSaved((d) => { got = d; });
+  setSaving(true);
+  applyRoom(room(ell), {keepDesign:false});
+  saveRoom();
+  onSaved(null);
+  assert.ok(got && got.savedAt > 0);
+  assert.ok(validRoom(got));
+  assert.equal(validRoom({...got, poly:[[0, 0]]}), false);
+});

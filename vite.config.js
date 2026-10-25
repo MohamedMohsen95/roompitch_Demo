@@ -7,10 +7,13 @@ import { pathToFileURL } from "node:url";
 
 export default defineConfig(({ mode }) => {
   // Server-side secrets from .env (FAL_KEY, CF_ACCOUNT_ID, ...) for the api/ functions.
-  // They stay on the server: only VITE_-prefixed variables ever reach browser code.
+  // They stay on the server: only VITE_- and NEXT_PUBLIC_-prefixed variables ever reach browser code.
   Object.assign(process.env, loadEnv(mode, process.cwd(), ""));
 
   return {
+    // NEXT_PUBLIC_ is what the Vercel Supabase integration names its browser-safe keys
+    // (NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY), so they reach the app unrenamed.
+    envPrefix: ["VITE_", "NEXT_PUBLIC_"],
     build: {
       chunkSizeWarningLimit: 800, // three.js alone is ~650 kB minified (~170 kB gzipped); that's expected
       rollupOptions: {

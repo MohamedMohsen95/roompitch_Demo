@@ -23,8 +23,13 @@ function openingIcon(p){
     `<g transform="translate(${(54 - w) / 2} ${y})"><rect width="${w}" height="${h}" fill="${glass ? "#cfe4f2" : "#8a6a52"}" stroke="currentColor" stroke-width="1.2"/>${bars}</g></svg>`;
 }
 
+// "Upload 3D model" shows on the furniture tab once the designer is signed in to Supabase.
+let canUpload = false;
+export const setUploadAvailable = (on) => { canUpload = on; renderLib(); };
+
 export function renderLib(){
   document.querySelectorAll(".tabs button").forEach(b => b.setAttribute("aria-selected", String(b.dataset.tab === S.tab)));
+  $("#uploadModelBtn").hidden = !(canUpload && S.tab === "furn");
   const lib = $("#lib"); lib.innerHTML = "";
   lib.classList.toggle("replacing", Boolean(S.replacing) && S.tab === "furn");
   for (const o of LISTS[S.tab]()){

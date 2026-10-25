@@ -60,3 +60,22 @@ export function addModels(models){
   }
   return added;
 }
+
+// Apply catalog_items rows from Supabase (see catalog-remote.js), which win over the entries above:
+// an id the code knows is updated in place (lists hold the same objects), a new id is added.
+// Returns how many entries changed or were added.
+export function applyCatalog(rows){
+  const lists = {furniture:[FURN, FU], wall_finish:[WALL_MATS, WM], floor_finish:[FLOOR_MATS, FM]};
+  let n = 0;
+  for (const r of rows){
+    const [list, index] = lists[r.kind] || [];
+    if (!list) continue;
+    const e = {id:r.id, name:r.name_en, ar:r.name_ar || undefined, price:Number(r.price) || 0, c:r.color || "#8a8580"};
+    if (r.kind === "furniture") Object.assign(e, {w:r.w, d:r.d, h:r.h, surface:r.surface, model:r.modelUrl || undefined});
+    else Object.assign(e, {kind:r.material || "paint", tile:r.textures?.tile || 1});
+    if (index[r.id]) Object.assign(index[r.id], e); else { list.push(e); index[r.id] = e; }
+    EN[r.id] = r.ai_description || r.name_en.toLowerCase();
+    n++;
+  }
+  return n;
+}

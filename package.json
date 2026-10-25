@@ -9,16 +9,26 @@
     "build": "vite build",
     "preview": "vite preview",
     "models": "node scripts/optimize-models.mjs",
-    "test": "node --test"
+    "test": "node --test",
+    "db:generate": "drizzle-kit generate",
+    "db:custom": "drizzle-kit generate --custom",
+    "db:check": "drizzle-kit check",
+    "db:push": "npx supabase db push --linked",
+    "db:studio": "drizzle-kit studio",
+    "catalog:sync": "node scripts/catalog-sync.mjs",
+    "admin": "node scripts/admin.mjs"
   },
   "engines": {
     "node": ">=20.19"
   },
   "dependencies": {
+    "@supabase/supabase-js": "2.118.0",
     "three": "0.186.1"
   },
   "devDependencies": {
     "@gltf-transform/cli": "4.5.1",
+    "drizzle-kit": "0.31.11",
+    "drizzle-orm": "0.45.4",
     "vite": "8.3.5"
   }
 }

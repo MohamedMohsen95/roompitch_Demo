@@ -8,6 +8,7 @@ import { renderPreview, initPreview } from "./preview.js";
 let draft = newDraft("manual");
 let keepDesign = false;
 let onStart = () => {};
+let onChoose = () => {};      // the "How do you want to start?" view was shown (main.js refreshes the projects)
 let photoHooks = null;        // set by photos.js: {render(draft), activeWall()}
 let last = {ok:false, room:null, shapeError:null, openingErrors:{}};
 
@@ -27,9 +28,11 @@ export function showSetup({keepDesign:keep = false, draft:d = null, canContinue 
   keepDesign = keep;
   $("#studioScreen").hidden = true; $("#setupScreen").hidden = false;
   $("#continueLast").hidden = !canContinue;
-  if (d){ draft = d; openForm(); } else { $("#setupChoose").hidden = false; $("#setupForm").hidden = true; }
+  if (d){ draft = d; openForm(); } else showChoose();
   window.scrollTo(0, 0);
 }
+
+function showChoose(){ $("#setupChoose").hidden = false; $("#setupForm").hidden = true; onChoose(); }
 
 function openForm(){
   $("#setupChoose").hidden = true; $("#setupForm").hidden = false;
@@ -142,12 +145,12 @@ function syncOffsets(){
 
 export const redraw = () => refresh(true);
 
-export function initSetup({onStart:start, onContinue}){
-  onStart = start;
+export function initSetup({onStart:start, onContinue, onChoose:choose}){
+  onStart = start; if (choose) onChoose = choose;
   $("#chooseManual").onclick = () => { draft = newDraft("manual"); keepDesign = false; openForm(); };
   $("#choosePhotos").onclick = () => { draft = newDraft("photos"); keepDesign = false; openForm(); };
   $("#continueLast").onclick = () => onContinue();
-  $("#setupBack").onclick = () => { $("#setupChoose").hidden = false; $("#setupForm").hidden = true; };
+  $("#setupBack").onclick = showChoose;
   $("#startDesign").onclick = () => { last = draftToRoom(draft); if (last.ok) onStart(last.room, {keepDesign, draft}); };
   bindForm();
 }

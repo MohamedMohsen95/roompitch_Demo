@@ -48,6 +48,34 @@ The top-right badge says **AI live** when keys are set, **Demo mode** otherwise.
 | `npm run preview` | Serves the production build locally, to test it before deploying |
 | `npm run models` | Compresses 3D models from `models-src/` into `public/models/` |
 | `npm test` | Runs the automated tests (room geometry, saving, photo analysis); needs no install |
+| `npm run db:generate -- --name=<what>` | Writes a migration into `supabase/migrations/` from changes in `db/schema.js` |
+| `npm run db:custom -- --name=<what>` | Empty migration for SQL Drizzle can't express (triggers, functions) |
+| `npm run db:push` | Applies new migrations to the linked Supabase project |
+| `npm run db:studio` | Browse the database (needs `DATABASE_URL` in `.env.local`) |
+| `npm run catalog:sync` | Publishes the built-in catalog to Supabase: optimises new models, uploads them, adds missing rows |
+| `npm run admin -- grant <email>` | Makes an account an admin (`revoke <email>`, `list`) |
+
+### Accounts and admins
+Visitors start as anonymous Supabase users, which is enough to design and save rooms. **Sign in** (top bar) with email and password to upload your own 3D models; they're private to your account. **Admins** can also upload to the built-in catalog that everyone sees ("Who sees it" in the upload dialog).
+
+- Make someone an admin after they've created an account: `npm run admin -- grant you@studio.com` (`revoke`, `list` too). Users can't change their own role.
+- Supabase → Authentication → Sign In / Providers → Email: with **Confirm email** on, new accounts get a confirmation link first. Supabase's built-in email service only delivers to your project's team members and a few emails an hour; set up custom SMTP (Authentication → Emails) before real designers sign up.
+- Add your site's URL (and `http://localhost:5173/studio.html`) under Authentication → URL Configuration so confirmation links come back to the studio.
+
+### Adding a built-in 3D model
+1. Put the model in `models-src/<folder>/` (a `.glb`, or a `.gltf` with its files) with a `CREDITS.md` saying where it's from and its licence.
+2. `npm run catalog:sync`
+
+That compresses it into `public/models/`, uploads it to the `catalog` bucket under `builtin/`, and adds its `catalog_items` row with the size measured from the model. Needs `SUPABASE_SECRET_KEY` in `.env.local` (Supabase → Project Settings → API keys); never give that key a `NEXT_PUBLIC_` or `VITE_` prefix. Rows already in Supabase are left alone, so prices or names edited in the dashboard stay; `--update` overwrites them from code, `--dry-run` shows what would happen.
+
+### Database (Supabase + Drizzle)
+Tables and their RLS policies are defined in [`db/schema.js`](db/schema.js). Never edit a migration by hand that drizzle-kit wrote; change the schema and generate a new one:
+1. Edit `db/schema.js`.
+2. `npm run db:generate -- --name=add_client_name` and read the SQL it wrote.
+3. Once per machine: `npx supabase login`, then `npx supabase link --project-ref <ref>`.
+4. `npm run db:push`.
+
+If a migration was run by pasting it into the Supabase SQL Editor, tell the CLI it's done so `db:push` skips it: `npx supabase migration repair --status applied <timestamp>`.
 
 ### Already had an older copy? · عندك نسخة قديمة؟
 The project moved from `node dev-server.mjs` to Vite. After `git pull`:

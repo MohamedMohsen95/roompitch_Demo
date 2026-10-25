@@ -70,6 +70,47 @@ button{cursor:pointer}
 .tile b{font-size:12.5px; font-weight:500; line-height:1.3; overflow-wrap:anywhere; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden}
 .tile span{font-size:11.5px; color:var(--muted); font-family:var(--font-data); direction:ltr; text-align:end}
 .hint{font-size:12px; color:var(--muted); padding:10px 12px 12px; margin:0}
+.uploadbtn{margin:10px 12px 0}
+.sizerow{display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:6px}
+.accountbtn{display:inline-flex; align-items:center; max-width:260px; min-width:0}
+.accountbtn .acctext{overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0}
+.accountbtn .badge{flex:none; margin-inline-start:6px; font-size:11px; padding:1px 6px; border-radius:999px; background:var(--accent-soft); color:var(--ink)}
+/* Account dialog */
+.authcard{position:relative; background:var(--surface); border:1px solid var(--line); border-radius:16px; width:100%; max-width:400px; max-height:92vh; overflow:auto; padding:28px 28px 22px; box-shadow:0 24px 60px rgba(10,14,13,.28)}
+.authcard form, #accIn{display:flex; flex-direction:column; gap:16px}
+.authx{position:absolute; top:12px; inset-inline-end:12px; width:32px; height:32px; display:grid; place-items:center; border:0; border-radius:8px; background:none; color:var(--muted)}
+.authx:hover{background:var(--sunk); color:var(--ink)}
+.authhead h3{margin:0 0 4px; font-size:20px; letter-spacing:-.01em}
+.authhead p{margin:0; font-size:13.5px; color:var(--muted); text-wrap:pretty}
+.authtabs{display:grid; grid-template-columns:1fr 1fr; padding:3px; gap:3px; background:var(--sunk); border:1px solid var(--line); border-radius:10px}
+.authtabs button{border:0; background:none; border-radius:7px; padding:7px 8px; font-size:13.5px; color:var(--muted)}
+.authtabs button:hover{color:var(--ink)}
+.authtabs button[aria-selected="true"]{background:var(--surface); color:var(--ink); font-weight:600; box-shadow:0 1px 2px rgba(10,14,13,.12)}
+.afield{display:flex; flex-direction:column; gap:6px; font-size:13px; font-weight:500}
+.afield input{width:100%; height:42px; padding:0 12px; border:1px solid var(--line); border-radius:9px; background:var(--surface); font-size:14.5px; font-weight:400}
+.afield input::placeholder{color:var(--muted); opacity:.7}
+.afield input:hover{border-color:color-mix(in srgb, var(--accent) 45%, var(--line))}
+.afield input:focus-visible{outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft)}
+.afield input[aria-invalid="true"]{border-color:var(--danger)}
+.apass{position:relative; display:block}
+.apass input{padding-inline-end:64px}
+.apeek{position:absolute; top:50%; inset-inline-end:6px; transform:translateY(-50%); border:0; background:none; border-radius:6px; padding:4px 8px; font-size:12.5px; font-weight:600; color:var(--accent)}
+.apeek:hover{background:var(--accent-soft)}
+.ahint{font-size:12px; font-weight:400; color:var(--muted)}
+.amsg{margin:0; padding:9px 12px; border-radius:9px; font-size:13px; background:var(--accent-soft); color:var(--ink)}
+.amsg.err{background:var(--danger-soft); color:var(--danger)}
+.ago{width:100%; height:44px; border-radius:10px; font-size:15px}
+.ago:disabled{opacity:.6; cursor:progress}
+.afoot{margin:0; font-size:12.5px; color:var(--muted); text-align:center; text-wrap:pretty}
+.awho{display:flex; align-items:center; gap:14px; padding-inline-end:28px}
+.aavatar{flex:none; width:48px; height:48px; border-radius:50%; display:grid; place-items:center; background:var(--accent); color:var(--accent-ink); font-size:20px; font-weight:600; text-transform:uppercase}
+.awhotext{display:flex; flex-direction:column; min-width:0}
+.awhotext strong{font-size:15px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.awhotext span{font-size:13px; color:var(--muted)}
+#accIn .afoot{text-align:start}
+#accIn .afoot.err{color:var(--danger)}
+.aacts{display:flex; justify-content:flex-end; gap:8px}
+@media (max-width:480px){ .authcard{padding:24px 18px 18px; border-radius:14px} }
 .lib + .hint{border-top:1px solid var(--line)}
 
 /* Selection bar: what's selected and its settings, in one row under the view settings */
@@ -250,6 +291,28 @@ details p{margin:6px 0 0; font-family:var(--font-data); font-size:11.5px; line-h
 .choice svg{width:44px; height:44px; color:var(--accent)}
 .choice b{font-size:17px; font-weight:600}
 .choice span{color:var(--muted); font-size:13.5px}
+.projects{width:100%; margin-top:18px; display:flex; flex-direction:column; gap:10px}
+.projects h2{margin:0; font-size:16px; font-weight:600; display:flex; align-items:center; gap:8px}
+.projcount{font-size:12px; font-weight:600; color:var(--muted); background:var(--sunk); border:1px solid var(--line); border-radius:999px; padding:1px 8px}
+.projerr{margin:0; padding:8px 12px; border-radius:8px; background:var(--danger-soft); color:var(--danger); font-size:13px}
+.projs{list-style:none; margin:0; padding:0; border:1px solid var(--line); border-radius:12px; background:var(--surface); overflow:hidden}
+.proj{display:flex; align-items:center; gap:12px; padding:12px 14px; border-bottom:1px solid var(--line)}
+.proj:last-child{border-bottom:none}
+.proj:hover{background:var(--sunk)}
+.proj.current{background:var(--accent-soft)}
+.projopen{flex:none; width:40px; height:40px; display:grid; place-items:center; border:1px solid var(--line); border-radius:9px; background:var(--surface); color:var(--accent); padding:0}
+.projopen svg{width:22px; height:22px}
+.projopen:hover{border-color:var(--accent)}
+.projtext{flex:1; min-width:0; display:flex; flex-direction:column; gap:3px}
+.projline{display:flex; align-items:center; gap:8px; min-width:0}
+.projtitle{font-size:14.5px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.projname{font:inherit; font-size:14.5px; font-weight:600; padding:4px 8px; border:1px solid var(--accent); border-radius:7px; background:var(--surface); color:var(--ink); width:min(100%, 320px); outline:3px solid var(--accent-soft)}
+.projline .badge{flex:none; font-size:11px; font-weight:600; padding:1px 8px; border-radius:999px; background:var(--accent); color:var(--accent-ink)}
+.projmeta{font-size:12.5px; color:var(--muted)}
+.projacts{flex:none; display:flex; gap:6px}
+.projacts .btn{padding:5px 11px; font-size:13px}
+.projacts .btn.primary{padding:5px 14px}
+@media (max-width:640px){ .proj{flex-wrap:wrap} .projacts{width:100%; justify-content:flex-end} }
 .setup-grid{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.1fr); gap:12px; align-items:start}
 .col-form{display:flex; flex-direction:column}
 .sblock{padding:14px; border-bottom:1px solid var(--line); display:flex; flex-direction:column; gap:10px}
@@ -329,7 +392,7 @@ details p{margin:6px 0 0; font-family:var(--font-data); font-size:11.5px; line-h
 <section class="setup wrap" id="setupScreen">
   <header class="bar">
     <div class="brand"><strong>RoomPitch</strong><span class="tag" data-i18n="newRoom">New room</span></div>
-    <div class="tools"><button class="btn langbtn" type="button" data-i18n="langBtn">عربي</button></div>
+    <div class="tools"><button class="btn accountbtn" id="setupAccountBtn" type="button" hidden></button><button class="btn langbtn" type="button" data-i18n="langBtn">عربي</button></div>
   </header>
 
   <div class="choose" id="setupChoose">
@@ -346,6 +409,11 @@ details p{margin:6px 0 0; font-family:var(--font-data); font-size:11.5px; line-h
       </button>
     </div>
     <button class="btn" id="continueLast" type="button" data-i18n="continueLast" hidden>Continue last room</button>
+    <section class="projects" id="projList" aria-labelledby="projHead" hidden>
+      <h2 id="projHead"><span data-i18n="yourProjects">Your projects</span> <span class="projcount" id="projCount"></span></h2>
+      <p class="projerr" id="projErr" role="alert" hidden></p>
+      <ul class="projs" id="projItems"></ul>
+    </section>
   </div>
 
   <div class="setup-form" id="setupForm" hidden>
@@ -408,6 +476,7 @@ details p{margin:6px 0 0; font-family:var(--font-data); font-size:11.5px; line-h
       <button class="btn" id="settingsBtn" type="button" data-i18n="settings">Settings</button>
       <button class="btn" id="pricesBtn" type="button" data-i18n="priceList">Price list</button>
       <button class="btn" id="pdfBtn" type="button" data-i18n="exportPdf">Export PDF</button>
+      <button class="btn accountbtn" id="accountBtn" type="button" hidden></button>
     </div>
     <button class="btn primary" id="renderBtn" type="button" data-i18n="render">Photoreal render</button>
   </header>
@@ -435,6 +504,7 @@ details p{margin:6px 0 0; font-family:var(--font-data); font-size:11.5px; line-h
         <button role="tab" id="tab-floor" aria-selected="false" data-tab="floor" data-i18n="tabFloor">Floors</button>
       </div>
       <div class="lib" id="lib"></div>
+      <button class="btn uploadbtn" id="uploadModelBtn" type="button" data-i18n="uploadModel" hidden>Upload 3D model</button>
       <p class="hint" id="hint"></p>
     </aside>
 
@@ -511,6 +581,82 @@ details p{margin:6px 0 0; font-family:var(--font-data); font-size:11.5px; line-h
     <div class="acts2">
       <button class="btn primary" id="closePrices" type="button" data-i18n="close">Close</button>
       <button class="btn" id="resetPrices" type="button" data-i18n="resetPrices">Reset to example prices</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="accountModal" hidden>
+  <div class="authcard" role="dialog" aria-modal="true" aria-labelledby="accTitle">
+    <button class="authx" id="accCancel" type="button" aria-label="Close" data-i18n-aria="close">
+      <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+    </button>
+
+    <form id="accOut" novalidate>
+      <div class="authhead">
+        <h3 id="accTitle" data-i18n="accTitle">Your account</h3>
+        <p id="accWhy" data-i18n="accNote">Sign in to upload your own 3D models and open your rooms on any device.</p>
+      </div>
+      <div class="authtabs" role="tablist">
+        <button type="button" role="tab" id="accModeIn" aria-selected="true" data-i18n="signIn">Sign in</button>
+        <button type="button" role="tab" id="accModeUp" aria-selected="false" data-i18n="signUp">Create account</button>
+      </div>
+      <label class="afield"><span data-i18n="email">Email</span>
+        <input id="accEmail" type="email" autocomplete="email" dir="ltr" placeholder="you@studio.com" required>
+      </label>
+      <label class="afield"><span data-i18n="password">Password</span>
+        <span class="apass">
+          <input id="accPass" type="password" autocomplete="current-password" minlength="6" dir="ltr" required>
+          <button class="apeek" id="accPeek" type="button" aria-pressed="false" data-i18n="show">Show</button>
+        </span>
+        <small class="ahint" id="accPassHint" data-i18n="accPassHint" hidden>At least 6 characters.</small>
+      </label>
+      <p class="amsg" id="accStatus" role="status" hidden></p>
+      <button class="btn primary ago" id="accGo" type="submit" data-i18n="signIn">Sign in</button>
+      <p class="afoot" data-i18n="accLocalNote">No account needed to design: without one, rooms are saved in this browser.</p>
+    </form>
+
+    <div id="accIn" hidden>
+      <div class="awho">
+        <span class="aavatar" id="accAvatar" aria-hidden="true"></span>
+        <div class="awhotext">
+          <strong id="accWhoEmail"></strong>
+          <span id="accWhoRole"></span>
+        </div>
+      </div>
+      <p class="afoot" id="accWhoNote"></p>
+      <div class="aacts">
+        <button class="btn" id="accSignOut" type="button" data-i18n="signOut">Sign out</button>
+        <button class="btn primary" id="accClose" type="button" data-i18n="done">Done</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="uploadModal" hidden>
+  <div class="sheet3" role="dialog" aria-modal="true" aria-labelledby="umTitle">
+    <div class="mhead"><h3 id="umTitle" data-i18n="umTitle">Upload a 3D model</h3></div>
+    <p class="dnote" data-i18n="umNote">A .glb file (or a .gltf with everything inside it), up to 50 MB. It's saved to your account and joins the furniture library.</p>
+    <div class="form">
+      <label for="umFile" data-i18n="umFile">Model file</label><input id="umFile" type="file" accept=".glb,.gltf,model/gltf-binary,model/gltf+json">
+      <label for="umName" data-i18n="umName">Name</label><input id="umName" type="text" maxlength="80">
+      <label for="umNameAr" data-i18n="umNameAr">Arabic name</label><input id="umNameAr" type="text" maxlength="80" dir="rtl">
+      <label for="umPrice" id="umPriceLabel">Price</label><input id="umPrice" type="number" min="0" step="1" inputmode="decimal">
+      <span class="flabel" data-i18n="umSize">Size (cm): width × depth × height</span>
+      <div class="sizerow">
+        <input id="umW" type="number" min="1" step="1" inputmode="decimal" aria-label="Width" data-i18n-aria="width">
+        <input id="umD" type="number" min="1" step="1" inputmode="decimal" aria-label="Depth" data-i18n-aria="depth">
+        <input id="umH" type="number" min="1" step="1" inputmode="decimal" aria-label="Height" data-i18n-aria="height">
+      </div>
+      <label for="umWho" data-i18n="umWho" hidden>Who sees it</label>
+      <select id="umWho" hidden>
+        <option value="everyone" data-i18n="umEveryone">Everyone (built-in catalog)</option>
+        <option value="me" data-i18n="umOnlyMe">Only me</option>
+      </select>
+    </div>
+    <p class="mstatus" id="umStatus" role="status"></p>
+    <div class="acts2">
+      <button class="btn primary" id="umGo" type="button" data-i18n="umUpload">Upload</button>
+      <button class="btn" id="umCancel" type="button" data-i18n="cancel">Cancel</button>
     </div>
   </div>
 </div>

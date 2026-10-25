@@ -5,24 +5,36 @@ import { FU, WM, FM } from "./catalog.js";
 
 const KEY = "rp_room";
 let paused = false;
+let afterSave = null;
 
 // While screen 1 is showing nothing is saved, so an untouched sample room never becomes "the last room".
 export const setSaving = (on) => { paused = !on; };
 
+// Something else that also keeps each saved room (cloud-store.js), called after every save.
+export const onSaved = (fn) => { afterSave = fn; };
+
 export function saveRoom(){
   if (paused) return;
-  const data = {v:1, form:S.form, poly:S.poly, openings:S.openings, H:S.H, walls:S.walls, floor:S.floor, items:S.items, nextId:S.nextId, sun:S.sun};
+  const data = {v:1, savedAt:Date.now(), form:S.form, poly:S.poly, openings:S.openings, H:S.H, walls:S.walls, floor:S.floor, items:S.items, nextId:S.nextId, sun:S.sun};
   try { localStorage.setItem(KEY, JSON.stringify(data)); } catch { /* storage full or blocked: keep working */ }
+  afterSave?.(data);
+}
+
+// Forget this browser's room (its cloud project was deleted).
+export function clearRoom(){ try { localStorage.removeItem(KEY); } catch { /* ignore */ } }
+
+// Whether a saved room (from this browser or the cloud) has the shape restoreRoom() needs.
+export function validRoom(d){
+  if (!d || d.v !== 1 || !Array.isArray(d.poly) || d.poly.length < 4) return false;
+  if (!d.poly.every(p => Array.isArray(p) && p.length === 2 && p.every(Number.isFinite))) return false;
+  return Array.isArray(d.openings) && Array.isArray(d.walls) && Array.isArray(d.items) && d.H > 0;
 }
 
 // The saved room, or null when there is none or it can't be trusted.
 export function loadRoom(){
   try {
     const d = JSON.parse(localStorage.getItem(KEY) || "null");
-    if (!d || d.v !== 1 || !Array.isArray(d.poly) || d.poly.length < 4) return null;
-    if (!d.poly.every(p => Array.isArray(p) && p.length === 2 && p.every(Number.isFinite))) return null;
-    if (!Array.isArray(d.openings) || !Array.isArray(d.walls) || !Array.isArray(d.items) || !(d.H > 0)) return null;
-    return d;
+    return validRoom(d) ? d : null;
   } catch { return null; }
 }
 

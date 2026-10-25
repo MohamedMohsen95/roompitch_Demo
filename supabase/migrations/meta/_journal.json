@@ -1,0 +1,69 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1792927847199,
+      "tag": "20261025113047_create_projects",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792927849164,
+      "tag": "20261025113049_touch_updated_at",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792928737915,
+      "tag": "20261025114537_full_schema",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792928788498,
+      "tag": "20261025114628_triggers_and_storage",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792928827951,
+      "tag": "20261025114707_seed_builtin_catalog",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792931731903,
+      "tag": "20261025123531_is_admin_function",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792931764902,
+      "tag": "20261025123604_roles_and_admin_policies",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1792931778770,
+      "tag": "20261025123618_role_guard_and_admin_storage",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1792932172918,
+      "tag": "20261025124252_admins_read_catalog_files",
+      "breakpoints": true
+    }
+  ]
+}

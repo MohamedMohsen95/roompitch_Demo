@@ -1,10 +1,11 @@
 // Finish textures drawn in code (no image files): used for library swatches and 3D surfaces.
 import { shade, rng } from "./utils.js";
 
-const cache = {};
+const cache = {};   // keyed by id + colour + kind, so a finish updated from Supabase is drawn again
 
 export function matCanvas(m){
-  if (cache[m.id]) return cache[m.id];
+  const key = `${m.id}|${m.c}|${m.kind}`;
+  if (cache[key]) return cache[key];
   const N = 256, c = document.createElement("canvas"); c.width = c.height = N;
   const x = c.getContext("2d"), r = rng([...m.id].reduce((a, ch) => a * 31 + ch.charCodeAt(0), 7));
   x.fillStyle = m.c; x.fillRect(0, 0, N, N);
@@ -41,7 +42,7 @@ export function matCanvas(m){
       for (let k = 0; k < 18; k++){ x.fillStyle = `rgba(0,0,0,${r() * .05})`; x.beginPath(); x.arc(r() * N, r() * N, 10 + r() * 40, 0, 7); x.fill(); }
       break;
   }
-  return (cache[m.id] = c);
+  return (cache[key] = c);
 }
 
 export const swatchURL = (m) => matCanvas(m).toDataURL("image/png");

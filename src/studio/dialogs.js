@@ -1,11 +1,14 @@
-// Studio settings (office details, logo, currency, fee, VAT) and the full price list.
-import { WALL_MATS, FLOOR_MATS, FURN } from "./catalog.js";
+// Studio settings (office details, logo, currency, fee, VAT), the full price list, uploading a 3D model,
+// and the account (sign in / create account / sign out).
+import { WALL_MATS, FLOOR_MATS, FURN, applyCatalog } from "./catalog.js";
+import { MAX_BYTES, measureModel, uploadModel } from "./model-upload.js";
+import { getAccount, signIn, signUp, signOut } from "./auth.js";
 import { $ } from "./utils.js";
 import { t, nameOf } from "./i18n.js";
 import { settings, saveSettings, CURRENCIES, priceOf, setPrice, resetPrices } from "./settings.js";
 import { swatchURL } from "./textures.js";
 import { renderEst } from "./estimate.js";
-import { renderLib } from "./library.js";
+import { renderLib, flashHint } from "./library.js";
 import { renderInspect } from "./inspector.js";
 
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;"}[c]));
@@ -97,8 +100,162 @@ function initPrices(){
   };
 }
 
+/* ───────── Upload a 3D model ───────── */
+
+let measured = null;   // {w, d, h, scaled} of the chosen file, or null
+const umStatus = (msg, err = false) => { const s = $("#umStatus"); s.textContent = msg; s.classList.toggle("err", err); };
+const cm = (id) => parseFloat($(id).value) / 100;
+
+function openUpload(){
+  if (!account?.email){ openAccount(t("accNeedForUpload")); return; }
+  measured = null;
+  for (const id of ["#umFile", "#umName", "#umNameAr", "#umPrice", "#umW", "#umD", "#umH"]) $(id).value = "";
+  $("#umPriceLabel").textContent = t("umPrice", {cur:settings.currency});
+  // Admins choose: the built-in catalog everyone sees, or only themselves.
+  for (const el of [$("#umWho"), $("label[for=umWho]")]) el.hidden = !account.admin;
+  $("#umWho").value = "everyone";
+  umStatus(""); $("#umGo").disabled = false;
+  openDialog("#uploadModal");
+}
+
+async function chooseModel(file){
+  measured = null;
+  if (!file) return;
+  if (file.size > MAX_BYTES) return umStatus(t("umErrBig"), true);
+  if (!$("#umName").value.trim()) $("#umName").value = file.name.replace(/\.(glb|gltf)$/i, "").replace(/[_-]+/g, " ").trim();
+  umStatus(t("umReading"));
+  try {
+    measured = await measureModel(file);
+    for (const [id, v] of [["#umW", measured.w], ["#umD", measured.d], ["#umH", measured.h]]) $(id).value = Math.round(v * 100);
+    umStatus(t(measured.scaled ? "umScaled" : "umMeasured"));
+  } catch { umStatus(t("umErrFile"), true); }
+}
+
+async function submitUpload(){
+  const file = $("#umFile").files[0], name = $("#umName").value.trim(), price = parseFloat($("#umPrice").value);
+  const w = cm("#umW"), d = cm("#umD"), h = cm("#umH");
+  if (!file || !measured) return umStatus(t(file ? "umErrFile" : "umErrPick"), true);
+  if (!name) return umStatus(t("umErrName"), true);
+  if (!(price >= 0)) return umStatus(t("umErrPrice"), true);
+  if (!(w > 0 && d > 0 && h > 0)) return umStatus(t("umErrSize"), true);
+  $("#umGo").disabled = true; umStatus(t("umUploading"));
+  try {
+    const row = await uploadModel({file, name, nameAr:$("#umNameAr").value.trim(), price, currency:settings.currency, w, d, h,
+      shared:account.admin && $("#umWho").value === "everyone"});
+    applyCatalog([row]); renderLib(); renderPrices();
+    closeDialog("#uploadModal");
+    flashHint(t("umDone", {name}), 5000);
+  } catch (e) {
+    umStatus(e.message === "offline" ? t("umErrCloud") : t("umErrUpload", {msg:e.message}), true);
+    $("#umGo").disabled = false;
+  }
+}
+
+function initUpload(){
+  $("#uploadModelBtn").onclick = openUpload;
+  $("#umFile").addEventListener("change", e => chooseModel(e.target.files[0]));
+  $("#umGo").onclick = submitUpload;
+  $("#umCancel").onclick = () => closeDialog("#uploadModal");
+}
+
+/* ───────── Account ───────── */
+
+let account = null;   // {email, anonymous, admin} once known (see auth.js)
+let creating = false; // which tab the signed-out form shows: sign in or create account
+const accStatus = (msg, err = false) => {
+  const s = $("#accStatus"); s.textContent = msg; s.hidden = !msg; s.classList.toggle("err", err);
+};
+// Supabase's error codes, in words a designer understands.
+const AUTH_ERRORS = {invalid_credentials:"accErrLogin", user_already_exists:"accErrExists", email_exists:"accErrExists",
+  email_not_confirmed:"accErrConfirm", weak_password:"accErrPass", email_address_invalid:"accErrEmail", validation_failed:"accErrEmail"};
+const authError = (e) => AUTH_ERRORS[e.code] ? t(AUTH_ERRORS[e.code]) : t("accErr", {msg:e.message});
+
+// The same button in the studio header and on screen 1.
+const ACCOUNT_BTNS = ["#accountBtn", "#setupAccountBtn"];
+function renderAccountBtn(){
+  for (const sel of ACCOUNT_BTNS){
+    const b = $(sel);
+    b.hidden = !account;
+    if (!account) continue;
+    b.replaceChildren(Object.assign(document.createElement("span"), {className:"acctext", textContent:account.email || t("signIn")}));
+    b.title = account.email || "";
+    if (account.admin) b.append(Object.assign(document.createElement("span"), {className:"badge", textContent:t("admin")}));
+  }
+}
+
+// The tab (sign in / create account) decides the heading, the submit label and the password autofill.
+function setMode(create){
+  creating = create;
+  $("#accModeIn").setAttribute("aria-selected", String(!create));
+  $("#accModeUp").setAttribute("aria-selected", String(create));
+  $("#accGo").textContent = t(create ? "signUp" : "signIn");
+  $("#accPass").autocomplete = create ? "new-password" : "current-password";
+  $("#accPassHint").hidden = !create;
+  if (!$("#accWhy").dataset.why) $("#accTitle").textContent = t(create ? "accTitleUp" : "accTitle");
+  accStatus("");
+}
+
+function openAccount(why){
+  const signedIn = Boolean(account?.email);
+  $("#accOut").hidden = signedIn; $("#accIn").hidden = !signedIn;
+  if (signedIn){
+    $("#accAvatar").textContent = account.email[0];
+    $("#accWhoEmail").textContent = account.email;
+    $("#accWhoRole").textContent = t(account.admin ? "accRoleAdmin" : "accRoleDesigner");
+    $("#accWhoNote").textContent = t(account.admin ? "accNoteAdmin" : "accNoteDesigner");
+    $("#accWhoNote").classList.remove("err");
+    $("#accTitle").textContent = t("accTitleIn");
+  } else {
+    // Opened from "Upload 3D model": say why an account is needed.
+    $("#accWhy").dataset.why = why ? "1" : "";
+    $("#accWhy").textContent = why || t("accNote");
+    $("#accTitle").textContent = t("accTitle");
+    $("#accPass").value = ""; $("#accPass").type = "password"; $("#accPeek").textContent = t("show");
+    for (const id of ["#accEmail", "#accPass"]) $(id).removeAttribute("aria-invalid");
+    $("#accGo").disabled = false;
+    setMode(creating);
+  }
+  openDialog("#accountModal");
+  if (!signedIn) ($("#accEmail").value ? $("#accPass") : $("#accEmail")).focus();
+}
+
+// Sign in or create an account; both reload the page when they succeed.
+async function submitAccount(){
+  const emailEl = $("#accEmail"), passEl = $("#accPass");
+  const email = emailEl.value.trim(), password = passEl.value;
+  const badEmail = !/^\S+@\S+\.\S+$/.test(email), badPass = password.length < 6;
+  emailEl.toggleAttribute("aria-invalid", badEmail); passEl.toggleAttribute("aria-invalid", !badEmail && badPass);
+  if (badEmail){ emailEl.focus(); return accStatus(t("accErrEmail"), true); }
+  if (badPass){ passEl.focus(); return accStatus(t("accErrPass"), true); }
+  const go = $("#accGo");
+  go.disabled = true; go.textContent = t(creating ? "accCreating" : "accSigningIn"); accStatus("");
+  try {
+    if (!creating) await signIn(email, password);
+    else if ((await signUp(email, password)).confirm){ setMode(false); accStatus(t("accConfirm", {email})); }
+  } catch (e) { accStatus(authError(e), true); }
+  go.disabled = false; go.textContent = t(creating ? "signUp" : "signIn");
+}
+
+function initAccount(){
+  for (const sel of ACCOUNT_BTNS) $(sel).onclick = () => openAccount();
+  $("#accModeIn").onclick = () => setMode(false);
+  $("#accModeUp").onclick = () => setMode(true);
+  $("#accOut").addEventListener("submit", e => { e.preventDefault(); submitAccount(); });
+  for (const id of ["#accEmail", "#accPass"]) $(id).addEventListener("input", e => e.target.removeAttribute("aria-invalid"));
+  $("#accPeek").onclick = () => {
+    const p = $("#accPass"), show = p.type === "password";
+    p.type = show ? "text" : "password";
+    $("#accPeek").textContent = t(show ? "hide" : "show"); $("#accPeek").setAttribute("aria-pressed", String(show));
+  };
+  $("#accSignOut").onclick = () => signOut().catch(e => {
+    $("#accWhoNote").textContent = t("accErr", {msg:e.message}); $("#accWhoNote").classList.add("err");
+  });
+  for (const id of ["#accCancel", "#accClose"]) $(id).onclick = () => closeDialog("#accountModal");
+  getAccount().then(a => { account = a; renderAccountBtn(); });
+}
+
 export function initDialogs(){
-  initSettings(); initPrices();
+  initSettings(); initPrices(); initUpload(); initAccount();
   // Click on the dimmed backdrop closes a dialog.
   document.querySelectorAll(".modal").forEach(m => m.addEventListener("click", e => { if (e.target === m) m.hidden = true; }));
 }
@@ -107,4 +264,5 @@ export function initDialogs(){
 export function relabelDialogs(){
   if (!$("#settingsModal").hidden) renderLogo();
   if (!$("#pricesModal").hidden) renderPrices();
+  renderAccountBtn();
 }
