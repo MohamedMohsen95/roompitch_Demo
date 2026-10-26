@@ -15,7 +15,7 @@
 | **npm** | comes with Node | `npm -v` |
 | **Git** | any recent version | `git --version` |
 
-No database and no other services. AI keys are optional: without them the app runs in **demo mode**.
+Everything else is optional. Without AI keys the app runs in **demo mode**; without Supabase keys rooms are saved only in the browser, and there are no accounts, projects list or model uploads.
 
 ### First-time setup · أول مرة
 ```bash
@@ -28,6 +28,13 @@ Optional, for real AI renders (see [section 2](#-2-شغّل-الذكاء-الا�
 cp .env.example .env
 ```
 Then fill in `CF_ACCOUNT_ID` and `CF_API_TOKEN` (free) or `FAL_KEY` (paid) in `.env`. Never commit `.env`; it's already in `.gitignore`.
+
+For accounts and cloud saving, create `.env.local` with the two Supabase values (Supabase → Project Settings → API keys, or ask a teammate; both are safe to share inside the team):
+```bash
+NEXT_PUBLIC_SUPABASE_URL=https://<ref>.supabase.co
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
+```
+That's all a designer or front-end developer needs. See [Working with Supabase as a team](#working-with-supabase-as-a-team) for database changes and admin tasks.
 
 ### Run · التشغيل
 ```bash
@@ -54,6 +61,18 @@ The top-right badge says **AI live** when keys are set, **Demo mode** otherwise.
 | `npm run db:studio` | Browse the database (needs `DATABASE_URL` in `.env.local`) |
 | `npm run catalog:sync` | Publishes the built-in catalog to Supabase: optimises new models, uploads them, adds missing rows |
 | `npm run admin -- grant <email>` | Makes an account an admin (`revoke <email>`, `list`) |
+
+### Working with Supabase as a team
+There is **one** Supabase project, used by the live site and by everyone's `npm run dev`. Rooms you save while developing are real rows, and a migration you push changes the live database straight away.
+
+| You want to… | You need | Ask for |
+|---|---|---|
+| Run the studio with accounts, projects and uploads | `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` in `.env.local` | the values (not secret) |
+| Change tables (`db/schema.js`) and push migrations | the above, plus membership of the Supabase organisation for `npx supabase login` / `link` | an invite to the Supabase project |
+| Browse data with `npm run db:studio` | `DATABASE_URL` (Supabase → Connect → Session pooler) | the database password |
+| Add built-in 3D models (`catalog:sync`) or make admins (`npm run admin`) | `SUPABASE_SECRET_KEY` | the secret key, only for people who need it |
+
+Rules: the secret key and `DATABASE_URL` never get a `NEXT_PUBLIC_` or `VITE_` prefix (those reach the browser) and never go in git. Only `.env.example` is committed. Before `npm run db:push`, read the generated SQL and tell the team, since it hits the live database. Pull before generating a migration, so two people don't write migrations from different schemas.
 
 ### Accounts and admins
 Visitors start as anonymous Supabase users, which is enough to design and save rooms. **Sign in** (top bar) with email and password to upload your own 3D models; they're private to your account. **Admins** can also upload to the built-in catalog that everyone sees ("Who sees it" in the upload dialog).
