@@ -96,6 +96,17 @@ Tables and their RLS policies are defined in [`db/schema.js`](db/schema.js). Nev
 
 If a migration was run by pasting it into the Supabase SQL Editor, tell the CLI it's done so `db:push` skips it: `npx supabase migration repair --status applied <timestamp>`.
 
+### Deploying (push to main)
+Every push to `main` deploys to Vercel production through [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml); other branches never deploy. Once, a repo admin adds three secrets under GitHub → Settings → Secrets and variables → Actions:
+
+| Secret | Where to find it |
+|---|---|
+| `VERCEL_TOKEN` | <https://vercel.com/account/tokens> → Create |
+| `VERCEL_ORG_ID` | Vercel → Team Settings → General → Team ID (or `orgId` in `.vercel/project.json` after `npx vercel link`) |
+| `VERCEL_PROJECT_ID` | Vercel → Project → Settings → General → Project ID (or `projectId` in the same file) |
+
+Then GitHub → Actions → **Deploy to Vercel** → **Run workflow** deploys `main` without a new push. The site's environment variables (AI keys, `ACCESS_CODE`, the two `NEXT_PUBLIC_SUPABASE_*` values) live in Vercel → Project → Settings → Environment Variables, not in GitHub; the Supabase integration fills the Supabase ones. The secret key and `DATABASE_URL` are never needed on Vercel.
+
 ### Already had an older copy? · عندك نسخة قديمة؟
 The project moved from `node dev-server.mjs` to Vite. After `git pull`:
 ```bash
