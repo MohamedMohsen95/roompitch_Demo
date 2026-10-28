@@ -13,11 +13,16 @@ export async function loadRemoteCatalog(){
     const sb = await cloudReady();
     if (!sb) return null;
     const { data:rows, error } = await sb.from("catalog_items")
-      .select("id, owner, kind, name_en, name_ar, ai_description, w, d, h, surface, price, color, material, model_path, textures")
+      .select("id, owner, kind, name_en, name_ar, ai_description, category, w, d, h, surface, price, color, material, model_path, textures")
       .eq("status", "ready").order("created_at");
     if (error) throw error;
 
-    for (const r of rows) if (r.model_path && !r.owner) r.modelUrl = sb.storage.from("catalog").getPublicUrl(r.model_path).data.publicUrl;
+    const pub = (path) => sb.storage.from("catalog").getPublicUrl(path).data.publicUrl;
+    for (const r of rows){
+      if (r.model_path && !r.owner) r.modelUrl = pub(r.model_path);
+      // Photo textures of built-in finishes and rugs (catalog-rows.mjs): public files next to the models.
+      if (r.textures?.base && !r.owner) r.texUrls = {base:pub(r.textures.base), normal:r.textures.normal && pub(r.textures.normal), arm:r.textures.arm && pub(r.textures.arm)};
+    }
     const own = rows.filter(r => r.model_path && r.owner);
     if (own.length){
       const { data:signed, error:signError } = await sb.storage.from("files").createSignedUrls(own.map(r => r.model_path), SIGNED_FOR);

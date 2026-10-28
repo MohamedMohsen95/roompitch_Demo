@@ -8,7 +8,7 @@ test("applyCatalog updates known ids in place and adds new ones", () => {
   const n = applyCatalog([
     {id:"sofa", kind:"furniture", name_en:"Sofa", name_ar:null, ai_description:"a sofa", w:2, d:1, h:.8, surface:false, price:"17000.00", color:"#111111"},
     {id:"m-new", kind:"furniture", name_en:"Lamp", w:.4, d:.4, h:1.6, surface:false, price:900, color:null, modelUrl:"https://x/lamp.glb"},
-    {id:"terrazzo", kind:"floor_finish", name_en:"Terrazzo", price:1200, color:"#ddd", material:"tiles", textures:{tile:.6}},
+    {id:"cork", kind:"floor_finish", name_en:"Cork", price:1200, color:"#ddd", material:"tiles", textures:{tile:.6}},
     {id:"odd", kind:"ceiling", name_en:"Ignored"}
   ]);
   assert.equal(n, 3);

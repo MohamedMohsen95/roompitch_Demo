@@ -1,10 +1,11 @@
 // Furniture in 3D: built-in pieces from boxes, real models from glTF, plus the selection outline.
 import * as THREE from "three";
 import { S, isSelectedItem } from "../state.js";
-import { FU } from "../catalog.js";
+import { FU, texMaps } from "../catalog.js";
 import { shade, cssVar } from "../utils.js";
 import { scene, itemGroup } from "./scene.js";
 import { loadModel, fitModel, disposeTree } from "./models.js";
+import { photoMaterial } from "./photo-tex.js";
 
 const itemObjs = new Map();   // item id -> THREE.Group
 let selHelper = null;
@@ -27,7 +28,13 @@ function buildItem(it){
       if (isSelectedItem(it.id)) refreshHelper();
     }).catch(err => { console.error("Model failed to load", f.model, err); ph.material.opacity = 1; });
   }
-  switch (it.type){
+  // Rugs: a thin slab; with a photo texture its fabric covers the top at real scale.
+  if (f.rug){
+    const maps = texMaps(f);
+    const rug = box(w, .012, d, 0, .006, 0, c, false);
+    if (maps){ rug.material.dispose(); rug.material = photoMaterial(maps, w / f.tile, d / f.tile, {normalScale:1.4}); }
+  }
+  else switch (it.type){
     case "sofa":
       box(w, .42, d, 0, .21, 0, c); box(w, .44, .2, 0, .64, -d / 2 + .1, shade(c, -.1));
       box(.18, .22, d, -w / 2 + .09, .53, 0, c); box(.18, .22, d, w / 2 - .09, .53, 0, c);
@@ -47,8 +54,6 @@ function buildItem(it){
     }
     case "tvunit":
       box(w, h, d, 0, h / 2, 0, c); box(1.25, .72, .04, 0, h + .55, -d / 2 + .08, "#141414"); break;
-    case "rug":
-      box(w, .012, d, 0, .006, 0, c, false); break;
     case "bed":
       box(w, .32, d, 0, .16, 0, "#8a7a66"); box(w - .06, .2, d - .12, 0, .42, .04, c);
       box(w, 1, .08, 0, .5, -d / 2 + .04, "#7a6a58");

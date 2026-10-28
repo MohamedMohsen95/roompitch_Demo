@@ -54,6 +54,7 @@ The top-right badge says **AI live** when keys are set, **Demo mode** otherwise.
 | `npm run build` | Production build into `dist/` (what Vercel runs) |
 | `npm run preview` | Serves the production build locally, to test it before deploying |
 | `npm run models` | Compresses 3D models from `models-src/` into `public/models/` |
+| `npm run textures` | Downloads the photo textures the catalog names (Poly Haven, CC0) into `public/textures/` |
 | `npm test` | Runs the automated tests (room geometry, saving, photo analysis); needs no install |
 | `npm run db:generate -- --name=<what>` | Writes a migration into `supabase/migrations/` from changes in `db/schema.js` |
 | `npm run db:custom -- --name=<what>` | Empty migration for SQL Drizzle can't express (triggers, functions) |
@@ -86,6 +87,12 @@ Visitors start as anonymous Supabase users, which is enough to design and save r
 2. `npm run catalog:sync`
 
 That compresses it into `public/models/`, uploads it to the `catalog` bucket under `builtin/`, and adds its `catalog_items` row with the size measured from the model. Needs `SUPABASE_SECRET_KEY` in `.env.local` (Supabase → Project Settings → API keys); never give that key a `NEXT_PUBLIC_` or `VITE_` prefix. Rows already in Supabase are left alone, so prices or names edited in the dashboard stay; `--update` overwrites them from code, `--dry-run` shows what would happen.
+
+### Adding a photo texture (walls, floors, rugs, doors)
+Finishes and rugs can use a real photo texture instead of the drawn ones:
+1. Pick a texture on <https://polyhaven.com/textures> (all CC0) and note its id from the URL, e.g. `herringbone_parquet`, and its real size (shown on the page, e.g. 3.4 m).
+2. In [`src/studio/catalog.js`](src/studio/catalog.js), add an entry with `tex:"herringbone_parquet", tile:3.4` (`turn:true` turns it a quarter, e.g. for vertical wood grain). Door leaves use `OPENING_TEX`.
+3. `npm run catalog:sync` downloads it into `public/textures/<id>/` (1024 px WebP colour, normal and roughness maps, plus `CREDITS.md`), uploads it to the `catalog` bucket and adds the row.
 
 ### Database (Supabase + Drizzle)
 Tables and their RLS policies are defined in [`db/schema.js`](db/schema.js). Never edit a migration by hand that drizzle-kit wrote; change the schema and generate a new one:

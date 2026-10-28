@@ -1,7 +1,7 @@
 // "Photoreal render": snapshot the 3D view, describe the room in words, send both to /api/generate
 // (Cloudflare Workers AI or fal.ai, chosen on the server) and show the result.
 import { S, foot } from "./state.js";
-import { FU, EN } from "./catalog.js";
+import { FU, EN, isRug } from "./catalog.js";
 import { $ } from "./utils.js";
 import { update } from "./app.js";
 import { renderer, scene, camera } from "./three/scene.js";
@@ -56,7 +56,7 @@ function heightEn(it){
 }
 
 function placeEn(it, ws){
-  if (it.type === "rug" && !it.z) return "on the floor";
+  if (isRug(it.type) && !it.z) return "on the floor";
   const fp = foot(it), near = nearestWall(it.x, it.y, S.poly, Math.max(fp.w, fp.d) / 2 + .35);
   const where = near == null ? "in the middle of the room" : `against wall ${near + 1}`;
   const face = facingWall(it, ws);

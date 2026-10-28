@@ -1,5 +1,6 @@
 // Finish textures drawn in code (no image files): used for library swatches and 3D surfaces.
 import { shade, rng } from "./utils.js";
+import { texMaps } from "./catalog.js";
 
 const cache = {};   // keyed by id + colour + kind, so a finish updated from Supabase is drawn again
 
@@ -45,4 +46,5 @@ export function matCanvas(m){
   return (cache[key] = c);
 }
 
-export const swatchURL = (m) => matCanvas(m).toDataURL("image/png");
+// A photo-textured finish shows its photo (catalog.js texMaps); the others are drawn.
+export const swatchURL = (m) => texMaps(m)?.base || matCanvas(m).toDataURL("image/png");

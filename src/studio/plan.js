@@ -1,6 +1,6 @@
 // 2D floor plan (SVG, 1 unit = 1 metre): draw, select, drag pieces and openings, accept drops from the library.
 import { S, clampItem, findItem } from "./state.js";
-import { FU, WM, FM } from "./catalog.js";
+import { FU, WM, FM, isRug } from "./catalog.js";
 import { wallsOf, wallFrame, alongWall, toCm } from "./geometry.js";
 import { nearestWallAny, findOpening, moveOpening, isGlassDoor } from "./openings.js";
 import { startCarry, carry } from "./stacking.js";
@@ -39,11 +39,11 @@ export function planMarkup({lang = getLang(), sel = S.sel, gridId = "g"} = {}){
   h += `<rect x="${-PAD}" y="${-PAD}" width="${L + PAD * 2}" height="${W + PAD * 2}" fill="url(#${gridId})"/>`;
   h += `<polygon data-floor="1" points="${S.poly.map(pt).join(" ")}" fill="${fm.c}" fill-opacity=".55" stroke="${sel && sel.kind === "floor" ? "var(--accent)" : "none"}" stroke-width=".04" stroke-dasharray=".12 .08"/>`;
   // furniture: rugs first, then by height so raised pieces draw on top
-  const items = [...S.items].sort((a, b) => (a.type === "rug" ? -1 : 0) - (b.type === "rug" ? -1 : 0) || (a.z || 0) - (b.z || 0));
+  const items = [...S.items].sort((a, b) => (isRug(a.type) ? -1 : 0) - (isRug(b.type) ? -1 : 0) || (a.z || 0) - (b.z || 0));
   for (const it of items){
     const f = FU[it.type], on = sel && sel.kind === "item" && sel.id === it.id, z = it.z || 0;
     h += `<g data-item="${it.id}" transform="translate(${it.x} ${it.y}) rotate(${-it.rot})" style="cursor:move">`;
-    h += `<rect x="${-f.w / 2}" y="${-f.d / 2}" width="${f.w}" height="${f.d}" rx=".04" fill="${f.c}" fill-opacity="${it.type === "rug" ? .55 : .92}" stroke="${on ? "var(--accent)" : "rgba(0,0,0,.35)"}" stroke-width="${on ? .05 : .015}"${z > 0 ? ` stroke-dasharray=".08 .05"` : ""}/>`;
+    h += `<rect x="${-f.w / 2}" y="${-f.d / 2}" width="${f.w}" height="${f.d}" rx=".04" fill="${f.c}" fill-opacity="${isRug(it.type) ? .55 : .92}" stroke="${on ? "var(--accent)" : "rgba(0,0,0,.35)"}" stroke-width="${on ? .05 : .015}"${z > 0 ? ` stroke-dasharray=".08 .05"` : ""}/>`;
     if (it.type === "sofa" || it.type === "armchair") h += `<rect x="${-f.w / 2}" y="${-f.d / 2}" width="${f.w}" height=".2" fill="rgba(0,0,0,.18)"/>`;
     if (it.type === "bed") h += `<rect x="${-f.w / 2 + .1}" y="${-f.d / 2 + .1}" width="${f.w - .2}" height=".35" rx=".06" fill="rgba(255,255,255,.55)"/>`;
     if (it.type === "tvunit") h += `<rect x="-.6" y="${-f.d / 2 + .05}" width="1.2" height=".06" fill="#111"/>`;

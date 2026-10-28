@@ -26,11 +26,11 @@ export function fitModel(obj, w, d, h){
   return obj;
 }
 
-// Free GPU memory of a removed object, except shared model parts.
+// Free GPU memory of a removed object, except shared model parts and cached photo textures (photo-tex.js).
 export function disposeTree(o){
   o.traverse(n => {
     if (n.userData.shared) return;
     if (n.geometry) n.geometry.dispose();
-    if (n.material){ if (n.material.map) n.material.map.dispose(); n.material.dispose(); }
+    if (n.material){ if (n.material.map && !n.material.map.userData.cached) n.material.map.dispose(); n.material.dispose(); }
   });
 }

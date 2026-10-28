@@ -1,6 +1,6 @@
 // Library panel: furniture, windows & doors, wall and floor tiles that can be clicked or dragged into the room.
 import { S, clampItem, findItem, nearestWall } from "./state.js";
-import { FURN, WALL_MATS, FLOOR_MATS } from "./catalog.js";
+import { FURN, WALL_MATS, FLOOR_MATS, texMaps, isRug } from "./catalog.js";
 import { OPENING_PRESETS, addOpening, nearestWallAny } from "./openings.js";
 import { canRestOn } from "./stacking.js";
 import { swatchURL } from "./textures.js";
@@ -37,7 +37,8 @@ export function renderLib(){
     tile.type = "button"; tile.className = "tile"; tile.draggable = true; tile.title = nameOf(o);
     if (S.tab === "furn"){
       const k = 38 / Math.max(o.w, o.d);
-      tile.innerHTML = `<div class="sw" style="background:var(--stage)"><div class="fp" style="width:${o.w * k}px;height:${o.d * k}px;background:${o.c}"></div></div><b>${nameOf(o)}</b><span>${Math.round(o.w * 100)}×${Math.round(o.d * 100)} ${t("cm")} · ${fmt(priceOf(o.id))}</span>`;
+      const fill = texMaps(o) ? `background:url(${texMaps(o).base}) center/${38 * o.tile / Math.max(o.w, o.d)}px` : `background:${o.c}`;
+      tile.innerHTML = `<div class="sw" style="background:var(--stage)"><div class="fp" style="width:${o.w * k}px;height:${o.d * k}px;${fill}"></div></div><b>${nameOf(o)}</b><span>${Math.round(o.w * 100)}×${Math.round(o.d * 100)} ${t("cm")} · ${fmt(priceOf(o.id))}</span>`;
     } else if (S.tab === "open"){
       tile.innerHTML = `<div class="sw" style="background:var(--stage); color:var(--muted)">${openingIcon(o)}</div><b>${nameOf(o)}</b><span>${toCm(o.width)}×${toCm(o.height)} ${t("cm")}</span>`;
     } else {
@@ -60,7 +61,7 @@ export function applyPayload(payload, target){
     // otherwise it replaces that piece (same spot and direction). Rugs are never swapped: pieces go on top.
     if (target && target.kind === "item" && target.x !== undefined){
       const under = findItem(target.id);
-      if (under && (canRestOn(id, under) || under.type === "rug")) target = {kind:"point", x:target.x, y:target.y};
+      if (under && (canRestOn(id, under) || isRug(under.type))) target = {kind:"point", x:target.x, y:target.y};
     }
     const swapId = target && target.kind === "item" ? target.id : S.replacing;
     const old = swapId && findItem(swapId);

@@ -9,6 +9,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "models": "node scripts/optimize-models.mjs",
+    "textures": "node scripts/fetch-textures.mjs",
     "test": "node --test",
     "db:generate": "drizzle-kit generate",
     "db:custom": "drizzle-kit generate --custom",
