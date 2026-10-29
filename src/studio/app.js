@@ -2,6 +2,7 @@
 import { S } from "./state.js";
 import { settleAll } from "./stacking.js";
 import { buildRoom } from "./three/room.js";
+import { buildContext } from "./three/context.js";
 import { buildItems, syncItem, refreshHelper } from "./three/items.js";
 import { saveRoom } from "./room-store.js";
 import { notify } from "./store.js";
@@ -15,6 +16,7 @@ export function update(){
   notify();
   saveRoom();
   buildRoom(); // also refreshes the selected-wall highlight
+  buildContext(); // neighbouring spaces of a flat (only rebuilt when they or the room's size change)
   const key = S.items.map(i => `${i.id}:${i.type}:${i.rot}`).join("|");
   if (key !== lastItemsKey){ lastItemsKey = key; buildItems(); }
   else { S.items.forEach(syncItem); refreshHelper(); }
