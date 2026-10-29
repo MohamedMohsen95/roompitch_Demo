@@ -109,6 +109,12 @@ initSetup({
   onContinue:continueLast,
   onChoose:refreshProjects
 });
+// Back to screen 1 (new room / your projects); the room is already saved.
+$("#projectsBtn").onclick = () => {
+  setSaving(false);
+  S.sel = null; S.replacing = null;
+  showSetup({canContinue:Boolean(loadRoom())});
+};
 $("#roomSetupBtn").onclick = async () => {
   setSaving(false);
   S.sel = null; S.replacing = null;
