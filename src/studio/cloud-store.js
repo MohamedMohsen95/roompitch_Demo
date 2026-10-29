@@ -13,8 +13,9 @@ const FLAT_KEY = "rp_flat_project_id"; // the same for the current flat
 const DELAY = 1500;                    // wait this long after the last change before uploading
 
 let pending = null, timer = null;
-let pendingFlat = null, flatTimer = null, flatRefused = false;
-const uploaded = new Map();            // project id -> plan image path already in storage
+let pendingFlat = null, flatTimer = null, flatRefused = false, flatSaved = false;
+const uploaded = new Map();            // project id -> {path, sig}: the plan image already in storage
+const sigOf = (u) => u.length + ":" + u.slice(-48);   // tells one plan image from another (a new file)
 let chain = Promise.resolve();         // saves and changes of the current project run one at a time, in call order
 let nextName = null;                   // the name of the next new room row (newProject)
 let nextFlatName = null;               // the same for the next new flat row
@@ -90,18 +91,20 @@ function flushFlat(){
     // The plan image goes to storage once; the row keeps its path instead of the image itself.
     const image = {...flat.image};
     if (image.dataUrl){
-      let path = image.path || uploaded.get(id);
+      const up = uploaded.get(id), sig = sigOf(image.dataUrl);
+      let path = image.path || (up && up.sig === sig ? up.path : null);
       if (!path){
         const { data:{ session } } = await sb.auth.getSession();
         const want = `${session?.user.id}/${id}/plan.jpg`;
         const { error } = await sb.storage.from("files").upload(want, await dataUrlBlob(image.dataUrl), {upsert:true, contentType:"image/jpeg"});
-        if (error) warn("plan image", error); else { path = want; uploaded.set(id, want); }
+        if (error) warn("plan image", error); else { path = want; uploaded.set(id, {path:want, sig}); }
       }
       if (path){ image.path = path; delete image.dataUrl; }
     }
     row.data = {...flat, image};
     const { error } = await sb.from("projects").upsert(row);
     // Until the database allows kind "flat" (a migration), the flat stays in this browser only.
+    flatSaved = !error;
     if (error && !flatRefused){ flatRefused = true; warn("save flat (kept in this browser)", error); }
   });
 }
@@ -169,11 +172,14 @@ export async function openProject(id){
     const kind = row.kind === "flat" ? "flat" : "studio";
     if (kind === "flat" ? !validFlat(row.data) : !validRoom(row.data)) return;
     await setId(sb, id, kind);
-    if (kind === "flat" && row.data.image?.path) uploaded.set(id, row.data.image.path);
+    if (kind === "flat") flatSaved = true;   // it came from the account, so it is saved there
     out = {kind, data:row.data};
   });
   return out;
 }
+
+// Whether the last flat save reached the account (false until the "flat" migration is live, or offline).
+export const flatInCloud = () => flatSaved;
 
 // A short-lived link to a flat's plan image in storage, or null.
 export async function planImageUrl(path){

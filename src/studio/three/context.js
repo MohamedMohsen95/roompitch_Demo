@@ -14,13 +14,13 @@ const noRaycast = () => {};
 
 export function setContext(list){ outlines = Array.isArray(list) ? list : []; }
 
-// A neighbour wall lying along one of the room's walls (both ends within 5 cm of its line, overlapping it).
+// A neighbour wall lying along one of the room's walls: both ends within a wall's thickness (30 cm) of its line, overlapping it.
 function shared(a, b){
   return wallsOf(S.poly).some(w => {
     const {dir} = wallFrame(w);
     const at = (p) => ({t:(p[0] - w.a[0]) * dir[0] + (p[1] - w.a[1]) * dir[1], d:Math.abs((p[0] - w.a[0]) * dir[1] - (p[1] - w.a[1]) * dir[0])});
     const pa = at(a), pb = at(b);
-    return pa.d < .05 && pb.d < .05 && Math.max(pa.t, pb.t) > .05 && Math.min(pa.t, pb.t) < w.len - .05;
+    return pa.d < .3 && pb.d < .3 && Math.max(pa.t, pb.t) > .05 && Math.min(pa.t, pb.t) < w.len - .05;
   });
 }
 

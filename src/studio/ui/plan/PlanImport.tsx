@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import { t } from "../../i18n.js";
 import { getCode, setCode } from "../../render-ai.js";
-import { newFlat, outlineProblem, scaleFromSizes, scaleFromWall, setWallLengthCm, wallLengthsCm, withSizeScale } from "../../plan/flat.js";
+import { newFlat, outlineProblem, scaleFromSizes, scaleFromWall, stretchWall, strayOpenings, wallLengthsCm, withSizeScale } from "../../plan/flat.js";
 import { flatFromReply } from "../../plan/plan-vision.js";
 import { polyArea } from "../../geometry.js";
 import type { Flat } from "../../plan/flat";
@@ -21,7 +21,7 @@ const isCad = (f: File) => /\.(dwg|dxf)$/i.test(f.name);
 type Props = {
   initialFlat: Flat | null;            // "Edit plan" from the flat screen
   imageUrl?: string | null;            // the plan image when the flat keeps it in the cloud (image.path)
-  onDone: (flat: Flat) => void;
+  onDone: (flat: Flat, isNew: boolean) => void;   // isNew: a new plan, not the same flat corrected
   onCancel: () => void;
   onAccount: () => void;
   onLang: () => void;
@@ -38,11 +38,16 @@ export default function PlanImport(props: Props){
   const [needCode, setNeedCode] = useState(false);
   const [code, setCodeText] = useState("");
   const [lengthSets, setLengthSets] = useState<"stretch" | "scale">("stretch");
+  const [isNew, setIsNew] = useState(!props.initialFlat);
+  const [armRead, setArmRead] = useState(false);       // "Read again" over designed spaces waits for a second click
   const codeRef = useRef<HTMLInputElement>(null);
   const say = (text: string, err = false) => setStatus({text, err});
   const change = (f: Flat) => setFlat(withSizeScale(f));
 
   async function readPlan(f: Flat){
+    // Reading again replaces the spaces: designs carry over only to spaces with the same name.
+    if (f.spaces.some(s => s.design) && !armRead){ setArmRead(true); say(t("rereadSure"), true); return; }
+    setArmRead(false);
     setBusy(true); setNeedCode(false);
     say(t("planReading"));
     try {
@@ -56,7 +61,14 @@ export default function PlanImport(props: Props){
       if (r.status === 503){ say(t("planOff"), true); return; }
       if (!r.ok){ say(data.error || t("wentWrong", {s:r.status}), true); return; }
       const read = flatFromReply({spaces:data.spaces || [], openings:data.openings || []}, f.image);
-      const next = {...read, image:f.image, H:f.H};
+      const byName = new Map(f.spaces.filter(s => s.design && s.name.trim()).map(s => [s.name.trim().toLowerCase(), s]));
+      const spaces = read.spaces.map(s => {
+        const old = byName.get(s.name.trim().toLowerCase());
+        if (!old) return s;
+        byName.delete(s.name.trim().toLowerCase());
+        return {...s, id:old.id, design:old.design, status:old.status};
+      });
+      const next = {...read, spaces, image:f.image, H:f.H};
       setFlat(next); setSel(null); setTool("select");
       if (!next.spaces.length) say(t("planNone"), true);
       else say(t("planFound", {s:next.spaces.length, o:next.openings.length}) + " " + (next.scale ? t("planCheck") : t("planNeedScale")));
@@ -66,7 +78,7 @@ export default function PlanImport(props: Props){
 
   async function useImage(img: {dataUrl: string, w: number, h: number}){
     const f = newFlat(img);
-    setFlat(f); setPdf(null); setSel(null);
+    setFlat(f); setPdf(null); setSel(null); setIsNew(true); setArmRead(false);
     await readPlan(f);
   }
 
@@ -81,6 +93,7 @@ export default function PlanImport(props: Props){
         const pages = await pdfPageCount(file);
         if (pages === 1){ await useImage(await renderPdfPage(file, 1, MAX_EDIT)); return; }
         const first = await renderPdfPage(file, 1, 600);
+        setFlat(null); setSel(null);   // the page picker shows instead of the plan
         setPdf({file, pages, page:1, preview:first.dataUrl}); say("");
         return;
       }
@@ -167,6 +180,7 @@ export default function PlanImport(props: Props){
   }
   const blockers = !flat.spaces.length ? t("needSpace") : !flat.scale ? t("needScale")
     : flat.spaces.some(s => outlineProblem(s.outline)) ? t("needFixOutline") : "";
+  const stray = strayOpenings(flat);
   const selSpace = sel?.kind === "space" ? flat.spaces.find(s => s.id === sel.id) || null : null;
   const selOpen = sel?.kind === "opening" ? flat.openings.find(o => o.id === sel.id) || null : null;
   const lens = selSpace && flat.scale ? wallLengthsCm(selSpace.outline, flat.scale) : null;
@@ -183,7 +197,7 @@ export default function PlanImport(props: Props){
       return;
     }
     // A typed length is the truth: the scale stops following the written sizes from here on.
-    setFlat({...flat!, scaleFrom:"wall", spaces:flat!.spaces.map(s => s.id === selSpace.id ? {...s, outline:setWallLengthCm(o, i, cm, flat!.scale!), fromAI:false} : s)});
+    setFlat({...stretchWall(flat!, selSpace.id, i, cm), scaleFrom:"wall"});
   }
 
   return (
@@ -196,7 +210,7 @@ export default function PlanImport(props: Props){
               <h2>{t("planTitle2")}</h2>
               {statusLine}{codeRow}
               <div className="acts2">
-                <button className="btn" type="button" disabled={busy} onClick={() => readPlan(flat)}>{t("planReread")}</button>
+                <button className={"btn" + (armRead ? " danger" : "")} type="button" disabled={busy} onClick={() => readPlan(flat)}>{t(armRead ? "rereadConfirm" : "planReread")}</button>
                 {fileButton(t("planOther"))}
               </div>
             </section>
@@ -249,6 +263,12 @@ export default function PlanImport(props: Props){
                               <small>{t("cm")}</small></label>
                           ))}
                         </div>
+                        <button className="btn small" type="button" onClick={() => {
+                          // A corner in the middle of the wall after the selected corner (wall 1 when none is selected), to drag into place.
+                          const i = sel?.kind === "space" && sel.corner != null ? sel.corner : 0, o = s.outline, q = o[(i + 1) % o.length];
+                          setSpace(s.id, {outline:[...o.slice(0, i + 1), [(o[i][0] + q[0]) / 2, (o[i][1] + q[1]) / 2], ...o.slice(i + 1)], fromAI:false});
+                          setSel({kind:"space", id:s.id, corner:i + 1});
+                        }}>{t("addCorner")}</button>
                         {sel?.kind === "space" && sel.corner != null && s.outline.length > 3 && (
                           <button className="btn small" type="button" onClick={() => {
                             setSpace(s.id, {outline:s.outline.filter((_, i) => i !== sel.corner), fromAI:false}); setSel({kind:"space", id:s.id});
@@ -265,6 +285,7 @@ export default function PlanImport(props: Props){
             <section className="sblock">
               <h2>{t("openingsTitle")}</h2>
               {!flat.openings.length && <p className="dnote">{t("noOpenings")}</p>}
+              {stray.length > 0 && <p className="oerr">{t("strayOpenings", {n:stray.length})}</p>}
               <div className="olist">
                 {flat.openings.map((o, i) => (
                   <button key={o.id} type="button" className={"ochip " + o.type + (selOpen?.id === o.id ? " on" : "")} onClick={() => setSel({kind:"opening", id:o.id})}>
@@ -301,7 +322,7 @@ export default function PlanImport(props: Props){
         <div className="setup-actions">
           <button className="btn" type="button" onClick={props.onCancel}>{t("backChoice")}</button>
           <span className="dnote">{blockers}</span>
-          <button className="btn primary" type="button" disabled={Boolean(blockers) || busy} onClick={() => props.onDone(flat)}>
+          <button className="btn primary" type="button" disabled={Boolean(blockers) || busy} onClick={() => props.onDone(flat, isNew)}>
             {flat.spaces.length > 1 ? t("planNextFlat") : t("startDesign")}
           </button>
         </div>

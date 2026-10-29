@@ -89,3 +89,20 @@ test("nearestPlanWall finds the wall under the pointer", async () => {
   assert.equal(nearestPlanWall(f, [40, 30], 5), null);
   assert.equal(nearestPlanWall(f, [150, -3], 5, "b").spaceId, "b");
 });
+
+test("two written sizes that disagree give no scale", () => {
+  const f = newFlat({w:1000, h:1000});
+  f.spaces = [space("a", box(0, 0, 100, 100), "10' x 10'"), space("b", box(200, 0, 100, 100), "20' x 20'")];
+  const r = scaleFromSizes(f);
+  assert.equal(r.scale, null);
+  assert.deepEqual(r.flagged.sort(), ["a", "b"]);
+});
+
+test("a repeated corner is a problem, and cleanOutline removes it", async () => {
+  const { cleanOutline } = await import("../src/studio/plan/flat.js");
+  const o = [[0, 0], [100, 0], [100, 100], [100, 100], [0, 100]];
+  assert.equal(outlineProblem(o), "sameCorner");
+  assert.deepEqual(cleanOutline(o, 3), box(0, 0, 100, 100));
+  assert.deepEqual(cleanOutline([[0, 0], [100, 0], [100, 100], [0, 100], [1, 1]], 3), box(0, 0, 100, 100));
+  assert.deepEqual(cleanOutline([[0, 0], [1, 0], [2, 0]], 3), [[0, 0], [1, 0], [2, 0]]);   // never under 3 corners
+});

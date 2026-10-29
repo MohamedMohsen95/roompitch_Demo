@@ -9,3 +9,4 @@ export function planImageUrl(path: string): Promise<string | null>;
 export function newProject(name: string, kind?: "studio" | "flat"): void;
 export function renameProject(id: string, name: string): Promise<boolean>;
 export function deleteProject(id: string): Promise<{ok: boolean, current?: boolean, kind?: "studio" | "flat"}>;
+export function flatInCloud(): boolean;

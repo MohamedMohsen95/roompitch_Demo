@@ -48,7 +48,7 @@ export default async function handler(req, res){
         headers:{Authorization:`Bearer ${process.env.CF_API_TOKEN}`, "Content-Type":"application/json"},
         body:JSON.stringify({
           messages:[{role:"user", content:[{type:"text", text:PLAN_PROMPT}, {type:"image_url", image_url:{url:image}}]}],
-          max_tokens:2000,
+          max_tokens:4000,   // a whole flat's outlines; a cut-off reply can't be read
           temperature:0
         }),
         signal:AbortSignal.timeout(55_000)

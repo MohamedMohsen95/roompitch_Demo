@@ -2,7 +2,7 @@
 // (or tracing by hand). Everything is in plan pixels; the logic lives in plan/flat.js.
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { t } from "../../i18n.js";
-import { snapPoint, wallLengthsCm, nearestPlanWall, orientCW, newId } from "../../plan/flat.js";
+import { snapPoint, wallLengthsCm, nearestPlanWall, orientCW, newId, cleanOutline } from "../../plan/flat.js";
 import type { Flat, Space, PlanOpening } from "../../plan/flat";
 import type { Point } from "../../types";
 
@@ -64,7 +64,8 @@ export default function PlanEditor({flat, imageUrl, onChange, sel, onSelect, too
   const setOpening = (id: string, fn: (o: PlanOpening) => PlanOpening) =>
     onChange({...flatRef.current, openings:flatRef.current.openings.map(o => o.id === id ? fn(o) : o)});
 
-  function closeTrace(points = trace){
+  function closeTrace(raw = trace){
+    const points = raw.length >= 3 ? cleanOutline(raw, tol / 2) : raw;   // a double-click on the last corner adds it twice
     if (points.length >= 3){
       const id = newId("s");
       const n = flatRef.current.spaces.length + 1;
@@ -169,6 +170,13 @@ export default function PlanEditor({flat, imageUrl, onChange, sel, onSelect, too
       onSelect({kind:"opening", id});
     } else if (drag?.kind === "corner" && !drag.moved){
       onSelect({kind:"space", id:drag.id, corner:drag.i});
+    } else if (drag?.kind === "corner"){
+      // A corner dropped on its neighbour merges with it.
+      const s = flatRef.current.spaces.find(x => x.id === drag.id);
+      if (s){
+        const c = cleanOutline(s.outline, tol / 2);
+        if (c.length !== s.outline.length){ setSpace(drag.id, x => ({...x, outline:c})); onSelect({kind:"space", id:drag.id}); }
+      }
     }
     setDrag(null);
   }

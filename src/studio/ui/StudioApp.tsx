@@ -27,7 +27,7 @@ import { initInteraction } from "../three/interaction.js";
 import { applyStatic, setLang, getLang, t } from "../i18n.js";
 import { S, applyRoom } from "../state.js";
 import { loadRoom, restoreRoom, setSaving, saveRoom, onSaved, clearRoom, redirectSaves } from "../room-store.js";
-import { cloudReady, pushRoom, pushFlat, pullRoom, openProject, newProject, planImageUrl } from "../cloud-store.js";
+import { cloudReady, pushRoom, pushFlat, pullRoom, openProject, newProject, planImageUrl, flatInCloud } from "../cloud-store.js";
 import { loadFlat, saveFlat, clearFlat, onFlatSaved, setCurrentSpace, currentSpace, openSpace, designSaved } from "../plan/flat-store.js";
 import { neighbours } from "../plan/flat.js";
 import type { Flat } from "../plan/flat";
@@ -167,9 +167,9 @@ export default function StudioApp(){
   };
 
   // The plan checked: a new flat is a new cloud project; one space goes straight to the studio.
-  const planDone = (flat: Flat, editing: boolean) => {
+  const planDone = (flat: Flat, isNew: boolean) => {
     leaveFlatSpace();
-    if (!editing) newProject(t("flatProjName", {date:new Date().toLocaleDateString(getLang(), {day:"numeric", month:"short"})}), "flat");
+    if (isNew) newProject(t("flatProjName", {date:new Date().toLocaleDateString(getLang(), {day:"numeric", month:"short"})}), "flat");
     saveFlat(flat);
     if (flat.spaces.length === 1) openFlatSpace(flat.spaces[0].id);
     else navigate("/studio/flat");
@@ -181,9 +181,14 @@ export default function StudioApp(){
       <Route index element={
         <SetupScreen key={location.key} initialDraft={(location.state as any)?.draft || null} canContinue={canContinue}
           onStart={startRoom} onContinue={continueLast} onOpenProject={openProjectRow}
-          onCurrentDeleted={kind => { if (kind === "flat"){ clearFlat(); setCanContinueFlat(false); } else { clearRoom(); setCanContinue(false); } }}
+          onCurrentDeleted={kind => { if (kind === "flat"){ leaveFlatSpace(); clearFlat(); setCanContinueFlat(false); } else { clearRoom(); setCanContinue(false); } }}
           projectError={projectError} onAccount={() => setAccountOpen(true)} onLang={toggleLang}
-          onPlan={() => navigate("/studio/plan")} canContinueFlat={canContinueFlat} onContinueFlat={() => navigate("/studio/flat")}/>
+          onPlan={() => {
+            // Only one flat lives in this browser: don't silently replace designs that aren't in the account.
+            const f = loadFlat();
+            if (f && f.spaces.some(s => s.design) && !flatInCloud() && !window.confirm(t("replaceFlatSure"))) return;
+            navigate("/studio/plan");
+          }} canContinueFlat={canContinueFlat} onContinueFlat={() => navigate("/studio/flat")}/>
       }/>
       <Route path="plan" element={
         <PlanRoute key={location.key} editing={Boolean((location.state as any)?.edit)} onDone={planDone}
@@ -226,10 +231,14 @@ function RoomRoute({onProjects, onRoomSetup, onLang, continueLast, openFlatSpace
 }
 
 // /studio/plan: a new floor plan, or "Edit plan" of the current flat (designs of spaces that are kept stay).
-function PlanRoute({editing, onDone, onCancel, onAccount, onLang}: {editing: boolean, onDone: (f: Flat, editing: boolean) => void,
+function PlanRoute({editing, onDone, onCancel, onAccount, onLang}: {editing: boolean, onDone: (f: Flat, isNew: boolean) => void,
   onCancel: () => void, onAccount: () => void, onLang: () => void}){
   const [initial] = useState(() => editing ? loadFlat() : null);
-  return <PlanImport initialFlat={initial} onDone={f => onDone(f, Boolean(initial))} onCancel={onCancel} onAccount={onAccount} onLang={onLang}/>;
+  const [url, setUrl] = useState<string | null>(null);
+  useEffect(() => {
+    if (initial && !initial.image.dataUrl && initial.image.path) planImageUrl(initial.image.path).then((u: string | null) => setUrl(u));
+  }, []);
+  return <PlanImport initialFlat={initial} imageUrl={url} onDone={onDone} onCancel={onCancel} onAccount={onAccount} onLang={onLang}/>;
 }
 
 // /studio/flat: the current flat's spaces. With none saved, back to the New room screen.

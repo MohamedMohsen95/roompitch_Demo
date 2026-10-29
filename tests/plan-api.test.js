@@ -54,7 +54,7 @@ test("a fenced reply is parsed into spaces and openings", async () => {
   const r = await call("POST", {image:IMG});
   assert.equal(r.status, 200);
   assert.deepEqual(r.body, reply);
-  assert.equal(sent.body.max_tokens, 2000);
+  assert.equal(sent.body.max_tokens, 4000);
   assert.equal(sent.body.messages[0].content[1].image_url.url, IMG);
 });
 

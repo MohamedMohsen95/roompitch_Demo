@@ -83,3 +83,36 @@ test("an AI opening stays marked until it is changed", () => {
   const f3 = writeBackOpenings(f, "right", spaceRoom(f, "right").openings);
   assert.equal(f3.openings.find(o => o.id === "d1").fromAI, true);
 });
+
+test("a door in a real wall belongs to both rooms and stays in the wall when moved", () => {
+  // Inside faces 15 cm apart (x=200 and x=207.5 at 0.02 m/px); the door drawn on the wall's centreline.
+  const f = twoRooms();
+  f.spaces[1].outline = box(207.5, 0, 200, 100);
+  f.openings[0] = {...f.openings[0], a:[203.75, 30], b:[203.75, 75]};
+  const left = spaceRoom(f, "left").openings.find(o => o.id === "d1");
+  assert.ok(left && left.wall === 1 && near(left.offset, 0.6));
+  assert.ok(spaceRoom(f, "right").openings.some(o => o.id === "d1"));
+  const f2 = writeBackOpenings(f, "left", spaceRoom(f, "left").openings.map(o => o.id === "d1" ? {...o, offset:1.0} : o));
+  assert.ok(Math.abs(f2.openings.find(o => o.id === "d1").a[0] - 203.75) < 1e-6);
+  const right = spaceRoom(f2, "right").openings.find(o => o.id === "d1");
+  assert.ok(right && near(right.offset, 0.1));
+});
+
+test("an outer window on a thick wall is kept", () => {
+  const f = twoRooms();
+  f.openings[1] = {...f.openings[1], a:[50, -10], b:[110, -10]};   // 20 cm out, on the outer wall's centre
+  assert.ok(spaceRoom(f, "left").openings.some(o => o.id === "w1" && o.wall === 0));
+});
+
+test("typing a wall length carries the openings past its end", async () => {
+  const { stretchWall, strayOpenings } = await import("../src/studio/plan/flat.js");
+  const f = twoRooms();
+  f.openings.push({id:"w2", type:"window", a:[0, 30], b:[0, 70], heightCm:120, sillCm:90, fromAI:false});
+  const g = stretchWall(f, "left", 0, 500);                         // 4 m -> 5 m: the right wall moves 50 px
+  assert.deepEqual(g.spaces[0].outline, [[0, 0], [250, 0], [250, 100], [0, 100]]);
+  assert.deepEqual(g.openings.find(o => o.id === "d1").a, [250, 30]);
+  assert.deepEqual(g.openings.find(o => o.id === "w2").a, [0, 30]);  // the left wall didn't move
+  assert.deepEqual(g.openings.find(o => o.id === "w1").a, [50, 0]);  // on wall 0 but before its end
+  assert.deepEqual(strayOpenings(g), []);
+  assert.deepEqual(strayOpenings({...f, openings:[...f.openings, {id:"x", type:"door", a:[100, 50], b:[120, 50], heightCm:210, sillCm:0, fromAI:false}]}), ["x"]);
+});

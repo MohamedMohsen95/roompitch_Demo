@@ -41,6 +41,10 @@ export function outlineProblem(outline){
   if (!Array.isArray(outline) || outline.length < 3) return "tooFewCorners";
   const n = outline.length;
   for (let i = 0; i < n; i++){
+    const a = outline[i], b = outline[(i + 1) % n];
+    if (Math.hypot(b[0] - a[0], b[1] - a[1]) < 1) return "sameCorner";
+  }
+  for (let i = 0; i < n; i++){
     for (let j = i + 2; j < n; j++){
       if (i === 0 && j === n - 1) continue;          // neighbours through the closing wall
       if (segsCross(outline[i], outline[(i + 1) % n], outline[j], outline[(j + 1) % n])) return "crossing";
@@ -73,7 +77,8 @@ export function scaleFromSizes(flat){
   const m = median(ratios.map(x => x.r));
   const flagged = ratios.filter(x => Math.abs(x.r - m) / m > 0.1).map(x => x.id);
   const kept = ratios.filter(x => !flagged.includes(x.id));
-  return {scale:kept.length ? median(kept.map(x => x.r)) : m, flagged};
+  // Nothing agrees (e.g. two sizes that differ): ask for a wall instead of averaging a wrong size in.
+  return {scale:kept.length ? median(kept.map(x => x.r)) : null, flagged};
 }
 
 // Scale (m/px) from one wall: its length on the image and in cm.
@@ -123,23 +128,28 @@ const toLocal = (p, origin, scale) => [r6((p[0] - origin[0]) * scale) + 0, r6((p
 // Where a plan opening sits on the space's walls (pixels), or null when it is on none of them.
 function onWall(outline, o, tolPx){
   const n = outline.length;
+  let best = null;
   for (let i = 0; i < n; i++){
     const a = outline[i], b = outline[(i + 1) % n];
     const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
     if (!len) continue;
     const ux = (b[0] - a[0]) / len, uy = (b[1] - a[1]) / len;
-    const at = (p) => ({t:(p[0] - a[0]) * ux + (p[1] - a[1]) * uy, d:Math.abs((p[0] - a[0]) * uy - (p[1] - a[1]) * ux)});
+    const at = (p) => ({t:(p[0] - a[0]) * ux + (p[1] - a[1]) * uy, d:(p[0] - a[0]) * uy - (p[1] - a[1]) * ux});
     const pa = at(o.a), pb = at(o.b);
-    if (pa.d > tolPx || pb.d > tolPx) continue;
+    if (Math.abs(pa.d) > tolPx || Math.abs(pb.d) > tolPx) continue;
     if (Math.min(pa.t, pb.t) < -tolPx || Math.max(pa.t, pb.t) > len + tolPx) continue;
     const t0 = Math.max(0, Math.min(pa.t, pb.t)), t1 = Math.min(len, Math.max(pa.t, pb.t));
     if (t1 - t0 <= 0) continue;
-    return {wall:i, t0, t1};
+    const side = (pa.d + pb.d) / 2;            // how far it sits off the wall's line (into the wall), kept on write-back
+    if (!best || Math.abs(side) < Math.abs(best.side)) best = {wall:i, t0, t1, side};
   }
-  return null;
+  return best;
 }
 
-const tolOf = (scale) => Math.max(4, 0.08 / scale);
+// Outlines follow the inside faces of the walls, so a door drawn on a 15–25 cm wall sits up to a wall's
+// thickness away from each room's outline.
+export const WALL_TOL_M = 0.26;
+const tolOf = (scale) => Math.max(4, WALL_TOL_M / scale);
 const findSpace = (flat, id) => {
   const s = flat.spaces.find(x => x.id === id);
   if (!s) throw new Error("No space " + id);
@@ -181,7 +191,9 @@ export function writeBackOpenings(flat, spaceId, openings){
     const len = Math.hypot(b[0] - a[0], b[1] - a[1]), ux = (b[0] - a[0]) / len, uy = (b[1] - a[1]) / len;
     const s0 = o.offset / scale, s1 = (o.offset + o.width) / scale;
     const old = byId.get(o.id);
-    const pa = [r6(a[0] + ux * s0), r6(a[1] + uy * s0)], pb = [r6(a[0] + ux * s1), r6(a[1] + uy * s1)];
+    const was = old && onWall(outline, old, tol), side = was && was.wall === o.wall % n ? was.side : 0;
+    const px = uy * side, py = -ux * side;    // back to the same distance off the wall's line
+    const pa = [r6(a[0] + ux * s0 + px), r6(a[1] + uy * s0 + py)], pb = [r6(a[0] + ux * s1 + px), r6(a[1] + uy * s1 + py)];
     const heightCm = Math.round(o.height * 100), sillCm = o.type === "window" ? Math.round((o.sill || 0) * 100) : 0;
     // Still the AI's opening only while nothing about it changed.
     const same = old && old.type === o.type && old.heightCm === heightCm && old.sillCm === sillCm
@@ -237,4 +249,44 @@ export function nearestPlanWall(flat, p, tolPx, onlySpaceId = null){
     }
   }
   return best;
+}
+
+// Corners closer than tolPx to the one before them (a double-click on a corner, a corner dragged onto its
+// neighbour) are dropped, as long as 3 corners remain.
+export function cleanOutline(outline, tolPx){
+  const out = [];
+  for (const p of outline){
+    const q = out[out.length - 1];
+    if (q && Math.hypot(p[0] - q[0], p[1] - q[1]) <= tolPx) continue;
+    out.push([p[0], p[1]]);
+  }
+  while (out.length > 3 && Math.hypot(out[0][0] - out[out.length - 1][0], out[0][1] - out[out.length - 1][1]) <= tolPx) out.pop();
+  return out.length >= 3 ? out : outline.map(p => [p[0], p[1]]);
+}
+
+// Typing a wall length in a space: the outline stretches (setWallLengthCm), and the doors and windows
+// past the wall's old end move with it, so they stay on their walls.
+export function stretchWall(flat, spaceId, i, cm){
+  const s = findSpace(flat, spaceId), o = s.outline, n = o.length, a = o[i], b = o[(i + 1) % n];
+  const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
+  if (!len || !(cm > 0) || !(flat.scale > 0)) return flat;
+  const ux = (b[0] - a[0]) / len, uy = (b[1] - a[1]) / len, delta = cm / 100 / flat.scale - len;
+  const endT = b[0] * ux + b[1] * uy, tol = tolOf(flat.scale);
+  const outline = setWallLengthCm(o, i, cm, flat.scale);
+  const past = (p) => p[0] * ux + p[1] * uy >= endT - 1e-6;
+  const move = (p) => [p[0] + delta * ux, p[1] + delta * uy];
+  const openings = flat.openings.map(op => {
+    if (!onWall(o, op, tol)) return op;
+    const pa = past(op.a), pb = past(op.b);
+    if (!pa && !pb) return op;
+    return {...op, a:pa ? move(op.a) : op.a, b:pb ? move(op.b) : op.b, fromAI:false};
+  });
+  return {...flat, spaces:flat.spaces.map(x => x.id === spaceId ? {...x, outline, fromAI:false} : x), openings};
+}
+
+// Doors and windows that sit on no space's walls (they are left out of every room).
+export function strayOpenings(flat){
+  if (!flat.scale) return [];
+  const tol = tolOf(flat.scale);
+  return flat.openings.filter(op => !flat.spaces.some(s => onWall(s.outline, op, tol))).map(op => op.id);
 }

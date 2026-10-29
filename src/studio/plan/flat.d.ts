@@ -14,7 +14,7 @@ export type SpaceRoom = {form: PlanForm, poly: Point[], openings: Opening[], H: 
 export const DEFAULT_H: number;
 export function newFlat(image: {w: number, h: number, dataUrl?: string, path?: string}): Flat;
 export function orientCW(outline: Point[]): Point[];
-export function outlineProblem(outline: Point[]): null | "tooFewCorners" | "crossing";
+export function outlineProblem(outline: Point[]): null | "tooFewCorners" | "crossing" | "sameCorner";
 export function scaleFromSizes(flat: Flat): {scale: number | null, flagged: string[]};
 export function scaleFromWall(lenPx: number, lenCm: number): number | null;
 export function snapPoint(p: Point, prev: Point | null, others: Point[], tolPx: number): Point;
@@ -26,3 +26,7 @@ export function neighbours(flat: Flat, spaceId: string, withinM?: number): Point
 export function withSizeScale(flat: Flat): Flat;
 export function newId(prefix: string): string;
 export function nearestPlanWall(flat: Flat, p: Point, tolPx: number, onlySpaceId?: string | null): {spaceId: string, i: number, a: Point, b: Point, len: number, t: number, d: number} | null;
+export const WALL_TOL_M: number;
+export function cleanOutline(outline: Point[], tolPx: number): Point[];
+export function stretchWall(flat: Flat, spaceId: string, i: number, cm: number): Flat;
+export function strayOpenings(flat: Flat): string[];
