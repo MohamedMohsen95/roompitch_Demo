@@ -3,6 +3,7 @@
   "functions": {
     "api/generate.js": { "maxDuration": 60 },
     "api/analyze.js": { "maxDuration": 60 },
+    "api/plan.js": { "maxDuration": 60 },
     "api/models.js": { "includeFiles": "public/models/**/*.{gltf,glb}" }
   },
   "redirects": [
