@@ -1,6 +1,6 @@
 /* RoomPitch — all interface text in English and Arabic.
    To change any wording, edit it here. */
-window.I18N = {
+export const I18N: Record<"en" | "ar", Record<string, string>> = {
   en: {
     priceList: "Price list", studio: "Studio",
     s1: "The room", s2: "Style", s3: "Budget", s4: "Proposal",

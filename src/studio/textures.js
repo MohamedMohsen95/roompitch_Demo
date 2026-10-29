@@ -47,4 +47,11 @@ export function matCanvas(m){
 }
 
 // A photo-textured finish shows its photo (catalog.js texMaps); the others are drawn.
-export const swatchURL = (m) => texMaps(m)?.base || matCanvas(m).toDataURL("image/png");
+// Library and price-list swatches: the photo, or the drawn finish (drawn once per finish and colour).
+const swatches = new Map();
+export function swatchURL(m){
+  const photo = texMaps(m)?.base; if (photo) return photo;
+  const key = `${m.id}|${m.kind}|${m.c}`;
+  if (!swatches.has(key)) swatches.set(key, matCanvas(m).toDataURL("image/png"));
+  return swatches.get(key);
+}

@@ -1,5 +1,4 @@
-// Interface language (English / Arabic). Text in studio.html is tagged with data-i18n="key";
-// text built in JS calls t("key"). The AI prompt is always English (see render-ai.js).
+// Interface language (English / Arabic). The interface calls t("key") (and redraws on a change, see ui/hooks.ts). The AI prompt is always English (see render-ai.js).
 
 const STR = {
   en: {
@@ -48,7 +47,7 @@ const STR = {
     shotAlt: "Snapshot of the 3D scene", outAlt: "Photoreal render",
     rendering: "Rendering…", accessLabel: "Access code (ACCESS_CODE in your .env file)", send: "Send",
     promptSum: "Prompt sent to the AI", again: "Render again", saveImg: "Save image", back: "Back to design",
-    offline: "Open this page through the server: run npm run dev and go to /studio.html",
+    offline: "Open this page through the server: run npm run dev and go to /studio",
     noKeys: "No AI keys in .env. Add CF_ACCOUNT_ID and CF_API_TOKEN, then restart the server.",
     renderOff: "Rendering is off", sending: "Sending to {p}…", codeNeeded: "Access code needed",
     enterCode: "Enter the code from your .env file", wentWrong: "Something went wrong ({s})", failed: "Render failed",
@@ -174,7 +173,7 @@ const STR = {
     shotAlt: "لقطة من المشهد 3D", outAlt: "الريندر الواقعي",
     rendering: "جاري الريندر…", accessLabel: "كود الدخول (ACCESS_CODE في ملف .env)", send: "إرسال",
     promptSum: "الوصف المُرسل للـ AI", again: "ريندر مرة أخرى", saveImg: "حفظ الصورة", back: "رجوع للتصميم",
-    offline: "افتح الصفحة من السيرفر: شغّل npm run dev وافتح ‎/studio.html",
+    offline: "افتح الصفحة من السيرفر: شغّل npm run dev وافتح ‎/studio",
     noKeys: "لا توجد مفاتيح AI في ملف .env. أضف CF_ACCOUNT_ID و CF_API_TOKEN ثم أعد تشغيل السيرفر.",
     renderOff: "الريندر غير مُفعّل", sending: "جاري الإرسال إلى {p}…", codeNeeded: "مطلوب كود الدخول",
     enterCode: "اكتب الكود الموجود في ملف .env", wentWrong: "حدث خطأ ({s})", failed: "فشل الريندر",
@@ -257,7 +256,7 @@ const STR = {
 
 const KEY = "rp_studio_lang";
 let lang = (() => { try { return localStorage.getItem(KEY) === "ar" ? "ar" : "en"; } catch { return "en"; } })();
-const listeners = [];
+const listeners = new Set();
 
 export const getLang = () => lang;
 
@@ -270,14 +269,11 @@ export function t(key, vars, l = lang){
 // Display name of a catalog entry (finish or piece). Models from public/models only have an English name.
 export const nameOf = (o, l = lang) => (l === "ar" && o.ar) || o.name;
 
-// Fill every tagged element in the page and set the direction.
+// Set the page language, direction and title.
 export function applyStatic(){
   const root = document.documentElement;
   root.lang = lang; root.dir = lang === "ar" ? "rtl" : "ltr";
   document.title = t("pageTitle");
-  document.querySelectorAll("[data-i18n]").forEach(el => { el.textContent = t(el.dataset.i18n); });
-  document.querySelectorAll("[data-i18n-alt]").forEach(el => { el.alt = t(el.dataset.i18nAlt); });
-  document.querySelectorAll("[data-i18n-aria]").forEach(el => { el.setAttribute("aria-label", t(el.dataset.i18nAria)); });
 }
 
 export function setLang(l){
@@ -287,5 +283,5 @@ export function setLang(l){
   listeners.forEach(fn => fn());
 }
 
-// Run `fn` after every language change (to redraw JS-built text).
-export const onLangChange = (fn) => listeners.push(fn);
+// Run `fn` after every language change. Returns a function that stops it.
+export const onLangChange = (fn) => { listeners.add(fn); return () => listeners.delete(fn); };

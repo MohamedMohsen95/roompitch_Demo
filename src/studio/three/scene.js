@@ -4,19 +4,20 @@ import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { S } from "../state.js";
 import { wallsOf, wallFrame, alongWall } from "../geometry.js";
-import { $, cssVar } from "../utils.js";
+import { cssVar } from "../utils.js";
 
 export let host, renderer, scene, camera, controls, sun, fill;
 export const roomGroup = new THREE.Group(), itemGroup = new THREE.Group();
 export const pickables = [];   // floor + walls, for clicks and drops
+let looping = false;
 
+// Made once; the studio page puts the canvas into its 3D panel with attachScene() each time it shows.
 export function initScene(){
-  host = $("#three");
+  if (renderer) return;
   renderer = new THREE.WebGLRenderer({antialias:true, preserveDrawingBuffer:true}); // buffer kept for the AI render snapshot
   renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
   renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = .9;
   renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFShadowMap;
-  host.appendChild(renderer.domElement);
 
   scene = new THREE.Scene();
   camera = new THREE.PerspectiveCamera(48, 1, .05, 100);
@@ -35,9 +36,15 @@ export function initScene(){
   matchMedia("(prefers-color-scheme: dark)").addEventListener("change", themeBg);
   new MutationObserver(themeBg).observe(document.documentElement, {attributes:true, attributeFilter:["data-theme"]});
 
-  new ResizeObserver(resize).observe(host);
+}
+
+// Show the 3D view in `el`, sized to it. Returns a function that takes it out again.
+export function attachScene(el){
+  host = el;
+  el.appendChild(renderer.domElement);
+  const ro = new ResizeObserver(resize); ro.observe(el);
   resize();
-  $("#camCorner").onclick = () => setCam("corner"); $("#camDoor").onclick = () => setCam("door"); $("#camTop").onclick = () => setCam("top");
+  return () => { ro.disconnect(); renderer.domElement.remove(); if (host === el) host = null; };
 }
 
 function themeBg(){ scene.background = new THREE.Color(cssVar("--stage") || "#dfe4e1"); }
@@ -56,6 +63,7 @@ export function setCam(view){
 }
 
 export function resize(){
+  if (!host) return;
   const r = host.getBoundingClientRect(); if (!r.width || !r.height) return;
   renderer.setSize(r.width, r.height, false); renderer.domElement.style.width = r.width + "px"; renderer.domElement.style.height = r.height + "px";
   camera.aspect = r.width / r.height; camera.updateProjectionMatrix();
@@ -63,5 +71,7 @@ export function resize(){
 
 // Render loop; `beforeRender` lets other modules update per frame (e.g. the selection outline).
 export function startLoop(beforeRender){
+  if (looping) return;
+  looping = true;
   renderer.setAnimationLoop(() => { controls.update(); beforeRender?.(); renderer.render(scene, camera); });
 }

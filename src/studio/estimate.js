@@ -1,10 +1,9 @@
 // Live estimate: finishes by area, furniture by count, priced from the designer's price list.
-// computeEstimate() is shared with the PDF proposal.
+// computeEstimate() feeds the estimate panel (ui/Estimate.tsx) and the PDF proposal.
 import { S, wallArea } from "./state.js";
 import { WM, FM, FU } from "./catalog.js";
-import { $, fmt } from "./utils.js";
 import { t, nameOf, getLang } from "./i18n.js";
-import { settings, priceOf, money } from "./settings.js";
+import { settings, priceOf } from "./settings.js";
 import { polyArea } from "./geometry.js";
 
 // rows: {grp} headings and {name, qty, unit, unitPrice, amt} lines, in language `l`.
@@ -34,39 +33,3 @@ export function computeEstimate(l = getLang()){
 
 export const qtyText = (r) => Number.isInteger(r.qty) ? String(r.qty) : r.qty.toFixed(1);
 
-export function renderEst(){
-  const e = computeEstimate();
-  const line = (label, v) => `<tr><td>${label}</td><td class="n">${fmt(v)}</td></tr>`;
-  const extra = (settings.feePct || settings.vatPct)
-    ? line(t("subtotal"), e.subtotal)
-      + (settings.feePct ? line(t("fee", {p:settings.feePct}), e.fee) : "")
-      + (settings.vatPct ? line(t("vat", {p:settings.vatPct}), e.vat) : "")
-    : "";
-  $("#est").innerHTML = `<table><tbody>${e.rows.map(r => r.grp
-      ? `<tr class="grp"><td colspan="2">${r.grp}</td></tr>`
-      : `<tr><td>${r.name}<span class="sub"><bdi>${qtyText(r)}</bdi> ${r.unit} × <bdi>${fmt(r.unitPrice)}</bdi></span></td><td class="n">${fmt(r.amt)}</td></tr>`).join("")}
-      ${extra}</tbody></table>
-    <div class="total"><span>${t("total")}</span><span class="n">${money(e.total)}</span></div>
-    <p class="note">${t("estNote")}</p>`;
-  $("#estMini").textContent = money(e.total);
-}
-
-// The estimate panel folds to a slim strip with just the total, giving the views more room.
-// The choice is remembered in this browser.
-const EST_KEY = "rp_est_closed";
-let estClosed = (() => { try { return localStorage.getItem(EST_KEY) === "1"; } catch { return false; } })();
-
-export function relabelEst(){
-  $("#app").classList.toggle("est-closed", estClosed);
-  const b = $("#estToggle"), label = t(estClosed ? "estShow" : "estHide");
-  b.setAttribute("aria-expanded", String(!estClosed)); b.setAttribute("aria-label", label); b.title = label;
-}
-function setEstClosed(v){
-  estClosed = v; relabelEst();
-  try { localStorage.setItem(EST_KEY, v ? "1" : "0"); } catch { /* private window: lasts until reload */ }
-}
-export function initEstToggle(){
-  $("#estToggle").onclick = () => setEstClosed(!estClosed);
-  $("#estMini").onclick = () => setEstClosed(false);
-  relabelEst();
-}

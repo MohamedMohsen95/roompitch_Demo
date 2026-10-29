@@ -1,6 +1,7 @@
-// Vite builds the two pages (the main app and the Room Studio) and, in development,
+// Vite builds the React app (index.html -> src/main.tsx: the photo page at / and the Room Studio at /studio) and, in development,
 // runs the files in api/ the same way Vercel runs them as serverless functions.
 import { defineConfig, loadEnv } from "vite";
+import react from "@vitejs/plugin-react";
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -15,15 +16,9 @@ export default defineConfig(({ mode }) => {
     // (NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY), so they reach the app unrenamed.
     envPrefix: ["VITE_", "NEXT_PUBLIC_"],
     build: {
-      chunkSizeWarningLimit: 800, // three.js alone is ~650 kB minified (~170 kB gzipped); that's expected
-      rollupOptions: {
-        input: {
-          main: resolve(import.meta.dirname, "index.html"),
-          studio: resolve(import.meta.dirname, "studio.html")
-        }
-      }
+      chunkSizeWarningLimit: 800 // three.js alone is ~650 kB minified (~170 kB gzipped); that's expected
     },
-    plugins: [vercelApiInDev()]
+    plugins: [react(), vercelApiInDev()]
   };
 });
 

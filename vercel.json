@@ -4,5 +4,11 @@
     "api/generate.js": { "maxDuration": 60 },
     "api/analyze.js": { "maxDuration": 60 },
     "api/models.js": { "includeFiles": "public/models/**/*.{gltf,glb}" }
-  }
+  },
+  "redirects": [
+    { "source": "/studio.html", "destination": "/studio", "permanent": true }
+  ],
+  "rewrites": [
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
+  ]
 }

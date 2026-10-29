@@ -43,7 +43,7 @@ npm run dev
 | Page | URL |
 |---|---|
 | Main app (photo restyle, budget, PDF) | <http://localhost:5173> |
-| Room Studio (2D plan + 3D) | <http://localhost:5173/studio.html> |
+| Room Studio (2D plan + 3D) | <http://localhost:5173/studio> |
 
 The top-right badge says **AI live** when keys are set, **Demo mode** otherwise. After editing `.env`, stop the server (Ctrl+C) and run it again.
 
@@ -56,6 +56,7 @@ The top-right badge says **AI live** when keys are set, **Demo mode** otherwise.
 | `npm run models` | Compresses 3D models from `models-src/` into `public/models/` |
 | `npm run textures` | Downloads the photo textures the catalog names (Poly Haven, CC0) into `public/textures/` |
 | `npm test` | Runs the automated tests (room geometry, saving, photo analysis); needs no install |
+| `npm run typecheck` | Checks the TypeScript (`tsc --noEmit`) |
 | `npm run db:generate -- --name=<what>` | Writes a migration into `supabase/migrations/` from changes in `db/schema.js` |
 | `npm run db:custom -- --name=<what>` | Empty migration for SQL Drizzle can't express (triggers, functions) |
 | `npm run db:push` | Applies new migrations to the linked Supabase project |
@@ -80,7 +81,7 @@ Visitors start as anonymous Supabase users, which is enough to design and save r
 
 - Make someone an admin after they've created an account: `npm run admin -- grant you@studio.com` (`revoke`, `list` too). Users can't change their own role.
 - Supabase → Authentication → Sign In / Providers → Email: with **Confirm email** on, new accounts get a confirmation link first. Supabase's built-in email service only delivers to your project's team members and a few emails an hour; set up custom SMTP (Authentication → Emails) before real designers sign up.
-- Add your site's URL (and `http://localhost:5173/studio.html`) under Authentication → URL Configuration so confirmation links come back to the studio.
+- Add your site's URL (and `http://localhost:5173/studio`) under Authentication → URL Configuration so confirmation links come back to the studio.
 
 ### Adding a built-in 3D model
 1. Put the model in `models-src/<folder>/` (a `.glb`, or a `.gltf` with its files) with a `CREDITS.md` saying where it's from and its licence.
@@ -129,7 +130,7 @@ npm run dev
 - **"AI key rejected":** the Cloudflare token needs the *Workers AI* permission and must match `CF_ACCOUNT_ID`.
 - **"Today's free AI allowance is used up":** Cloudflare's free 10,000 neurons/day reset at 00:00 UTC.
 
-**بالعربي باختصار:** محتاج Node.js 20.19 أو أحدث. أول مرة: `npm install`، وبعدها كل مرة: `npm run dev` وافتح <http://localhost:5173> (التطبيق) أو <http://localhost:5173/studio.html> (استوديو الأوضة). لو عايز رندر حقيقي بالذكاء الاصطناعي، انسخ `.env.example` لـ `.env` وحط المفاتيح (شوف القسم 2). لو عندك نسخة قديمة: بعد `git pull` شغّل `npm install` مرة، و`node dev-server.mjs` اتشال.
+**بالعربي باختصار:** محتاج Node.js 20.19 أو أحدث. أول مرة: `npm install`، وبعدها كل مرة: `npm run dev` وافتح <http://localhost:5173> (التطبيق) أو <http://localhost:5173/studio> (استوديو الأوضة). لو عايز رندر حقيقي بالذكاء الاصطناعي، انسخ `.env.example` لـ `.env` وحط المفاتيح (شوف القسم 2). لو عندك نسخة قديمة: بعد `git pull` شغّل `npm install` مرة، و`node dev-server.mjs` اتشال.
 
 ---
 
@@ -141,7 +142,7 @@ npm run dev
 
 بعد "ابدأ التصميم" بتدخل الاستوديو: المصمم يسحب الخامات والأثاث على المسقط أو الـ 3D، والحيطان مترقّمة، والميزانية بتتحسب لوحدها. زرار **"إعدادات الأوضة"** بيرجّعك للشاشة الأولى من غير ما يضيع الأثاث. الأوضة بتتحفظ في المتصفح، ولما تفتح تاني هتلاقي **"أكمل آخر غرفة"**. زرار **ريندر واقعي** بيبعت لقطة الـ 3D للـ AI (Cloudflare) ويرجع صورة واقعية.
 
-افتح <http://localhost:5173/studio.html> بعد `npm run dev`. ده نموذج للتجربة بس، مش الكود النهائي.
+افتح <http://localhost:5173/studio> بعد `npm run dev`. ده نموذج للتجربة بس، مش الكود النهائي.
 
 الـ 3D مبني على **three.js** (أحدث نسخة) و **Vite**، والإضاءة من صورة HDRI حقيقية (Poly Haven) عشان الخامات تبان واقعية. من قائمة **Lighting** في لوحة الـ 3D المصمم يختار الإضاءة: نهار (Daylight)، دافية (Warm interior)، أو ستوديو (Studio). الرندر بالذكاء الاصطناعي بياخد نفس الإضاءة.
 
@@ -161,18 +162,17 @@ npm run models
 
 | الملف | وظيفته |
 |---|---|
-| `index.html` | شكل الصفحة |
-| `styles.css` | الألوان والتصميم (الألوان كلها متعرفة فوق في أول الملف) |
-| `app.js` | كل منطق التطبيق: الستايلات، الرندر، الفرشاة، الميزانية، الـ PDF |
-| `i18n.js` | كل الكلام اللي في الواجهة بالعربي والإنجليزي — عدّل الكلام من هنا |
-| `studio.html` + `src/studio/` | استوديو الأوضة (المسقط + الـ 3D)، مقسوم لملفات صغيرة — الخريطة في أول `src/studio/main.js` |
+| `index.html` + `src/main.tsx` | الواجهة كلها تطبيق React واحد (TypeScript): `/` صفحة الصور و `/studio` الاستوديو |
+| `src/photo/` | صفحة الصور: `PhotoPage.tsx` (الصفحة)، `Viewer.tsx` (قبل/بعد، الفرشاة، الأثاث)، `data.ts` (الستايلات والأسعار)، `photo.css` (التصميم) |
+| `src/photo/i18n.ts` | كل كلام صفحة الصور بالعربي والإنجليزي — عدّل الكلام من هنا |
+| `src/studio/` | استوديو الأوضة (المسقط + الـ 3D): المنطق في ملفات JS، والواجهة في `src/studio/ui/` (React) |
 | `api/generate.js` | السيرفر: بيكلم الذكاء الاصطناعي ويخبي مفتاحك السري |
 | `api/models.js` | بيقرا موديلات الأثاث من `public/models/` |
 | `models-src/` | الموديلات الأصلية (مش بتترفع على الموقع) |
 | `public/models/` | الموديلات المضغوطة اللي الموقع بيستخدمها (`npm run models`) |
 | `public/hdri/` | صور الإضاءة HDRI |
 | `scripts/optimize-models.mjs` | سكريبت ضغط الموديلات |
-| `vite.config.js` | إعدادات Vite (بيشغل الصفحتين و `api/` على جهازك) |
+| `vite.config.js` | إعدادات Vite (React، وبيشغل `api/` على جهازك) |
 | `.env.example` | مثال للإعدادات السرية |
 
 المتطلبات وطريقة التشغيل في [أول الملف](#️-requirements--setup--المتطلبات-والتشغيل).
@@ -263,15 +263,15 @@ npm run dev
 
 ## English summary
 
-**What it is:** a web app (Vite + three.js) for interior designers to use live with clients — upload a room photo, restyle it with AI (8 styles, 3 structure-preservation levels, "site under construction" option), compare before/after, brush-edit one area, get an itemized estimate from the designer's own price list, and export a branded A4 proposal in English or Arabic (RTL).
+**What it is:** a web app (React + TypeScript, Vite, three.js) for interior designers to use live with clients — upload a room photo, restyle it with AI (8 styles, 3 structure-preservation levels, "site under construction" option), compare before/after, brush-edit one area, get an itemized estimate from the designer's own price list, and export a branded A4 proposal in English or Arabic (RTL).
 
-**Run locally:** `npm install`, then `npm run dev` → http://localhost:5173 (main app) and `/studio.html` (Room Studio). Needs Node 20.19+. Vite also runs the `api/` functions locally, like Vercel does. `npm run build` + `npm run preview` serves the production build. Without any AI keys it runs in demo mode.
+**Run locally:** `npm install`, then `npm run dev` → http://localhost:5173 (main app) and `/studio` (Room Studio). `npm run typecheck` checks the TypeScript. Needs Node 20.19+. Vite also runs the `api/` functions locally, like Vercel does. `npm run build` + `npm run preview` serves the production build. Without any AI keys it runs in demo mode.
 
 **3D models:** put the original `.gltf` (with its files) or `.glb` in `models-src/<folder>/` and run `npm run models`. It writes a compressed `.glb` (Meshopt geometry, WebP textures ≤1024 px) to `public/models/<folder>/`; the desk went from 5.25 MB to 185 KB. Everything in `public/models/` appears in the Room Studio library with its real size.
 
 **Room Studio first screen:** "New room" — build a rectangle or L-shape in centimetres with any number of doors and windows, or upload up to 8 photos (one per wall), tag each with its wall and let a Cloudflare vision model (`CF_VISION_MODEL`, default `@cf/meta/llama-4-scout-17b-16e-instruct`, via `api/analyze.js`) place the doors and windows for review. The room is saved in the browser (photos in IndexedDB). `npm test` runs the Node tests in `tests/`.
 
-**Lighting:** a **Lighting** picker in the 3D panel offers moods — *Daylight*, *Warm interior* and *Studio (even)*. Each sets an HDRI from Poly Haven (`public/hdri/`, CC0) for ambient light and reflections, the sun's colour and strength (shadows), the fill light and exposure, and how the light is described to the AI renderer. The choice is remembered per browser; `studio.html?lighting=warm` opens with a given mood. Add a mood in `src/studio/three/lighting.js`.
+**Lighting:** a **Lighting** picker in the 3D panel offers moods — *Daylight*, *Warm interior* and *Studio (even)*. Each sets an HDRI from Poly Haven (`public/hdri/`, CC0) for ambient light and reflections, the sun's colour and strength (shadows), the fill light and exposure, and how the light is described to the AI renderer. The choice is remembered per browser; `/studio?lighting=warm` opens with a given mood. Add a mood in `src/studio/three/lighting.js`.
 
 **Windows & doors:** the *Windows & doors* library tab has a window, wide window, glass/balcony door and door. Drop one on any wall (plan or 3D), drag it along a wall or onto another wall in the plan, and set width, height and sill height in the inspector. These are the same openings as on the New room screen.
 
@@ -279,7 +279,7 @@ npm run dev
 
 **Sun:** walls are solid (12 cm) with real openings and, with a hidden ceiling, cast shadows, so sunlight only enters through windows and glass doors. The **Sun** bar under the 3D header sets the time of day, which way the top of the plan faces, and the season; the sun follows a real solar path for Cairo's latitude (`src/studio/three/sun.js`) and the plan shows a north arrow. Walls between the camera and the room are hidden dollhouse-style but still cast shadows. The lighting mood tints the sun, and the AI prompt says where the sun is and which windows it shines through.
 
-**Studio code:** `src/studio/` — one module per concern (catalog, state, library, inspector, plan, estimate, `three/` scene/room/items/models/interaction, AI render). The map is at the top of `src/studio/main.js`.
+**Front-end code:** one React + TypeScript app (`src/main.tsx`, React Router): `/` is the photo page (`src/photo/`), `/studio` the New room screen and `/studio/room` the studio (`src/studio/`). Each page injects its own stylesheet while it's shown. The studio's logic stays in plain JS modules (catalog, state, geometry, stacking, `three/` scene/room/items/models/interaction, AI render), typed through `.d.ts` files beside them; the room lives in the mutable `S` object and `notify()` (`src/studio/store.js`) re-renders the React components in `src/studio/ui/`. Vercel rewrites every non-API path to `index.html`, and old `/studio.html` links redirect to `/studio`.
 
 **Real AI (free to try):** set `CF_ACCOUNT_ID` + `CF_API_TOKEN` in `.env` to use Cloudflare Workers AI (`@cf/black-forest-labs/flux-2-klein-4b`, roughly 100 free renders/day). Input photos are downscaled below 512px (a Workers AI limit) and brush edits are composited into the painted area in the browser.
 

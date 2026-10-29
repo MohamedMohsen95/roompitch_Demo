@@ -7,11 +7,9 @@ import { nearestWallAny } from "../openings.js";
 import { saveRoom } from "../room-store.js";
 import { snap } from "../utils.js";
 import { update } from "../app.js";
-import { applyPayload } from "../library.js";
-import { renderInspect, rotateSel } from "../inspector.js";
-import { renderPlan } from "../plan.js";
-import { renderEst } from "../estimate.js";
-import { host, renderer, scene, camera, controls, itemGroup, pickables } from "./scene.js";
+import { applyPayload, rotateSel } from "../actions.js";
+import { notify } from "../store.js";
+import { renderer, scene, camera, controls, itemGroup, pickables } from "./scene.js";
 import { syncAll, refreshHelper } from "./items.js";
 import { startCarry, carry } from "../stacking.js";
 
@@ -38,7 +36,11 @@ function levelPoint(clientX, clientY, height = 0){
   return ray.ray.intersectPlane(floorPlane, floorHit) ? {x:floorHit.x + S.L / 2, y:floorHit.z + S.W / 2} : null;
 }
 
+// Bound once to the 3D canvas (it moves between pages with the canvas).
+let bound = false;
 export function initInteraction(){
+  if (bound) return;
+  bound = true;
   const cv = renderer.domElement;
   let down = null, drag = null;
 
@@ -61,7 +63,7 @@ export function initInteraction(){
     if (!drag.vertical && drag.dx === undefined){ drag = null; return; }
     e.stopImmediatePropagation();
     controls.enabled = false; cv.setPointerCapture(e.pointerId); cv.style.cursor = drag.vertical ? "ns-resize" : "grabbing";
-    if (!isSelectedItem(id)){ S.sel = {kind:"item", id}; renderInspect(); renderPlan(); refreshHelper(); }
+    if (!isSelectedItem(id)){ S.sel = {kind:"item", id}; notify(); refreshHelper(); }
   }, {capture:true});
 
   cv.addEventListener("pointermove", e => {
@@ -78,8 +80,7 @@ export function initInteraction(){
       }
       clampItem(drag.it);
       carry(drag.it, drag.riders);   // things on it come along; it lands on whatever is below
-      drag.moved = true; syncAll(); renderPlan();
-      if (drag.vertical) renderInspect();   // live height readout
+      drag.moved = true; syncAll(); notify();   // the plan and the height readout follow live
       return;
     }
     if (e.buttons) return; // orbiting
@@ -91,7 +92,7 @@ export function initInteraction(){
     if (!drag) return false;
     const moved = drag.moved; drag = null;
     controls.enabled = true; cv.style.cursor = "grab";
-    if (moved){ renderEst(); renderInspect(); saveRoom(); }
+    if (moved){ notify(); saveRoom(); }
     return true;
   };
   cv.addEventListener("pointercancel", () => { endDrag(); down = null; });
@@ -113,29 +114,25 @@ export function initInteraction(){
     const h = hit3D(e.clientX, e.clientY, itemGroup.children);
     if (h && h.object.userData.itemId){ S.sel = {kind:"item", id:h.object.userData.itemId}; rotateSel(); }
   });
+}
 
-  // HTML5 drop from the library
-  host.addEventListener("dragover", e => { e.preventDefault(); host.parentElement.classList.add("drop-on"); });
-  host.addEventListener("dragleave", () => host.parentElement.classList.remove("drop-on"));
-  host.addEventListener("drop", e => {
-    e.preventDefault(); host.parentElement.classList.remove("drop-on");
-    const payload = e.dataTransfer.getData("text/plain"); if (!payload) return;
-    if (payload.startsWith("furn:")){
-      const hi = hit3D(e.clientX, e.clientY, itemGroup.children), id = hi && hi.object.userData.itemId;
-      // onto a piece: stacks on top if it fits there, otherwise swaps (see applyPayload)
-      if (id) return applyPayload(payload, {kind:"item", id, x:hi.point.x + S.L / 2, y:hi.point.z + S.W / 2});
-    }
-    const h = hit3D(e.clientX, e.clientY, pickables);
-    if (!h) return applyPayload(payload, null);
-    const p = {x:h.point.x + S.L / 2, y:h.point.z + S.W / 2};   // room coordinates of the drop
-    if (payload.startsWith("open:")){
-      // onto the wall that was hit (or the nearest wall when dropped on the floor), centred under the pointer
-      const at = nearestWallAny(p.x, p.y);
-      return applyPayload(payload, {kind:"wall", id:at.wall, along:at.along});
-    }
-    if (payload.startsWith("furn:")) return applyPayload(payload, {kind:"point", ...p});
-    if (h.object.userData.kind === "wall") return applyPayload(payload, {kind:"wall", id:h.object.userData.id});
-    if (h.object.userData.kind === "opening") return applyPayload(payload, {kind:"wall", id:h.object.userData.wall});
-    applyPayload(payload, {kind:"floor"});
-  });
+// A library entry dropped on the 3D view at (clientX, clientY): onto a piece, a wall or the floor.
+export function dropIn3D(clientX, clientY, payload){
+  if (payload.startsWith("furn:")){
+    const hi = hit3D(clientX, clientY, itemGroup.children), id = hi && hi.object.userData.itemId;
+    // onto a piece: stacks on top if it fits there, otherwise swaps (see applyPayload)
+    if (id) return applyPayload(payload, {kind:"item", id, x:hi.point.x + S.L / 2, y:hi.point.z + S.W / 2});
+  }
+  const h = hit3D(clientX, clientY, pickables);
+  if (!h) return applyPayload(payload, null);
+  const p = {x:h.point.x + S.L / 2, y:h.point.z + S.W / 2};   // room coordinates of the drop
+  if (payload.startsWith("open:")){
+    // onto the wall that was hit (or the nearest wall when dropped on the floor), centred under the pointer
+    const at = nearestWallAny(p.x, p.y);
+    return applyPayload(payload, {kind:"wall", id:at.wall, along:at.along});
+  }
+  if (payload.startsWith("furn:")) return applyPayload(payload, {kind:"point", ...p});
+  if (h.object.userData.kind === "wall") return applyPayload(payload, {kind:"wall", id:h.object.userData.id});
+  if (h.object.userData.kind === "opening") return applyPayload(payload, {kind:"wall", id:h.object.userData.wall});
+  applyPayload(payload, {kind:"floor"});
 }

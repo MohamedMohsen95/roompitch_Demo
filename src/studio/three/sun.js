@@ -10,7 +10,6 @@ import { S } from "../state.js";
 import { sun } from "./scene.js";
 import { getLighting } from "./lighting.js";
 import { wallsOf, wallFrame } from "../geometry.js";
-import { t } from "../i18n.js";
 
 export const LATITUDE = 30.04;
 export const FACINGS = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
@@ -71,27 +70,6 @@ export function sunWords(){
     ? `, shining in through the window${lit.length > 1 ? "s" : ""} on wall${lit.length > 1 ? "s" : ""} ${lit.map(i => i + 1).join(" and ")}`
     : ", outside the windows, so no direct sunlight enters";
   return `${when} sun (${formatTime(t)}) coming from beyond wall ${from + 1}${alt < 20 ? ", low and warm, casting long shadows" : ""}${enters}`;
-}
-
-// The Sun bar under the 3D header. `onChange` runs after every change (plan compass, saving).
-// Returns `refresh`, to call after the language changes or a saved room is restored.
-export function initSunControls(onChange){
-  const time = document.getElementById("sunTime"), out = document.getElementById("sunTimeOut");
-  const facing = document.getElementById("sunFacing"), season = document.getElementById("sunSeason");
-  const show = () => {
-    facing.innerHTML = FACINGS.map(f => `<option value="${f}">${t("dir" + f)}</option>`).join("");
-    season.innerHTML = Object.keys(SEASONS).map(k => `<option value="${k}">${t("season_" + k)}</option>`).join("");
-    time.value = S.sun.time; facing.value = S.sun.facing; season.value = S.sun.season;
-    const {alt} = sunAngles(S.sun.time, S.sun.season);
-    out.textContent = alt > 0 ? formatTime(S.sun.time) : `${formatTime(S.sun.time)} ☾`;
-    out.title = alt > 0 ? t("sunUp", {n:Math.round(alt)}) : t("sunSet");
-  };
-  const changed = () => { show(); updateSun(); onChange?.(); };
-  time.addEventListener("input", () => { S.sun.time = +time.value; changed(); });
-  facing.addEventListener("change", () => { S.sun.facing = facing.value; changed(); });
-  season.addEventListener("change", () => { S.sun.season = season.value; changed(); });
-  show();
-  return show;
 }
 
 export const formatTime = (t) => `${String(Math.floor(t)).padStart(2, "0")}:${String(Math.round((t % 1) * 60)).padStart(2, "0")}`;

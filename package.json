@@ -17,19 +17,27 @@
     "db:push": "npx supabase db push --linked",
     "db:studio": "drizzle-kit studio",
     "catalog:sync": "node scripts/catalog-sync.mjs",
-    "admin": "node scripts/admin.mjs"
+    "admin": "node scripts/admin.mjs",
+    "typecheck": "tsc --noEmit"
   },
   "engines": {
     "node": ">=20.19"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.118.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "react-router": "7.18.5",
     "three": "0.186.1"
   },
   "devDependencies": {
     "@gltf-transform/cli": "4.5.1",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.1.2",
     "drizzle-kit": "0.31.11",
     "drizzle-orm": "0.45.4",
+    "typescript": "5.9.3",
     "vite": "8.3.5"
   }
 }

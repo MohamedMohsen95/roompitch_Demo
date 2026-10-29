@@ -1,4 +1,4 @@
-// Lighting moods the designer can pick in the 3D panel.
+// Lighting moods the designer can pick in the view bar (ui/ViewBar.tsx).
 // Each preset sets the HDRI (image-based light and reflections), a tint and strength for the sun
 // (whose position and natural colour come from the time of day, see sun.js), the soft fill light
 // and the camera exposure, plus how the light is described to the AI renderer.
@@ -10,8 +10,6 @@ import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { HDRLoader } from "three/addons/loaders/HDRLoader.js";
 import { renderer, scene, fill } from "./scene.js";
 import { updateSun } from "./sun.js";
-import { $ } from "../utils.js";
-import { t } from "../i18n.js";
 
 export const LIGHTING = [
   {id:"daylight", name:"Daylight", hdri:"photo_studio_loft_hall_1k", env:.75, exposure:1.1,
@@ -33,7 +31,7 @@ const envCache = new Map();   // hdri name -> Promise<prefiltered texture>
 // Download an HDRI once and pre-blur it for rough and shiny surfaces (PMREM).
 function loadEnv(name){
   if (!envCache.has(name)) envCache.set(name, new Promise((resolve, reject) => {
-    new HDRLoader().load(`hdri/${encodeURIComponent(name)}.hdr`, hdr => {
+    new HDRLoader().load(`/hdri/${encodeURIComponent(name)}.hdr`, hdr => {
       hdr.mapping = THREE.EquirectangularReflectionMapping;
       const tex = pmrem.fromEquirectangular(hdr).texture;
       hdr.dispose();
@@ -52,7 +50,6 @@ export async function setLighting(id){
   const mine = ++request;
   current = p;
   try { localStorage.setItem(STORE_KEY, p.id); } catch {}
-  const sel = $("#lighting"); if (sel) sel.value = p.id;
 
   renderer.toneMappingExposure = p.exposure;
   updateSun();   // sun tint/strength
@@ -70,21 +67,12 @@ export async function setLighting(id){
 }
 
 export function initLighting(){
+  if (pmrem) return;
   pmrem = new THREE.PMREMGenerator(renderer);
   generatedEnv = pmrem.fromScene(new RoomEnvironment(), .04).texture;
-
-  const sel = $("#lighting");
-  relabelLighting();
-  sel.addEventListener("change", () => setLighting(sel.value));
 
   // ?lighting=warm in the address wins, then the last choice on this device, then Daylight.
   let saved = null; try { saved = localStorage.getItem(STORE_KEY); } catch {}
   setLighting(new URLSearchParams(location.search).get("lighting") || saved || DEFAULT_ID);
 }
 
-// Mood names in the interface language (call after the language changes).
-export function relabelLighting(){
-  const sel = $("#lighting"); if (!sel) return;
-  sel.innerHTML = LIGHTING.map(l => `<option value="${l.id}">${t("light_" + l.id)}</option>`).join("");
-  sel.value = current.id;
-}

@@ -1,13 +1,11 @@
 // "Photoreal render": snapshot the 3D view, describe the room in words, send both to /api/generate
-// (Cloudflare Workers AI or fal.ai, chosen on the server) and show the result.
+// (Cloudflare Workers AI or fal.ai, chosen on the server). The dialog is ui/RenderDialog.tsx.
 import { S, foot } from "./state.js";
 import { FU, EN, isRug } from "./catalog.js";
-import { $ } from "./utils.js";
 import { update } from "./app.js";
 import { renderer, scene, camera } from "./three/scene.js";
 import { buildRoom, cullForCamera } from "./three/room.js";
 import { refreshHelper } from "./three/items.js";
-import { t } from "./i18n.js";
 import { wallsOf, wallFrame, nearestWall, toCm } from "./geometry.js";
 import { openingDesc } from "./openings.js";
 import { getLighting } from "./three/lighting.js";
@@ -79,16 +77,16 @@ export function describeScene(){
   ].join(" ").slice(0, 2900); // the server rejects prompts over 3000 characters
 }
 
-let cfg = null, job = null;
-async function getCfg(){
+let cfg = null;
+export async function getCfg(){
   if (cfg) return cfg;
   try { const r = await fetch("/api/generate"); cfg = await r.json(); }
   catch { cfg = {aiEnabled:false, offline:true}; }
   return cfg;
 }
 // The access code is shared with the main app's Studio settings.
-const getCode = () => { try { return JSON.parse(localStorage.getItem("rp_settings") || "{}").accessCode || ""; } catch { return ""; } };
-const setCode = (v) => { try { const s = JSON.parse(localStorage.getItem("rp_settings") || "{}"); s.accessCode = v; localStorage.setItem("rp_settings", JSON.stringify(s)); } catch {} };
+export const getCode = () => { try { return JSON.parse(localStorage.getItem("rp_settings") || "{}").accessCode || ""; } catch { return ""; } };
+export const setCode = (v) => { try { const s = JSON.parse(localStorage.getItem("rp_settings") || "{}"); s.accessCode = v; localStorage.setItem("rp_settings", JSON.stringify(s)); } catch {} };
 
 // Capture the 3D view without the selection outline. `small` respects the provider's input size limit.
 export function snapshot(maxSide = 1600){
@@ -104,51 +102,28 @@ export function snapshot(maxSide = 1600){
   return shot;
 }
 
-function setStatus(msg, err = false){ const s = $("#mStatus"); s.textContent = msg; s.classList.toggle("err", err); }
-const providerName = (p) => p === "cloudflare" ? "Cloudflare Workers AI" : p;
+export const providerName = (p) => p === "cloudflare" ? "Cloudflare Workers AI" : p;
 
-async function runRender(){
-  $("#codeRow").hidden = true; $("#outImg").hidden = true; $("#saveImg").hidden = true;
-  $("#spin").hidden = false; $("#spin").textContent = t("rendering"); setStatus("");
+// A render request for the current view: the snapshot, the prompt and the output size.
+export async function newJob(){
   const c = await getCfg();
-  if (!job){
-    const shot = snapshot(c.maxInputSide || 1024);
-    const outW = shot.aspect >= 1 ? 1024 : Math.round(1024 * shot.aspect);
-    const outH = shot.aspect >= 1 ? Math.round(1024 / shot.aspect) : 1024;
-    job = {shot, prompt:describeScene(), outW, outH};
-  }
-  $("#shot").src = job.shot.full; $("#promptTxt").textContent = job.prompt;
-  if (!c.aiEnabled){
-    $("#spin").textContent = c.offline
-      ? t("offline")
-      : t("noKeys");
-    setStatus(t("renderOff"), true); return;
-  }
-  setStatus(t("sending", {p:providerName(c.provider)}));
-  const t0 = performance.now();
-  try {
-    const r = await fetch("/api/generate", {
-      method:"POST",
-      headers:{"Content-Type":"application/json", "x-access-code":getCode()},
-      body:JSON.stringify({mode:"restyle", image:job.shot.small, prompt:job.prompt, width:job.outW, height:job.outH})
-    });
-    if (r.status === 401){ $("#codeRow").hidden = false; $("#spin").textContent = t("codeNeeded"); setStatus(t("enterCode"), true); $("#accessCode").focus(); return; }
-    const data = await r.json().catch(() => ({}));
-    if (!r.ok || !data.image){ $("#spin").textContent = data.error || t("wentWrong", {s:r.status}); setStatus(t("failed"), true); return; }
-    const secs = ((performance.now() - t0) / 1000).toFixed(1);
-    $("#outImg").src = data.image; $("#outImg").hidden = false; $("#spin").hidden = true;
-    $("#saveImg").href = data.image; $("#saveImg").hidden = false;
-    setStatus(t("done", {s:secs, p:providerName(c.provider)}));
-    renders.push({src:data.image, at:Date.now()});
-  } catch {
-    $("#spin").textContent = t("noServer"); setStatus(t("failed"), true);
-  }
+  const shot = snapshot(c.maxInputSide || 1024);
+  const outW = shot.aspect >= 1 ? 1024 : Math.round(1024 * shot.aspect);
+  const outH = shot.aspect >= 1 ? Math.round(1024 / shot.aspect) : 1024;
+  return {shot, prompt:describeScene(), outW, outH};
 }
 
-export function initRenderDialog(){
-  $("#renderBtn").onclick = () => { job = null; $("#modal").hidden = false; runRender(); };
-  $("#again").onclick = () => runRender();        // same scene, new attempt
-  $("#codeGo").onclick = () => { setCode($("#accessCode").value.trim()); runRender(); };
-  $("#closeModal").onclick = () => { $("#modal").hidden = true; };
-  $("#modal").addEventListener("click", e => { if (e.target.id === "modal") $("#modal").hidden = true; });
+// Send a job. -> {image, secs} | {needCode:true} | {error, status}; throws when the server can't be reached.
+export async function sendJob(job){
+  const t0 = performance.now();
+  const r = await fetch("/api/generate", {
+    method:"POST",
+    headers:{"Content-Type":"application/json", "x-access-code":getCode()},
+    body:JSON.stringify({mode:"restyle", image:job.shot.small, prompt:job.prompt, width:job.outW, height:job.outH})
+  });
+  if (r.status === 401) return {needCode:true};
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok || !data.image) return {error:data.error || null, status:r.status};
+  renders.push({src:data.image, at:Date.now()});
+  return {image:data.image, secs:((performance.now() - t0) / 1000).toFixed(1)};
 }
