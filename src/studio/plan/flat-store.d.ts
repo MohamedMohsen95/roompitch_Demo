@@ -1,0 +1,10 @@
+import type { Flat, SpaceRoom } from "./flat";
+export function onFlatSaved(fn: ((f: Flat) => void) | null): void;
+export function validFlat(f: any): boolean;
+export function saveFlat(flat: Flat): void;
+export function loadFlat(): Flat | null;
+export function clearFlat(): void;
+export function setCurrentSpace(id: string | null): void;
+export function currentSpace(): string | null;
+export function openSpace(flat: Flat, spaceId: string): {room: SpaceRoom, saved: any | null, flat: Flat};
+export function designSaved(flat: Flat, spaceId: string, data: any): Flat;

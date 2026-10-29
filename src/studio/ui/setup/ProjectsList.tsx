@@ -5,7 +5,7 @@ import { t, getLang } from "../../i18n.js";
 import { listProjects, renameProject, deleteProject } from "../../cloud-store.js";
 import { useLang } from "../hooks";
 
-type Project = {id: string, name: string, updatedAt: string, form: any, pieces: number, current: boolean};
+type Project = {id: string, name: string, kind: "studio" | "flat", updatedAt: string, form: any, pieces: number, current: boolean};
 
 // "3 hours ago", "yesterday", or the date when older than a week.
 function when(iso: string){
@@ -23,7 +23,7 @@ const nameOf = (p: Project) => p.name === "Untitled room" ? t("projUntitled") : 
 
 type Props = {
   onOpen: (p: Project) => void;
-  onCurrentDeleted: () => void;
+  onCurrentDeleted: (kind: "studio" | "flat") => void;
   onHasCurrent: (has: boolean) => void;   // a listed current project replaces the plain "Continue" button
   error: string | null;
 };
@@ -64,7 +64,7 @@ export default function ProjectsList({onOpen, onCurrentDeleted, onHasCurrent, er
     setDeleting(null);
     if (!r.ok) return;
     setProjects(list => list.filter(x => x.id !== p.id));
-    if (r.current) onCurrentDeleted();
+    if (r.current) onCurrentDeleted(r.kind || "studio");
   }
 
   const onKey = (p: Project) => (e: KeyboardEvent) => {
@@ -84,7 +84,7 @@ export default function ProjectsList({onOpen, onCurrentDeleted, onHasCurrent, er
       <ul className="projs">
         {projects.map(p => {
           const size = p.form?.lengthCm && p.form?.widthCm ? <bdi dir="ltr">{p.form.lengthCm} × {p.form.widthCm} {t("cm")}</bdi> : null;
-          const meta = [size, t("projPieces", {n:p.pieces}), when(p.updatedAt)].filter(Boolean);
+          const meta = (p.kind === "flat" ? [t("flatTitle"), when(p.updatedAt)] : [size, t("projPieces", {n:p.pieces}), when(p.updatedAt)]).filter(Boolean);
           const open = () => { if (renaming !== p.id) onOpen(p); };
           return (
             <li key={p.id} className={"proj" + (p.current ? " current" : "")} data-id={p.id}>

@@ -18,10 +18,13 @@ type Props = {
   onStart: (room: any, opts: {keepDesign: boolean, draft: any}) => void;
   onContinue: () => void;
   onOpenProject: (p: any) => void;
-  onCurrentDeleted: () => void;
+  onCurrentDeleted: (kind: "studio" | "flat") => void;
+  canContinueFlat: boolean;
+  onContinueFlat: () => void;
   projectError: string | null;
   onAccount: () => void;
   onLang: () => void;
+  onPlan: () => void;                // "I have a floor plan"
 };
 
 export default function SetupScreen(props: Props){
@@ -49,8 +52,17 @@ export default function SetupScreen(props: Props){
             <svg viewBox="0 0 48 48" aria-hidden="true"><rect x="6" y="12" width="36" height="26" rx="3" fill="none" stroke="currentColor" strokeWidth="2.4"/><circle cx="24" cy="25" r="7" fill="none" stroke="currentColor" strokeWidth="2.4"/><path d="M17 12l3-5h8l3 5" fill="none" stroke="currentColor" strokeWidth="2.4"/></svg>
             <b>{t("choosePhotos")}</b><span>{t("choosePhotosSub")}</span>
           </button>
+          <button className="choice" type="button" onClick={props.onPlan}>
+            <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M6 8h36v32H6z M6 24h14 M26 8v12 M26 28v12 M26 24h16" fill="none" stroke="currentColor" strokeWidth="2.4"/><path d="M20 24a6 6 0 0 1 6-6" fill="none" stroke="currentColor" strokeWidth="1.6"/></svg>
+            <b>{t("chooseFloorPlan")}</b><span>{t("chooseFloorPlanSub")}</span>
+          </button>
         </div>
-        {props.canContinue && !listed && <button className="btn" type="button" onClick={props.onContinue}>{t("continueLast")}</button>}
+        {(props.canContinue && !listed || props.canContinueFlat) && (
+          <div className="acts2">
+            {props.canContinue && !listed && <button className="btn" type="button" onClick={props.onContinue}>{t("continueLast")}</button>}
+            {props.canContinueFlat && <button className="btn" type="button" onClick={props.onContinueFlat}>{t("continueFlat")}</button>}
+          </div>
+        )}
         <ProjectsList onOpen={props.onOpenProject} onCurrentDeleted={props.onCurrentDeleted} onHasCurrent={setListed} error={props.projectError}/>
       </div>
     );

@@ -23,9 +23,9 @@ type DialogId = "render" | "settings" | "prices" | "pdf" | "upload" | "account" 
 const EST_KEY = "rp_est_closed";
 const loadEstClosed = () => { try { return localStorage.getItem(EST_KEY) === "1"; } catch { return false; } };
 
-type Props = {onProjects: () => void, onRoomSetup: () => void, onLang: () => void};
+type Props = {onProjects: () => void, onRoomSetup: () => void, onLang: () => void, onFlat?: (() => void) | null};
 
-export default function StudioScreen({onProjects, onRoomSetup, onLang}: Props){
+export default function StudioScreen({onProjects, onRoomSetup, onLang, onFlat}: Props){
   useStudio();
   const account = useAccount();
   const [dialog, setDialog] = useState<DialogId>(null);
@@ -53,7 +53,9 @@ export default function StudioScreen({onProjects, onRoomSetup, onLang}: Props){
         <div className="brand"><strong>RoomPitch</strong><span className="tag">{t("tag")}</span></div>
         <div className="dims">
           <span className="roomsize" dir="ltr">{toCm(S.L)} × {toCm(S.W)} × {toCm(S.H)} {t("cm")}</span>
-          <button className="btn" type="button" onClick={onRoomSetup}>{t("roomSetup")}</button>
+          {onFlat
+            ? <button className="btn" type="button" onClick={onFlat}>{t("flatBtn")}</button>
+            : <button className="btn" type="button" onClick={onRoomSetup}>{t("roomSetup")}</button>}
         </div>
         <div className="tools">
           <button className="btn langbtn" type="button" onClick={onLang}>{t("langBtn")}</button>

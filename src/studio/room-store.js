@@ -13,9 +13,14 @@ export const setSaving = (on) => { paused = !on; };
 // Something else that also keeps each saved room (cloud-store.js), called after every save.
 export const onSaved = (fn) => { afterSave = fn; };
 
+// While a space of a flat is open, its saves go to the flat instead (StudioApp), not to this browser's single room.
+let redirect = null;
+export const redirectSaves = (fn) => { redirect = fn; };
+
 export function saveRoom(){
   if (paused) return;
   const data = {v:1, savedAt:Date.now(), form:S.form, poly:S.poly, openings:S.openings, H:S.H, walls:S.walls, floor:S.floor, items:S.items, nextId:S.nextId, sun:S.sun};
+  if (redirect){ redirect(data); return; }
   try { localStorage.setItem(KEY, JSON.stringify(data)); } catch { /* storage full or blocked: keep working */ }
   afterSave?.(data);
 }

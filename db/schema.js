@@ -89,7 +89,8 @@ export const clients = pgTable("clients", {
 
 /* ── Work ── */
 
-// A studio room (kind "studio": data is what room-store.js saves) or a photo restyle (kind "restyle").
+// A studio room (kind "studio": data is what room-store.js saves), a photo restyle (kind "restyle"),
+// or a flat read from a floor plan (kind "flat": data is plan/flat-store.js's flat; needs its migration).
 export const projects = pgTable("projects", {
   id:            uuid("id").primaryKey().defaultRandom(),
   owner:         owner(),
@@ -103,7 +104,7 @@ export const projects = pgTable("projects", {
   updatedAt:     updatedAt()
 }, (t) => [
   ownerFk(t, "projects"),
-  oneOf("projects_kind_check", t.kind, ["studio", "restyle"]),
+  oneOf("projects_kind_check", t.kind, ["studio", "restyle", "flat"]),
   oneOf("projects_status_check", t.status, ["draft", "sent", "won", "lost"]),
   index("projects_owner_updated").on(t.owner, t.updatedAt.desc()),
   ...ownRows(t, "projects")

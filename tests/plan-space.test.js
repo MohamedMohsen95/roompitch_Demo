@@ -24,7 +24,7 @@ test("a flat space becomes a studio room in local metres", () => {
   assert.deepEqual(r.poly, [[0, 0], [4, 0], [4, 2], [0, 2]]);
   assert.deepEqual(r.origin, [0, 0]);
   assert.equal(r.H, 2.8);
-  assert.deepEqual(r.form, {shape:"plan", heightCm:280});
+  assert.deepEqual(r.form, {shape:"plan", lengthCm:400, widthCm:200, heightCm:280});
   const door = r.openings.find(o => o.id === "d1");
   assert.equal(door.wall, 1);
   assert.ok(near(door.offset, 0.6) && near(door.width, 0.9) && near(door.height, 2.1) && door.sill === 0);

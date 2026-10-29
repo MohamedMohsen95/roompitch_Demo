@@ -160,8 +160,9 @@ export function spaceRoom(flat, spaceId){
       height:(o.heightCm || 0) / 100, sill:o.type === "window" ? (o.sillCm || 0) / 100 : 0
     });
   }
+  const [w, h] = bboxPx(outline);
   return {
-    form:{shape:"plan", heightCm:Math.round(flat.H * 100)},
+    form:{shape:"plan", lengthCm:Math.round(w * scale * 100), widthCm:Math.round(h * scale * 100), heightCm:Math.round(flat.H * 100)},
     poly:outline.map(p => toLocal(p, origin, scale)),
     openings, H:flat.H, origin
   };
@@ -208,4 +209,32 @@ export function neighbours(flat, spaceId, withinM = 4){
     const [ox, oy] = originOf(o.outline), [ow, oh] = bboxPx(o.outline);
     return ox <= box.x1 && ox + ow >= box.x0 && oy <= box.y1 && oy + oh >= box.y0;
   }).map(o => orientCW(o.outline).map(p => toLocal(p, origin, scale)));
+}
+
+// After spaces or sizes change: the scale follows the written sizes, unless the designer set it from a wall.
+export function withSizeScale(flat){
+  if (flat.scaleFrom === "wall" && flat.scale) return flat;
+  const {scale} = scaleFromSizes(flat);
+  return {...flat, scale, scaleFrom:scale ? "sizes" : null};
+}
+
+export const newId = (prefix) => prefix + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+
+// The space wall nearest a point (within tolPx), optionally only of one space:
+// {spaceId, i, a, b, len, t /* px along the wall from a */, d /* px from the wall */} or null.
+export function nearestPlanWall(flat, p, tolPx, onlySpaceId = null){
+  let best = null;
+  for (const s of flat.spaces){
+    if (onlySpaceId && s.id !== onlySpaceId) continue;
+    const o = s.outline, n = o.length;
+    for (let i = 0; i < n; i++){
+      const a = o[i], b = o[(i + 1) % n], len = Math.hypot(b[0] - a[0], b[1] - a[1]);
+      if (!len) continue;
+      const ux = (b[0] - a[0]) / len, uy = (b[1] - a[1]) / len;
+      const t = Math.max(0, Math.min(len, (p[0] - a[0]) * ux + (p[1] - a[1]) * uy));
+      const d = Math.hypot(a[0] + ux * t - p[0], a[1] + uy * t - p[1]);
+      if (d <= tolPx && (!best || d < best.d)) best = {spaceId:s.id, i, a, b, len, t, d};
+    }
+  }
+  return best;
 }

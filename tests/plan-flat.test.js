@@ -65,3 +65,27 @@ test("wall lengths in cm, and setting one keeps a square outline square", () => 
   const o2 = setWallLengthCm(o, 0, 300, 0.02);
   assert.deepEqual(wallLengthsCm(o2, 0.02), [300, 100, 300, 100]);
 });
+
+test("withSizeScale follows the written sizes unless the scale came from a wall", async () => {
+  const { withSizeScale } = await import("../src/studio/plan/flat.js");
+  const f = newFlat({w:1000, h:1000});
+  f.spaces = [space("a", box(0, 0, 100, 200), "10' x 20'")];
+  const g = withSizeScale(f);
+  assert.ok(Math.abs(g.scale - 0.0305) < 1e-4);
+  assert.equal(g.scaleFrom, "sizes");
+  assert.equal(f.scale, null);                                  // not mutated
+  const h = withSizeScale({...g, spaces:[{...g.spaces[0], sizeText:null}]});
+  assert.deepEqual([h.scale, h.scaleFrom], [null, null]);
+  const w = withSizeScale({...f, scale:0.02, scaleFrom:"wall"});
+  assert.deepEqual([w.scale, w.scaleFrom], [0.02, "wall"]);
+});
+
+test("nearestPlanWall finds the wall under the pointer", async () => {
+  const { nearestPlanWall } = await import("../src/studio/plan/flat.js");
+  const f = newFlat({w:500, h:500});
+  f.spaces = [space("a", box(0, 0, 100, 50), null), space("b", box(100, 0, 100, 50), null)];
+  const w = nearestPlanWall(f, [40, 52], 5);
+  assert.deepEqual([w.spaceId, w.i, w.t], ["a", 2, 60]);           // wall 2 runs right to left
+  assert.equal(nearestPlanWall(f, [40, 30], 5), null);
+  assert.equal(nearestPlanWall(f, [150, -3], 5, "b").spaceId, "b");
+});

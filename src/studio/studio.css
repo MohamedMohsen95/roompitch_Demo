@@ -277,9 +277,9 @@ details p{margin:6px 0 0; font-family:var(--font-data); font-size:11.5px; line-h
 }
 
 /* ───────── Screen 1: new room ───────── */
-.choose{max-width:880px; width:100%; margin:6vh auto 0; display:flex; flex-direction:column; gap:14px; align-items:flex-start}
+.choose{max-width:980px; width:100%; margin:6vh auto 0; display:flex; flex-direction:column; gap:14px; align-items:flex-start}
 .choose h1{margin:0; font-size:28px; font-weight:600; text-wrap:balance}
-.choices{display:grid; grid-template-columns:1fr 1fr; gap:14px; width:100%}
+.choices{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; width:100%}
 .choice{display:flex; flex-direction:column; gap:8px; align-items:flex-start; text-align:start; padding:22px; border:1px solid var(--line); border-radius:12px; background:var(--surface); min-height:180px}
 .choice:hover{border-color:var(--accent); background:var(--accent-soft)}
 .choice svg{width:44px; height:44px; color:var(--accent)}
@@ -354,7 +354,65 @@ details p{margin:6px 0 0; font-family:var(--font-data); font-size:11.5px; line-h
 #setupPreview{width:100%; aspect-ratio:4 / 3; display:block; background:var(--stage); border-radius:8px; touch-action:none}
 .setup-actions{display:flex; justify-content:space-between; gap:10px; margin-top:12px}
 .setup-actions .primary:disabled{opacity:.45; cursor:not-allowed}
-@media (max-width:900px){ .setup-grid{grid-template-columns:1fr} .col-preview{position:static; order:-1} .choices{grid-template-columns:1fr} }
+/* Floor plan import */
+.plan-grid{grid-template-columns:minmax(300px,0.8fr) minmax(0,1.4fr)}
+.pedit{display:flex; flex-direction:column; gap:6px}
+.ptools{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+.planedit{width:100%; height:auto; max-height:78vh; display:block; background:#fff; border-radius:8px; border:1px solid var(--line); touch-action:none; user-select:none; -webkit-user-select:none}
+.planedit.tool-trace, .planedit.tool-door, .planedit.tool-window{cursor:crosshair}
+.psp polygon{fill:var(--accent); fill-opacity:.12; stroke:var(--accent); stroke-width:2; cursor:pointer}
+.psp.ai polygon{stroke-dasharray:6 4}
+.psp.on polygon{fill-opacity:.24; stroke-width:3}
+.psp.bad polygon{stroke:#c0392b; fill:#c0392b}
+.psp text, .plen{fill:var(--ink); paint-order:stroke; stroke:#fff; stroke-width:3px; font-family:var(--font-body); font-weight:600; pointer-events:none}
+.plen{fill:var(--accent); font-family:var(--font-data)}
+.pop line{stroke-width:7; stroke-linecap:round; cursor:pointer}
+.pop.door line{stroke:#d35400}
+.pop.window line{stroke:#2e86c1}
+.pop.ai line{stroke-dasharray:8 5}
+.pop.on line{stroke-width:10}
+.pop.new line, line.pop.new{stroke-width:7; stroke:#888; stroke-dasharray:4 4}
+.planedit .handle{fill:#fff; stroke:var(--accent); stroke-width:2.5; cursor:grab}
+.planedit .handle.on{fill:var(--accent)}
+.ptrace polyline{fill:none; stroke:#c0392b; stroke-width:2.5; stroke-dasharray:6 4}
+.ptrace circle{fill:#fff; stroke:#c0392b; stroke-width:2}
+.ptrace circle.first{fill:#c0392b}
+.orow.on{border-color:var(--accent); background:var(--accent-soft)}
+.sname{flex:1; min-width:0; font:inherit; font-weight:600; padding:4px 8px; border:1px solid var(--line); border-radius:7px; background:var(--surface)}
+.sarea{font-family:var(--font-data); font-size:12.5px; color:var(--muted)}
+.sdetail{display:flex; flex-direction:column; gap:8px}
+.ssize{display:flex; flex-direction:column; gap:3px; font-size:12.5px; color:var(--muted)}
+.ssize input{padding:7px 8px; border:1px solid var(--line); border-radius:7px; background:var(--surface); font-family:var(--font-data)}
+.ofields.walls{grid-template-columns:repeat(3,minmax(0,1fr))}
+.olist{display:flex; flex-wrap:wrap; gap:6px}
+.ochip{font:inherit; font-size:12.5px; padding:3px 10px; border-radius:20px; border:1px solid var(--line); background:var(--sunk); cursor:pointer}
+.ochip.door{border-inline-start:4px solid #d35400}
+.ochip.window{border-inline-start:4px solid #2e86c1}
+.ochip.on{border-color:var(--accent); background:var(--accent-soft)}
+.chk{display:flex; gap:8px; align-items:flex-start; font-size:13px}
+.planup{align-items:stretch}
+.pdfpick{display:flex; flex-direction:column; gap:10px}
+.pdfpick label{display:flex; flex-direction:column; gap:4px; font-size:13px; color:var(--muted); max-width:260px}
+.pdfpick select{padding:7px 8px; border:1px solid var(--line); border-radius:7px; background:var(--surface)}
+.pdfprev{border:1px solid var(--line); border-radius:8px; background:#fff; min-height:200px; display:grid; place-items:center; overflow:hidden}
+.pdfprev img{max-width:100%; max-height:60vh; display:block}
+.setup-actions > .dnote{align-self:center; margin:0}
+/* The flat screen */
+.flat-grid{display:grid; grid-template-columns:minmax(0,1.4fr) minmax(280px,0.8fr); gap:12px; align-items:start}
+.flatplan{width:100%; height:auto; max-height:78vh; display:block; background:#fff; border-radius:8px; border:1px solid var(--line)}
+.flatplan polygon{fill-opacity:.18; stroke-width:2; cursor:pointer}
+.flatplan .st-todo polygon{fill:#9aa3a0; stroke:#6a736f}
+.flatplan .st-doing polygon{fill:var(--accent); stroke:var(--accent)}
+.flatplan .st-done polygon{fill:#27ae60; stroke:#1e8449}
+.flatplan g:hover polygon{fill-opacity:.32}
+.flatplan text{fill:var(--ink); paint-order:stroke; stroke:#fff; stroke-width:3px; font-weight:600; pointer-events:none}
+.fspaces{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:8px}
+.fspace{display:flex; align-items:center; gap:10px; padding:10px 12px; border:1px solid var(--line); border-radius:10px; background:var(--surface)}
+.fspace .projtext{flex:1}
+.stchip{font-size:11px; font-weight:600; padding:1px 8px; border-radius:999px; background:var(--sunk); border:1px solid var(--line)}
+.stchip.st-doing{background:var(--accent-soft); border-color:var(--accent)}
+.stchip.st-done{background:#e8f6ee; border-color:#27ae60; color:#1e8449}
+@media (max-width:900px){ .setup-grid, .plan-grid, .flat-grid{grid-template-columns:1fr} .col-preview{position:static; order:-1} .choices{grid-template-columns:1fr} }
 @media (max-width:560px){ .fgrid, .ofields{grid-template-columns:repeat(2,minmax(0,1fr))} }
 @media (max-width:1150px){
   .app{grid-template-columns:240px minmax(0,1fr)}
