@@ -18,9 +18,23 @@ export default defineConfig(({ mode }) => {
     build: {
       chunkSizeWarningLimit: 800 // three.js alone is ~650 kB minified (~170 kB gzipped); that's expected
     },
-    plugins: [react(), vercelApiInDev()]
+    plugins: [react(), vercelApiInDev(), printStudioUrl()]
   };
 });
+
+// `npm run dev` / `npm run preview` also print the Room Studio's address under Vite's usual one.
+function printStudioUrl() {
+  const wrap = (server) => {
+    const print = server.printUrls.bind(server);
+    server.printUrls = () => {
+      print();
+      for (const url of (server.resolvedUrls && server.resolvedUrls.local) || []) {
+        server.config.logger.info(`  \u279c  Studio:  ${url.replace(/\/$/, "")}/studio`);
+      }
+    };
+  };
+  return { name: "print-studio-url", configureServer: wrap, configurePreviewServer: wrap };
+}
 
 // /api/<name> -> default export of api/<name>.js, with the small part of Vercel's
 // request/response API those handlers use (req.body, res.status().json()).
