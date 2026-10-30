@@ -3,18 +3,57 @@
 import { useEffect, useRef, useState } from "react";
 import { attachScene } from "../three/scene.js";
 import { dropIn3D } from "../three/interaction.js";
-import { isWalking } from "../three/walk.js";
+import { isWalking, lastBlink, lastExit } from "../three/walk.js";
+import { isMuted, setMuted } from "../three/walk-sound.js";
 import { useStudio } from "./hooks";
 import Hints from "./Hints";
 import WalkButton from "./WalkIntro";
 import { t } from "../i18n.js";
 import { CameraViews, LightMenu } from "./ViewBar";
 import { MaxButton, ViewRail, viewClass, type MaxProps } from "./ViewMax";
+import { IconSound, IconMuted, IconWalk } from "./Icons";
 
-// How to move things (or, while walking, how to walk).
+// How to move things (or, while walking, how to walk), and while walking the sound on/off button.
 function Caption(){
   useStudio();
-  return <Hints text={t(isWalking() ? "walkHint" : "threeHint")}/>;
+  const off = isMuted();
+  return <>
+    <Hints text={t(isWalking() ? "walkHint" : "threeHint")}/>
+    {isWalking() && <button type="button" className="walk-sound" aria-pressed={!off} title={t(off ? "soundOn" : "soundOff")}
+      aria-label={t(off ? "soundOn" : "soundOff")} onClick={() => setMuted(!off)}>{off ? <IconMuted/> : <IconSound/>}</button>}
+  </>;
+}
+
+// Entering walk mode you blink: eyelids close over the view and open again on the room.
+// Shown only while that blink is playing, so coming back to the studio later doesn't replay it.
+const BLINK_MS = 1600;   // a little over the animation (studio.css .blink)
+function WalkBlink(){
+  useStudio();
+  const at = lastBlink();
+  const [done, setDone] = useState(0);
+  if (!at || done === at || performance.now() - at > BLINK_MS) return null;
+  return <div key={at} className="blink" aria-hidden="true" onAnimationEnd={e => { if (e.target === e.currentTarget) setDone(at); }}><i/><i/></div>;
+}
+
+// Leaving walk mode the view blurs behind a short "Exiting walk mode" card while the camera glides out to
+// the corner, then clears. Like the blink, shown only while it plays; if the view is rebuilt meanwhile (the
+// layout going back from the expanded 3D view) it carries on from where it was.
+const EXIT_MS = 2000;   // studio.css .walkexit
+function WalkExit(){
+  useStudio();
+  const at = lastExit();
+  const [done, setDone] = useState(0);
+  if (!at || done === at || performance.now() - at > EXIT_MS) return null;
+  return <ExitCard key={at} at={at} onEnd={() => setDone(at)}/>;
+}
+function ExitCard({at, onEnd}: {at: number, onEnd: () => void}){
+  const [ago] = useState(() => -(performance.now() - at) + "ms");
+  return (
+    <div className="walkexit" role="status" style={{"--ago": ago} as React.CSSProperties}
+      onAnimationEnd={e => { if (e.target === e.currentTarget) onEnd(); }}>
+      <div className="we-card"><IconWalk/><span>{t("walkExiting")}</span><i/></div>
+    </div>
+  );
 }
 
 export default function ThreeView({max, onMax}: MaxProps){
@@ -37,6 +76,8 @@ export default function ThreeView({max, onMax}: MaxProps){
             const payload = e.dataTransfer.getData("text/plain");
             if (payload) dropIn3D(e.clientX, e.clientY, payload);
           }}/>
+        <WalkBlink/>
+        <WalkExit/>
         <Caption/>
       </div>
     </div>

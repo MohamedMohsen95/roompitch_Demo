@@ -116,6 +116,62 @@ button{cursor:pointer}
 @keyframes walk-sheen{0%, 60%{transform:translateX(-120%)} 100%{transform:translateX(120%)}}
 @media (prefers-reduced-motion: reduce){ .walkbtn::after{animation:none; content:none} }
 
+/* Walking: the blinks on entering (eyelids close and open twice as the blur clears),
+   and the sound button on the view */
+.blink{position:absolute; inset:0; z-index:3; overflow:hidden; pointer-events:none; animation:blink-blur 1.48s ease-out}
+.blink i{position:absolute; inset-inline:-15%; height:62%; background:#0b0d0c}
+.blink i:first-child{top:0; border-radius:0 0 50% 50% / 0 0 35% 35%; transform:translateY(-105%); animation:lid-top 1.48s both}
+.blink i:last-child{bottom:0; border-radius:50% 50% 0 0 / 35% 35% 0 0; transform:translateY(105%); animation:lid-bottom 1.48s both}
+/* Two blinks over 1.48s: a quick one (shut by 90ms, open again by 240ms), a pause, then one about twice as
+   slow (closing from 420ms, shut at 740ms, open again by 1.48s; walk-sound.js chimes at 740ms) */
+@keyframes lid-top{
+  0%{transform:translateY(-105%); animation-timing-function:cubic-bezier(.5, 0, .9, .6)}
+  6.1%, 8.8%{transform:translateY(0); animation-timing-function:cubic-bezier(.2, .6, .3, 1)}
+  16.2%, 28.4%{transform:translateY(-105%); animation-timing-function:cubic-bezier(.45, 0, .7, .7)}
+  50%, 58.1%{transform:translateY(0); animation-timing-function:cubic-bezier(.3, .4, .4, 1)}
+  100%{transform:translateY(-105%)}}
+@keyframes lid-bottom{
+  0%{transform:translateY(105%); animation-timing-function:cubic-bezier(.5, 0, .9, .6)}
+  6.1%, 8.8%{transform:translateY(0); animation-timing-function:cubic-bezier(.2, .6, .3, 1)}
+  16.2%, 28.4%{transform:translateY(105%); animation-timing-function:cubic-bezier(.45, 0, .7, .7)}
+  50%, 58.1%{transform:translateY(0); animation-timing-function:cubic-bezier(.3, .4, .4, 1)}
+  100%{transform:translateY(105%)}}
+@keyframes blink-blur{0%, 6%{backdrop-filter:blur(0)} 9%{backdrop-filter:blur(7px)} 28%{backdrop-filter:blur(3px)} 58%{backdrop-filter:blur(4px)} 100%{backdrop-filter:blur(0)}}
+@media (prefers-reduced-motion: reduce){
+  .blink{background:#0b0d0c; opacity:0; animation:blink-fade 1.48s}
+  .blink i{display:none}
+  @keyframes blink-fade{6.1%, 8.8%{opacity:1} 16%{opacity:0}}
+}
+/* Leaving a walk (2s): the view blurs and dims behind an "Exiting walk mode" card with a filling bar while
+   the camera glides out to the corner (walk.js: from 350ms, done by 1.65s), then clears.
+   --ago (negative) resumes it where it was if the view is rebuilt part-way. */
+.walkexit{position:absolute; inset:0; z-index:3; display:grid; place-items:center; pointer-events:none;
+  animation:exit-veil 2s ease-in-out var(--ago, 0s) both}
+.we-card{display:flex; align-items:center; gap:10px; position:relative; overflow:hidden; padding:12px 18px 14px; border-radius:12px;
+  background:rgba(22,26,25,.72); color:#fff; font-size:14px; font-weight:500; border:1px solid rgba(255,255,255,.14);
+  box-shadow:0 10px 30px rgba(0,0,0,.25); animation:exit-card 2s ease-out var(--ago, 0s) both}
+.we-card svg{width:18px; height:18px}
+.we-card i{position:absolute; inset-inline:0; bottom:0; height:3px; background:rgba(255,255,255,.75); transform-origin:left;
+  animation:exit-bar 2s linear var(--ago, 0s) both}
+[dir="rtl"] .we-card i{transform-origin:right}
+@keyframes exit-veil{
+  0%{backdrop-filter:blur(0); background:rgba(11,13,12,0)}
+  15%, 62%{backdrop-filter:blur(10px); background:rgba(11,13,12,.18)}
+  100%{backdrop-filter:blur(0); background:rgba(11,13,12,0)}}
+@keyframes exit-card{0%{opacity:0; transform:translateY(6px) scale(.97)} 14%, 66%{opacity:1; transform:none} 82%, 100%{opacity:0; transform:translateY(-4px)}}
+@keyframes exit-bar{0%{transform:scaleX(0)} 66%, 100%{transform:scaleX(1)}}
+@media (prefers-reduced-motion: reduce){
+  .walkexit{animation-name:exit-dim}
+  .we-card{animation-name:exit-fade}
+  .we-card i{display:none}
+  @keyframes exit-dim{0%, 100%{background:rgba(11,13,12,0)} 10%, 70%{background:rgba(11,13,12,.35)}}
+  @keyframes exit-fade{0%, 82%, 100%{opacity:0} 10%, 70%{opacity:1}}
+}
+.walk-sound{position:absolute; bottom:12px; inset-inline-end:12px; z-index:2; width:34px; height:34px; display:grid; place-items:center; border:1px solid var(--line);
+  border-radius:50%; background:color-mix(in srgb, var(--surface) 88%, transparent); color:var(--ink); cursor:pointer; backdrop-filter:blur(6px)}
+.walk-sound:hover{background:var(--surface)}
+.walk-sound[aria-pressed="false"]{color:var(--muted)}
+
 /* The walk intro: a looping clip with the main controls over it, then a line and the buttons */
 .walkintro{position:relative; width:min(560px, 100%); animation:wi-in .38s cubic-bezier(.2, .8, .2, 1) both; max-height:92vh; overflow:auto; background:var(--surface); border:1px solid var(--line); border-radius:16px; display:flex; flex-direction:column}
 .modal:has(> .walkintro){animation:wi-fade .3s ease-out both}

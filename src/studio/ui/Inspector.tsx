@@ -7,6 +7,7 @@ import { OP, findOpening, refit, openingKind, duplicateOpening, centerOpening } 
 import { isAuto, supportUnder } from "../stacking.js";
 import { update } from "../app.js";
 import { notify, ui } from "../store.js";
+import { isWalking } from "../three/walk.js";
 import { rotateSel, deleteSel, clearSelection, alignSelected, canAlign, focusSel, toggleLock } from "../actions.js";
 import { multiCount, multiOpIds, multiItems } from "../selection.js";
 import { t, nameOf, getLang } from "../i18n.js";
@@ -120,7 +121,7 @@ export default function Inspector(){
       <AlignBar/>
       <div className="acts">
         <Btn label={t("deselect")} onClick={clearSelection}/>
-        <Btn icon={<IconFocus/>} label={t("focus")} title={t("focusHint")} onClick={focusSel}/>
+        {!isWalking() && <Btn icon={<IconFocus/>} label={t("focus")} title={t("focusHint")} onClick={focusSel}/>}
         {multiItems().length > 0 && <LockBtn locked={multiItems().every(isLocked)}/>}
         <Btn icon={<IconTrash/>} label={t("deleteAll")} danger onClick={deleteSel}/>
       </div>
@@ -151,7 +152,7 @@ export default function Inspector(){
         <Btn icon={<IconSwap/>} label={t("replace")} disabled={locked} onClick={() => { S.replacing = it.id; S.tab = "furn"; notify(); }}/>
         <Btn icon={<IconRotateCcw/>} label={t("rotateLeft")} title={t("rotateLeftHint")} disabled={locked} onClick={() => rotateSel(1)}/>
         <Btn icon={<IconRotate/>} label={t("rotateRight")} title={t("rotateRightHint")} disabled={locked} onClick={() => rotateSel(-1)}/>
-        <Btn icon={<IconFocus/>} label={t("focus")} title={t("focusHint")} onClick={focusSel}/>
+        {!isWalking() && <Btn icon={<IconFocus/>} label={t("focus")} title={t("focusHint")} onClick={focusSel}/>}
         <Btn icon={<IconCopy/>} label={t("duplicate")} onClick={() => {
           const c = {...it, id:S.nextId++, x:it.x + .3, y:it.y + .3}; delete c.locked;   // the copy is free to move
           clampItem(c); S.items.push(c); S.sel = {kind:"item", id:c.id}; update();

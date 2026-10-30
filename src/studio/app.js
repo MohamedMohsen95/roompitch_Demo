@@ -6,7 +6,7 @@ import { buildItems, syncItem, refreshHelper } from "./three/items.js";
 import { saveRoom } from "./room-store.js";
 import { notify } from "./store.js";
 
-let lastItemsKey = "";
+let lastItemsKey = null;   // null: rebuild the 3D pieces next time (an empty room's key is "")
 
 // The panels (plan, selection bar, estimate, library) redraw through notify(). 3D pieces are only
 // rebuilt when the set of pieces (or their type/rotation) changed; moves just reposition them.
@@ -21,4 +21,4 @@ export function update(){
 }
 
 // Force a full 3D rebuild (e.g. after the room size changed).
-export function rebuildAll(){ lastItemsKey = ""; update(); }
+export function rebuildAll(){ lastItemsKey = null; update(); }

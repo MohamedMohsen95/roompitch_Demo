@@ -55,8 +55,9 @@ export function attachScene(el){
 
 function themeBg(){ scene.background = new THREE.Color(cssVar("--stage") || "#dfe4e1"); }
 
-// The preset views. They glide there, except `instant` (opening a room).
-export function setCam(view, instant = false){
+const GLIDE_MS = 600;
+// The preset views. They glide there (over `ms`), except `instant` (opening a room).
+export function setCam(view, instant = false, ms = GLIDE_MS){
   const {L, W, H} = S, target = new THREE.Vector3(0, .9, 0), pos = new THREE.Vector3();
   const door = S.openings.find(o => o.type === "door"), dw = door && wallsOf(S.poly)[door.wall];
   if (view === "door" && dw){
@@ -66,7 +67,7 @@ export function setCam(view, instant = false){
   }
   else if (view === "top") pos.set(0, Math.max(L, W) * 1.7, .01);
   else pos.set(L * .85, H * 1.9, W * 1.25);
-  flyTo(pos, target, instant);
+  flyTo(pos, target, instant, ms);
 }
 
 // Frame a box (a piece, or several): keep looking from the same side, a little from above, close enough
@@ -80,19 +81,19 @@ export function focusBox(box){
   flyTo(center.clone().addScaledVector(dir, dist), center);
 }
 
-// Move the camera and the point it orbits, eased over ~0.6 s.
-let glide = null;   // {p0, t0, p1, t1, start}
-const GLIDE_MS = 600;
-function flyTo(pos, target, instant = false){
-  nav.exit?.();   // a view or a focus ends a walk
+// Move the camera and the point it orbits, eased over `ms` (~0.6 s).
+let glide = null;   // {p0, t0, p1, t1, start, ms}
+export const stopGlide = () => { glide = null; };   // a walk starting takes the camera
+function flyTo(pos, target, instant = false, ms = GLIDE_MS){
+  nav.exit?.(false);   // a view or a focus ends a walk (and takes the camera from there)
   if (instant || !looping){
     glide = null; camera.position.copy(pos); controls.target.copy(target); controls.update(); return;
   }
-  glide = {p0:camera.position.clone(), t0:controls.target.clone(), p1:pos.clone(), t1:target.clone(), start:performance.now()};
+  glide = {p0:camera.position.clone(), t0:controls.target.clone(), p1:pos.clone(), t1:target.clone(), start:performance.now(), ms};
 }
 function stepGlide(){
   if (!glide) return;
-  const k = Math.min(1, (performance.now() - glide.start) / GLIDE_MS), e = 1 - Math.pow(1 - k, 3);   // ease out
+  const k = Math.min(1, (performance.now() - glide.start) / glide.ms), e = 1 - Math.pow(1 - k, 3);   // ease out
   camera.position.lerpVectors(glide.p0, glide.p1, e); controls.target.lerpVectors(glide.t0, glide.t1, e);
   if (k === 1) glide = null;
 }

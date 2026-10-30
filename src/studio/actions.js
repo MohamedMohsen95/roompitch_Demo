@@ -14,7 +14,7 @@ import { undo, redo } from "./history.js";
 import { nudgeKey } from "./nudge.js";
 import { focusBox } from "./three/scene.js";
 import { itemsBox } from "./three/items.js";
-import { walkKey } from "./three/walk.js";
+import { walkKey, isWalking } from "./three/walk.js";
 
 // Apply a dragged/clicked library entry ("furn:sofa", "open:window", "wall:paint-white", "floor:oak").
 // `target` = {kind:'point', x, y} | {kind:'item', id, x?, y?} | {kind:'wall', id, along?} | {kind:'floor'} | null
@@ -108,8 +108,10 @@ export function toggleLock(){
   update();
 }
 
-// Glide the 3D camera up to the selected piece (or pieces) and orbit around it. False when nothing is selected.
+// Glide the 3D camera up to the selected piece (or pieces) and orbit around it. False when nothing is selected,
+// or while walking (focusing would end the walk; the Focus button is hidden then).
 export function focusSel(){
+  if (isWalking()) return false;
   const ids = multiIds().length ? multiIds() : S.sel && S.sel.kind === "item" ? [S.sel.id] : [];
   const box = ids.length && itemsBox(ids);
   if (!box) return false;
