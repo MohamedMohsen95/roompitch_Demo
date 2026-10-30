@@ -8,6 +8,8 @@ import SetupPreview from "./SetupPreview";
 import PhotosSection from "./PhotosSection";
 import ProjectsList from "./ProjectsList";
 import { AccountButton } from "../AccountDialog";
+import { Mark } from "../StudioScreen";
+import { IconGlobe } from "../Icons";
 import { useLang } from "../hooks";
 
 const ERR_KEY: Record<string, string> = {beyondWall:"errBeyondWall", tooTall:"errTooTall", overlap:"errOverlap", tooSmall:"errTooSmall"};
@@ -156,8 +158,11 @@ export default function SetupScreen(props: Props){
   return (
     <section className="setup wrap">
       <header className="bar">
-        <div className="brand"><strong>RoomPitch</strong><span className="tag">{t("newRoom")}</span></div>
-        <div className="tools"><AccountButton onOpen={props.onAccount}/><button className="btn langbtn" type="button" onClick={props.onLang}>{t("langBtn")}</button></div>
+        <div className="brand"><Mark/><strong>RoomPitch</strong></div>
+        <div className="tools">
+          <button className="btn ghost" type="button" onClick={props.onLang} lang={t("langBtn") === "English" ? "en" : "ar"}><IconGlobe/><span>{t("langBtn")}</span></button>
+          <AccountButton onOpen={props.onAccount}/>
+        </div>
       </header>
       {body}
     </section>

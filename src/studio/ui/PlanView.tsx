@@ -8,16 +8,18 @@ import { update } from "../app.js";
 import { applyPayload, rotateSel, select } from "../actions.js";
 import { notify } from "../store.js";
 import { t } from "../i18n.js";
+import { toCm } from "../geometry.js";
 import { syncAll } from "../three/items.js";
 import { buildRoom } from "../three/room.js";
 import { saveRoom } from "../room-store.js";
 import PlanSvg, { planViewBox } from "./PlanSvg";
 import { useLang } from "./hooks";
+import { MaxButton, ViewRail, viewClass, type MaxProps } from "./ViewMax";
 
 type Drag = {it: any, dx: number, dy: number, riders: any[]} | null;
 type DragOpen = {o: any, grab: number, moved: boolean} | null;
 
-export default function PlanView(){
+export default function PlanView({max, onMax}: MaxProps){
   const lang = useLang();
   const svg = useRef<SVGSVGElement>(null);
   const drag = useRef<Drag>(null), dragOpen = useRef<DragOpen>(null);
@@ -81,8 +83,12 @@ export default function PlanView(){
   };
 
   return (
-    <div className="panel view">
-      <h2><span>{t("planTitle")}</span> <small>{t("planHint")}</small></h2>
+    <div className={viewClass("plan", max)}>
+      <ViewRail title={t("planTitle")} onMax={onMax}/>
+      <div className="phead">
+        <h2>{t("planTitle")}</h2>
+        <div className="phead-tools"><small className="plan-dims" dir="ltr">{toCm(S.L)} × {toCm(S.W)} × {toCm(S.H)} {t("cm")}</small><MaxButton id="plan" max={max} onMax={onMax}/></div>
+      </div>
       <div className={"stage" + (dropOn ? " drop-on" : "")}
         onDragOver={e => { e.preventDefault(); setDropOn(true); }} onDragLeave={() => setDropOn(false)} onDrop={onDrop}>
         <svg id="plan" ref={svg} viewBox={planViewBox()} aria-label={t("planAria")}
@@ -90,6 +96,7 @@ export default function PlanView(){
           onDoubleClick={e => { if (closest(e, "[data-item]")) rotateSel(); }}>
           <PlanSvg lang={lang} sel={S.sel}/>
         </svg>
+        <p className="caption">{t("planHint")}</p>
       </div>
     </div>
   );

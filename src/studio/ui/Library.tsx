@@ -9,6 +9,7 @@ import { applyPayload } from "../actions.js";
 import { t, nameOf } from "../i18n.js";
 import { priceOf } from "../settings.js";
 import { toCm } from "../geometry.js";
+import { IconUpload } from "./Icons";
 
 const TABS = [["furn", "tabFurn"], ["open", "tabOpen"], ["wall", "tabWall"], ["floor", "tabFloor"]] as const;
 const HINT_KEYS: Record<string, string> = {furn:"hintFurn", open:"hintOpen", wall:"hintWall", floor:"hintFloor"};
@@ -37,17 +38,17 @@ function Tile({tab, o}: {tab: string, o: any}){
     const fill = maps ? {background:`url(${maps.base}) center/${38 * o.tile / Math.max(o.w, o.d)}px`} : {background:o.c};
     body = <>
       <div className="sw" style={{background:"var(--stage)"}}><div className="fp" style={{width:o.w * k, height:o.d * k, ...fill}}/></div>
-      <b>{nameOf(o)}</b><span>{Math.round(o.w * 100)}×{Math.round(o.d * 100)} {t("cm")} · {fmt(priceOf(o.id))}</span>
+      <b>{nameOf(o)}</b><span className="meta"><bdi>{Math.round(o.w * 100)}×{Math.round(o.d * 100)} {t("cm")}</bdi><bdi>{fmt(priceOf(o.id))}</bdi></span>
     </>;
   } else if (tab === "open"){
     body = <>
       <div className="sw" style={{background:"var(--stage)", color:"var(--muted)"}}><OpeningIcon p={o}/></div>
-      <b>{nameOf(o)}</b><span>{toCm(o.width)}×{toCm(o.height)} {t("cm")}</span>
+      <b>{nameOf(o)}</b><span className="meta"><bdi>{toCm(o.width)}×{toCm(o.height)} {t("cm")}</bdi></span>
     </>;
   } else {
     body = <>
       <div className="sw" style={{backgroundImage:`url(${swatchURL(o)})`}}/>
-      <b>{nameOf(o)}</b><span>{fmt(priceOf(o.id))} / {t("m2")}</span>
+      <b>{nameOf(o)}</b><span className="meta"><bdi>{fmt(priceOf(o.id))} / {t("m2")}</bdi></span>
     </>;
   }
   return (
@@ -63,8 +64,8 @@ export default function Library({onUpload}: {onUpload: () => void}){
   const replacing = Boolean(S.replacing) && S.tab === "furn";
   const hint = ui.flash || (replacing ? t("hintReplace") : t(HINT_KEYS[S.tab]));
   return (
-    <aside className="panel">
-      <h2><span>{t("library")}</span> <small>{t("dragDrop")}</small></h2>
+    <aside className="panel library">
+      <div className="phead"><h2>{t("library")}</h2><small>{t("dragDrop")}</small></div>
       <div className="tabs" role="tablist">
         {TABS.map(([id, key]) => (
           <button key={id} role="tab" aria-selected={S.tab === id} onClick={() => { S.tab = id; notify(); }}>{t(key)}</button>
@@ -73,8 +74,8 @@ export default function Library({onUpload}: {onUpload: () => void}){
       <div className={"lib" + (replacing ? " replacing" : "")}>
         {LISTS[S.tab]().map(o => <Tile key={o.id} tab={S.tab} o={o}/>)}
       </div>
-      {ui.canUpload && S.tab === "furn" && <button className="btn uploadbtn" type="button" onClick={onUpload}>{t("uploadModel")}</button>}
-      <p className="hint" style={ui.flash ? {color:"var(--accent)"} : undefined}>{hint}</p>
+      {ui.canUpload && S.tab === "furn" && <button className="btn uploadbtn" type="button" onClick={onUpload}><IconUpload/><span>{t("uploadModel")}</span></button>}
+      <p className={"hint" + (ui.flash ? " flash" : "")} role="status">{hint}</p>
     </aside>
   );
 }

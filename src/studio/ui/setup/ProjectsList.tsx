@@ -4,6 +4,8 @@ import { useEffect, useRef, useState, type FocusEvent, type KeyboardEvent } from
 import { t, getLang } from "../../i18n.js";
 import { listProjects, renameProject, deleteProject } from "../../cloud-store.js";
 import { useLang } from "../hooks";
+import Menu, { MenuItem } from "../Menu";
+import { IconEdit, IconMore, IconTrash } from "../Icons";
 
 type Project = {id: string, name: string, updatedAt: string, form: any, pieces: number, current: boolean};
 
@@ -102,8 +104,16 @@ export default function ProjectsList({onOpen, onCurrentDeleted, onHasCurrent, er
               </div>
               <div className="projacts">
                 <button className={"btn" + (p.current ? " primary" : "")} type="button" onClick={open}>{t(p.current ? "projContinue" : "projOpen")}</button>
-                <button className="btn" type="button" onClick={() => renaming === p.id ? saveName(p) : setRenaming(p.id)}>{t(renaming === p.id ? "projSave" : "projRename")}</button>
-                <button className="btn danger" type="button" disabled={deleting === p.id} onClick={() => remove(p)}>{t(armed === p.id ? "projDeleteSure" : "delete")}</button>
+                {renaming === p.id
+                  ? <button className="btn" type="button" onClick={() => saveName(p)}>{t("projSave")}</button>
+                  : <Menu label={`${t("more")}: ${nameOf(p)}`} className="btn ghost icon" face={<IconMore/>}>
+                      {done => <>
+                        <MenuItem icon={<IconEdit/>} label={t("projRename")} onClick={() => { done(); setRenaming(p.id); }}/>
+                        {/* The first click arms Delete and keeps the menu open; the second deletes. */}
+                        <MenuItem icon={<IconTrash/>} danger disabled={deleting === p.id} label={t(armed === p.id ? "projDeleteSure" : "delete")}
+                          onClick={() => { if (armed === p.id) done(); remove(p); }}/>
+                      </>}
+                    </Menu>}
               </div>
             </li>
           );

@@ -1,5 +1,6 @@
-// The selection bar: what's selected, its price, and the actions for it (replace, rotate, duplicate, delete...).
-import { useEffect } from "react";
+// The selection toolbar, a full-width row above the library, the views and the estimate: what's selected,
+// its price and size, and the actions for it (replace, rotate, duplicate, delete...).
+import { useEffect, type ReactNode } from "react";
 import { S, clampItem, findItem, wallArea } from "../state.js";
 import { FU, WM, FM } from "../catalog.js";
 import { OP, findOpening, refit, openingKind, duplicateOpening, centerOpening } from "../openings.js";
@@ -8,38 +9,45 @@ import { update } from "../app.js";
 import { notify, ui } from "../store.js";
 import { rotateSel, deleteSel, clearSelection } from "../actions.js";
 import { t, nameOf, getLang } from "../i18n.js";
-import { settings, priceOf, setPrice } from "../settings.js";
+import { settings, priceOf } from "../settings.js";
+import { fmt } from "../utils.js";
 import { polyArea, toCm, toM } from "../geometry.js";
 import NumField from "./NumField";
+import { IconSwap, IconRotate, IconCopy, IconTrash, IconCenter, IconSelect, IconChevron } from "./Icons";
 
-// Editable price for a finish or piece. Saved on change; the estimate and library follow.
-function PriceField({id, perKey}: {id: string, perKey: string}){
+// The price of a finish or piece, shown for reference; it is changed in the Price list.
+function PriceTag({id, perKey}: {id: string, perKey: string}){
   return (
-    <label className="pricefield">
-      <span>{t("price")}</span>
-      <NumField min="0" step="1" inputMode="decimal" value={priceOf(id)}
-        onCommit={(v, el) => { setPrice(id, v); el.value = String(priceOf(id)); notify(); }}/>
-      <span className="unit">{settings.currency} {t(perKey)}</span>
-    </label>
+    <span className="pricetag">
+      <span>{t("price")}</span><b dir="ltr">{fmt(priceOf(id))}</b><span>{settings.currency} {t(perKey)}</span>
+    </span>
   );
 }
 
-// A centimetre field (value given in metres).
+// A centimetre field (value given in metres), with up/down buttons that step it by 5 cm.
+const STEP_CM = 5;
 function CmField({label, m, title, onCommit}: {label: string, m: number, title?: string, onCommit: (metres: number) => void}){
+  const step = (dir: 1 | -1) => onCommit(toM(Math.max(0, toCm(m) + dir * STEP_CM)));
   return (
-    <label className="num" title={title}>
-      <span>{label}</span>
-      <NumField inputMode="numeric" step="5" min="0" value={toCm(m)} onCommit={v => onCommit(toM(v || 0))}/>
-      <em>{t("cm")}</em>
-    </label>
+    <div className="num" title={title}>
+      <label>
+        <span>{label}</span>
+        <NumField fit inputMode="numeric" step={STEP_CM} min="0" value={toCm(m)} onCommit={v => onCommit(toM(v || 0))}/>
+        <em>{t("cm")}</em>
+      </label>
+      <span className="stepper">
+        <button type="button" tabIndex={-1} aria-label={`${label} +${STEP_CM} ${t("cm")}`} onClick={() => step(1)}><IconChevron/></button>
+        <button type="button" tabIndex={-1} aria-label={`${label} −${STEP_CM} ${t("cm")}`} onClick={() => step(-1)}><IconChevron/></button>
+      </span>
+    </div>
   );
 }
 
-const Btn = ({label, onClick, danger, title}: {label: string, onClick: () => void, danger?: boolean, title?: string}) =>
-  <button className={"btn" + (danger ? " danger" : "")} type="button" title={title} onClick={onClick}>{label}</button>;
+const Btn = ({label, onClick, danger, title, icon}: {label: string, onClick: () => void, danger?: boolean, title?: string, icon?: ReactNode}) =>
+  <button className={"btn" + (danger ? " danger" : "")} type="button" title={title || (icon ? label : undefined)} aria-label={icon ? label : undefined} onClick={onClick}>{icon}<span>{label}</span></button>;
 
 function What({name, sub}: {name: string, sub: string}){
-  return <div className="what">{name}<em style={ui.inspectMsg ? {color:"var(--accent)"} : undefined}>{ui.inspectMsg || sub}</em></div>;
+  return <div className="what"><h2>{name}</h2><p className={ui.inspectMsg ? "warn" : undefined}>{ui.inspectMsg || sub}</p></div>;
 }
 
 export default function Inspector(){
@@ -54,7 +62,7 @@ export default function Inspector(){
   let body = null;
   if (old){
     body = <>
-      <div className="what">{t("replacing", {name:nameOf(FU[old.type])})}<em>{t("pickNew")}</em></div>
+      <What name={t("replacing", {name:nameOf(FU[old.type])})} sub={t("pickNew")}/>
       <div className="acts"><Btn label={t("cancel")} onClick={clearSelection}/></div>
     </>;
   } else if (it){
@@ -64,19 +72,18 @@ export default function Inspector(){
     const underName = under && (getLang() === "en" ? nameOf(FU[under.type]).toLowerCase() : nameOf(FU[under.type]));
     const rests = !isAuto(it) ? t("fixedHeight") : under ? t("restsOn", {name:underName}) : t("onFloor");
     body = <>
-      <What name={nameOf(f)} sub={`${Math.round(f.w * 100)}×${Math.round(f.d * 100)} ${t("cm")}`}/>
-      <PriceField id={it.type} perKey="perPiece"/>
+      <What name={nameOf(f)} sub={`${Math.round(f.w * 100)}×${Math.round(f.d * 100)} ${t("cm")} · ${rests}`}/>
+      <PriceTag id={it.type} perKey="perPiece"/>
       <div className="dims">
         {/* typing a height pins it there (e.g. a wall-mounted TV); "Rest on surface" lets it settle again */}
         <CmField label={t("fromFloor")} m={it.z || 0} title={t("raiseHint")} onCommit={z => { it.z = z; it.zAuto = false; clampItem(it); update(); }}/>
-        <span className="rests">{rests}</span>
         {!isAuto(it) && <Btn label={t("restOnSurface")} title={t("restOnSurfaceHint")} onClick={() => { it.zAuto = true; update(); }}/>}
       </div>
       <div className="acts">
-        <Btn label={t("replace")} onClick={() => { S.replacing = it.id; S.tab = "furn"; notify(); }}/>
-        <Btn label={t("rotate")} onClick={rotateSel}/>
-        <Btn label={t("duplicate")} onClick={() => { const c = {...it, id:S.nextId++, x:it.x + .3, y:it.y + .3}; clampItem(c); S.items.push(c); S.sel = {kind:"item", id:c.id}; update(); }}/>
-        <Btn label={t("delete")} danger onClick={deleteSel}/>
+        <Btn icon={<IconSwap/>} label={t("replace")} onClick={() => { S.replacing = it.id; S.tab = "furn"; notify(); }}/>
+        <Btn icon={<IconRotate/>} label={t("rotate")} onClick={rotateSel}/>
+        <Btn icon={<IconCopy/>} label={t("duplicate")} onClick={() => { const c = {...it, id:S.nextId++, x:it.x + .3, y:it.y + .3}; clampItem(c); S.items.push(c); S.sel = {kind:"item", id:c.id}; update(); }}/>
+        <Btn icon={<IconTrash/>} label={t("delete")} danger onClick={deleteSel}/>
       </div>
     </>;
   } else if (o){
@@ -96,20 +103,20 @@ export default function Inspector(){
         {o.type !== "door" && <CmField label={t("fromFloor")} m={o.sill} onCommit={resize("sill")}/>}
       </div>
       <div className="acts">
-        <Btn label={t("duplicate")} onClick={() => {
+        <Btn icon={<IconCopy/>} label={t("duplicate")} onClick={() => {
           const c = duplicateOpening(o);
           if (!c){ ui.inspectMsg = t("hintNoRoomOnWall"); notify(); return; }
           S.sel = {kind:"opening", id:c.id}; ui.inspectMsg = null; update();
         }}/>
-        <Btn label={t("centerOnWall")} onClick={() => { if (centerOpening(o)) update(); }}/>
-        <Btn label={t("delete")} danger onClick={deleteSel}/>
+        <Btn icon={<IconCenter/>} label={t("centerOnWall")} onClick={() => { if (centerOpening(o)) update(); }}/>
+        <Btn icon={<IconTrash/>} label={t("delete")} danger onClick={deleteSel}/>
       </div>
     </>;
   } else if (s?.kind === "wall"){
     const id = S.walls[s.id], m = WM[id];
     body = <>
       <What name={t("wallN", {n:s.id + 1})} sub={`${nameOf(m)} · ${wallArea(s.id).toFixed(1)} ${t("m2")}`}/>
-      {(m.price || priceOf(id)) ? <PriceField id={id} perKey="perM2"/> : null}
+      {(m.price || priceOf(id)) ? <PriceTag id={id} perKey="perM2"/> : null}
       <div className="acts">
         <Btn label={t("applyAll")} onClick={() => { S.walls = S.walls.map(() => S.walls[s.id]); update(); }}/>
         <Btn label={t("removeFinish")} onClick={deleteSel}/>
@@ -119,11 +126,11 @@ export default function Inspector(){
     const id = S.floor, m = FM[id];
     body = <>
       <What name={t("floor")} sub={`${nameOf(m)} · ${polyArea(S.poly).toFixed(1)} ${t("m2")}`}/>
-      {(m.price || priceOf(id)) ? <PriceField id={id} perKey="perM2"/> : null}
+      {(m.price || priceOf(id)) ? <PriceTag id={id} perKey="perM2"/> : null}
       <div className="acts"><Btn label={t("removeFloor")} onClick={deleteSel}/></div>
     </>;
   }
-  if (!body) return null;
-  // the bar only shows while something is selected (or a piece is being replaced)
-  return <div className="inspect" role="region" aria-label={t("selection")}>{body}</div>;
+  // Nothing selected: the panel stays, saying how to fill it.
+  if (!body) body = <div className="noselect"><IconSelect/><div><h2>{t("noSel")}</h2><p>{t("noSelHint")}</p></div></div>;
+  return <section className={"panel inspect" + (s || old ? "" : " empty")} aria-label={t("selAria")}>{body}</section>;
 }

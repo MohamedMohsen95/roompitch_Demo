@@ -5,12 +5,14 @@ import { signIn, signUp, signOut } from "../auth.js";
 import { t } from "../i18n.js";
 import Modal from "./Modal";
 import { useAccount } from "./account";
+import { IconUser } from "./Icons";
 
 export function AccountButton({onOpen}: {onOpen: () => void}){
   const account = useAccount();
   if (!account) return null;
   return (
-    <button className="btn accountbtn" type="button" title={account.email || ""} onClick={onOpen}>
+    <button className="btn ghost accountbtn" type="button" title={account.email || ""} onClick={onOpen}>
+      {account.email ? <span className="avatar" aria-hidden="true">{account.email[0]}</span> : <IconUser/>}
       <span className="acctext">{account.email || t("signIn")}</span>
       {account.admin && <span className="badge">{t("admin")}</span>}
     </button>

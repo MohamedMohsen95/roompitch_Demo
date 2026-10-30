@@ -9,6 +9,7 @@ import { PricesDialog, StudioDialog } from "./Dialogs";
 import Proposal, { type ProposalData } from "./Proposal";
 import NumField from "../studio/ui/NumField";
 import css from "./photo.css?inline";
+import { IconGlobe, IconSettings, IconTag } from "../studio/ui/Icons";
 
 type Dims = {L: string, W: string, H: string};
 const numDims = (d: Dims): RoomDims => ({
@@ -243,10 +244,10 @@ export default function PhotoPage(){
           {aiEnabled !== null && <span className={"mode-badge" + (aiEnabled ? " live" : "")}>{aiEnabled ? t("liveBadge") : t("demoBadge")}</span>}
         </div>
         <div className="top-actions">
-          <button className="ghost" type="button" onClick={() => setDialog("prices")}>{t("priceList")}</button>
-          <button className="ghost" type="button" onClick={() => setDialog("studio")}>{t("studio")}</button>
-          <button className="lang" type="button" aria-label="Switch language" onClick={() => { settings.lang = lang === "ar" ? "en" : "ar"; saveOrWarn(); refresh(); }}>
-            {lang === "ar" ? "EN" : "ع"}
+          <button className="ghost" type="button" onClick={() => setDialog("prices")}><IconTag/><span>{t("priceList")}</span></button>
+          <button className="ghost" type="button" onClick={() => setDialog("studio")}><IconSettings/><span>{t("studio")}</span></button>
+          <button className="ghost lang" type="button" lang={lang === "ar" ? "en" : "ar"} onClick={() => { settings.lang = lang === "ar" ? "en" : "ar"; saveOrWarn(); refresh(); }}>
+            <IconGlobe/><span>{lang === "ar" ? "English" : "عربي"}</span>
           </button>
         </div>
       </header>

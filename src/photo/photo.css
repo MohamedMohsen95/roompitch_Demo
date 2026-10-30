@@ -55,7 +55,8 @@ img { max-width: 100%; display: block; }
 .mode-badge.live { background: color-mix(in srgb, var(--ok) 15%, transparent); color: var(--ok); }
 .mode-badge[hidden] { display: none; }
 .top-actions { display: flex; gap: 6px; align-items: center; }
-.lang { width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--line); background: var(--paper); cursor: pointer; font-weight: 600; }
+.top-actions .ghost { display: inline-flex; align-items: center; gap: 7px; }
+.top-actions .ico { width: 16px; height: 16px; flex: none; }
 
 /* ───── Layout ───── */
 .layout {

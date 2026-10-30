@@ -142,6 +142,8 @@ function RoomRoute({onProjects, onRoomSetup, onLang, continueLast}: {onProjects:
   const [ready, setReady] = useState(opened);
   useEffect(() => {
     if (ready) return;
+    // Dev only: /studio/room?sample opens the built-in sample room (for screenshots in a fresh browser).
+    if (import.meta.env.DEV && new URLSearchParams(location.search).has("sample")){ setReady(true); return; }
     if (!loadRoom()){ navigate("/studio", {replace:true}); return; }
     continueLast().then(() => setReady(true));
   }, []);

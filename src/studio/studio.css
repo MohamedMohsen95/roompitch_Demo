@@ -1,74 +1,130 @@
-/* Layout: drafting-table workspace. Library on the left, plan + 3D side by side in the middle, live estimate on the right. */
+/* Layout: an editor. A tinted frame holds the top bar; the library, the plan + 3D views and the side column
+   (selection, estimate) are white panels on it. Colour stays on the brand mark, the data and the one primary action. */
 :root{
-  --bg:#e9ecea; --surface:#ffffff; --sunk:#f3f5f4; --ink:#1b2220; --muted:#5f6b67; --line:#d3d9d6;
-  --accent:#2c6a5c; --accent-ink:#ffffff; --accent-soft:rgba(44,106,92,.12); --stage:#dfe4e1; --grid:rgba(27,34,32,.07); --danger:#b3261e; --danger-soft:rgba(179,38,30,.08);
+  --bg:#f2f4f3; --surface:#ffffff; --sunk:#f5f7f6; --stage:#eef1ef; --active:#e6eae8;
+  --ink:#131614; --muted:#5a625f; --line:#e1e6e3; --rule:#eef1ef; --control:#cdd4d0;
+  --accent:#2c6a5c; --accent-ink:#ffffff; --accent-soft:rgba(44,106,92,.10);
+  --primary:#17201d; --primary-ink:#ffffff;
+  --grid:rgba(19,22,20,.07); --danger:#b3261e; --danger-soft:rgba(179,38,30,.08);
+  --radius-panel:14px; --radius-inner:10px;
   --font-body:"IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
   --font-data:"IBM Plex Mono", ui-monospace, "Cascadia Mono", monospace;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#121615; --surface:#1a1f1e; --sunk:#151a19; --ink:#e6ebe9; --muted:#97a39f; --line:#2b3331;
-  --accent:#5fb39d; --accent-ink:#0d1211; --accent-soft:rgba(95,179,157,.16); --stage:#202725; --grid:rgba(230,235,233,.06); --danger:#f2867a; --danger-soft:rgba(242,134,122,.12); color-scheme:dark}}
-html[lang="ar"]{--font-body:"IBM Plex Sans Arabic", "Segoe UI", Tahoma, sans-serif}
+  --bg:#0e1110; --surface:#161a19; --sunk:#1b201e; --stage:#1c2120; --active:#242a28;
+  --ink:#e8ecea; --muted:#9da7a3; --line:#262c2a; --rule:#202624; --control:#3a423f;
+  --accent:#5fb39d; --accent-ink:#0d1211; --accent-soft:rgba(95,179,157,.14);
+  --primary:#e8ecea; --primary-ink:#0e1110;
+  --grid:rgba(232,236,234,.06); --danger:#f2867a; --danger-soft:rgba(242,134,122,.12); color-scheme:dark}}
 :root[data-theme="dark"]{
-  --bg:#121615; --surface:#1a1f1e; --sunk:#151a19; --ink:#e6ebe9; --muted:#97a39f; --line:#2b3331;
-  --accent:#5fb39d; --accent-ink:#0d1211; --accent-soft:rgba(95,179,157,.16); --stage:#202725; --grid:rgba(230,235,233,.06); --danger:#f2867a; --danger-soft:rgba(242,134,122,.12); color-scheme:dark}
+  --bg:#0e1110; --surface:#161a19; --sunk:#1b201e; --stage:#1c2120; --active:#242a28;
+  --ink:#e8ecea; --muted:#9da7a3; --line:#262c2a; --rule:#202624; --control:#3a423f;
+  --accent:#5fb39d; --accent-ink:#0d1211; --accent-soft:rgba(95,179,157,.14);
+  --primary:#e8ecea; --primary-ink:#0e1110;
+  --grid:rgba(232,236,234,.06); --danger:#f2867a; --danger-soft:rgba(242,134,122,.12); color-scheme:dark}
+html[lang="ar"]{--font-body:"IBM Plex Sans Arabic", "Segoe UI", Tahoma, sans-serif}
 
 *{box-sizing:border-box}
 html,body{margin:0}
 [hidden]{display:none!important}
-html{overflow-anchor:none} /* selecting things resizes the library panel; don't let the page jump */
+html{overflow-anchor:none} /* selecting things resizes panels; don't let the page jump */
 body{background:var(--bg); color:var(--ink); font-family:var(--font-body); font-size:14px; line-height:1.5}
 .wrap{padding-left:max(16px, env(safe-area-inset-left,0px)); padding-right:max(16px, env(safe-area-inset-right,0px)); padding-block:14px 24px; display:flex; flex-direction:column; gap:12px}
 button,input,select,textarea{font:inherit; color:inherit}
 button{cursor:pointer}
 :focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+.num{font-variant-numeric:tabular-nums}
+.ico{flex:none; display:block}
 
-/* Top bar */
-.bar{display:flex; flex-wrap:wrap; align-items:center; gap:12px 20px; background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:10px 14px}
-.brand{display:flex; align-items:baseline; gap:10px; margin-inline-end:auto}
-.backbtn{display:inline-flex; align-items:center; gap:4px; padding-inline-start:8px}
-.backbtn svg{width:16px; height:16px}
-[dir=rtl] .backbtn svg{transform:scaleX(-1)}
-.brand strong{font-size:17px; letter-spacing:.2px}
-.tag{font-size:12px; color:var(--muted); border:1px dashed var(--line); padding:1px 8px; border-radius:20px}
-.dims{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
-.dims label{display:flex; align-items:center; gap:6px; font-size:13px; color:var(--muted)}
-.roomsize{font-family:var(--font-data); font-size:13px; color:var(--muted)}
-.dims input{width:64px; padding:5px 6px; border:1px solid var(--line); border-radius:6px; background:var(--sunk); font-family:var(--font-data); text-align:center; direction:ltr}
-.btn{border:1px solid var(--line); background:var(--sunk); padding:6px 12px; border-radius:7px}
-.btn:hover{border-color:var(--accent)}
+/* Buttons: one height, pill-shaped. Ghost buttons sit on the frame; the one primary is near-black. */
+.btn{display:inline-flex; align-items:center; justify-content:center; gap:7px; height:32px; padding:0 14px; border:1px solid var(--control); border-radius:999px;
+  background:var(--surface); font-size:13.5px; font-weight:500; white-space:nowrap; text-decoration:none; transition:background-color .15s, border-color .15s, color .15s}
+.btn:hover{border-color:var(--muted)}
+.btn:active{transform:translateY(1px)}
+.btn.ghost{background:transparent; border-color:transparent; color:var(--ink)}
+.btn.ghost:hover, .btn.ghost.open{background:var(--active)}
+.btn.icon{width:32px; padding:0}
+.btn.small{height:28px; padding:0 11px; font-size:12.5px}
+.btn.primary{background:var(--primary); color:var(--primary-ink); border-color:var(--primary); font-weight:600; padding:0 16px}
+.btn.primary:hover{opacity:.88}
 .btn.danger{color:var(--danger)}
 .btn.danger:hover{border-color:var(--danger); background:var(--danger-soft)}
-.btn.primary{background:var(--accent); color:var(--accent-ink); border-color:var(--accent); font-weight:600; padding:8px 18px}
 
-/* Main grid */
-.app{display:grid; grid-template-columns:250px minmax(0,1fr) 270px; gap:12px; align-items:start}
-.panel{background:var(--surface); border:1px solid var(--line); border-radius:10px; min-width:0}
-.panel h2{font-size:13px; font-weight:600; margin:0; padding:10px 14px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center; gap:8px}
-.panel h2 small{font-weight:400; color:var(--muted); font-size:12px}
-.view h2 > span:first-child{white-space:nowrap}
-.view h2 small{text-align:end}
+/* The New room screen's header */
+.bar{display:flex; flex-wrap:wrap; align-items:center; gap:12px 20px; min-height:40px}
+.bar .tools{gap:4px}
+.brand{display:flex; align-items:center; gap:10px; margin-inline-end:auto}
+.brand strong{font-size:16px; font-weight:600}
+.tag{font-size:12.5px; color:var(--muted)}
+.backbtn{padding-inline-start:10px}
+.mark{flex:none; display:block}
 
-/* Library */
-.tabs{display:grid; grid-template-columns:1fr 1fr; gap:6px; padding:10px; background:var(--sunk); border-bottom:1px solid var(--line)}
-.tabs button{min-width:0; border:1px solid var(--line); background:var(--surface); border-radius:7px; padding:5px 2px; font-size:12.5px; letter-spacing:-.01em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
-.tabs button:hover{border-color:var(--accent)}
-.tabs button[aria-selected="true"]{background:var(--accent-soft); border-color:var(--accent); color:var(--ink); font-weight:600}
-.lib{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; padding:10px; max-height:430px; overflow:auto}
-.tile{min-width:0; border:1px solid var(--line); background:var(--sunk); border-radius:8px; padding:6px; text-align:start; display:flex; flex-direction:column; gap:5px; cursor:grab; user-select:none; touch-action:manipulation}
-.tile:hover{border-color:var(--accent); background:var(--surface)}
-.tile:active{cursor:grabbing}
-.lib.replacing .tile{border-color:var(--accent); background:var(--accent-soft)}
-.sw{height:46px; border-radius:5px; background-size:cover; border:1px solid var(--line); position:relative}
-.sw .fp{position:absolute; inset:0; margin:auto; border-radius:2px}
-.tile b{font-size:12.5px; font-weight:500; line-height:1.3; overflow-wrap:anywhere; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden}
-.tile span{font-size:11.5px; color:var(--muted); font-family:var(--font-data); direction:ltr; text-align:end}
-.hint{font-size:12px; color:var(--muted); padding:10px 12px 12px; margin:0}
-.uploadbtn{margin:10px 12px 0}
-.sizerow{display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:6px}
+/* The studio's top bar */
+.studio{display:flex; flex-direction:column; height:100vh; height:100dvh}
+.topbar{flex:none; display:flex; align-items:center; justify-content:space-between; gap:12px; height:56px;
+  padding:0 max(12px, env(safe-area-inset-right,0px)) 0 max(12px, env(safe-area-inset-left,0px))}
+.tb-start, .tb-end, .tb-group{display:flex; align-items:center; gap:6px; min-width:0}
+.tb-start{gap:10px}
+.tb-start > .btn{padding-inline-start:10px}
+[dir=rtl] .tb-start > .btn .ico, [dir=rtl] .backbtn .ico{transform:scaleX(-1)}
+.tb-div{width:1px; height:20px; background:var(--control); flex:none; margin:0 4px}
+.tb-title{display:flex; align-items:baseline; gap:10px; margin:0; font-size:15px; font-weight:600; min-width:0}
+.tb-name{overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:30vw}
+.tb-narrow{display:none}
+.acct{padding:0 6px}
+.avatar{width:24px; height:24px; border-radius:50%; display:grid; place-items:center; background:var(--accent); color:var(--accent-ink); font-size:12px; font-weight:600; text-transform:uppercase}
 .accountbtn{display:inline-flex; align-items:center; max-width:260px; min-width:0}
 .accountbtn .acctext{overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0}
 .accountbtn .badge{flex:none; margin-inline-start:6px; font-size:11px; padding:1px 6px; border-radius:999px; background:var(--accent-soft); color:var(--ink)}
+
+/* Menus and popovers: the only things that float, so the only things with a shadow */
+.menu{position:relative; display:inline-flex}
+.menupanel{position:absolute; top:calc(100% + 6px); z-index:30; min-width:208px; padding:6px; background:var(--surface); border:1px solid var(--line);
+  border-radius:12px; box-shadow:0 12px 32px rgba(10,14,13,.14); display:flex; flex-direction:column; gap:2px}
+.menupanel.end{inset-inline-end:0}
+.menupanel.start{inset-inline-start:0}
+.menuitem{display:flex; align-items:center; gap:10px; width:100%; height:36px; padding:0 10px; border:0; border-radius:8px; background:none; text-align:start; font-size:13.5px; white-space:nowrap}
+.menuitem:hover, .menuitem:focus-visible{background:var(--active); outline:none}
+.menuitem .ico{color:var(--muted)}
+.menuitem.danger, .menuitem.danger .ico{color:var(--danger)}
+.menuitem:disabled{opacity:.5; cursor:default}
+.lightpanel{width:290px; max-width:calc(100vw - 32px); padding:6px; display:flex; flex-direction:column; gap:10px}
+.lp-row{display:grid; grid-template-columns:1fr auto; align-items:center; gap:6px 10px; font-size:13px; color:var(--muted)}
+.lp-row select{height:32px; min-width:150px; padding:0 8px; border:1px solid var(--control); border-radius:8px; background:var(--surface); color:var(--ink); cursor:pointer}
+.lp-time output{color:var(--ink); font-weight:500; text-align:end}
+.lp-time input{grid-column:1 / -1; width:100%; accent-color:var(--accent); margin:0}
+
+/* Panels */
+.panel{background:var(--surface); border:1px solid var(--line); border-radius:var(--radius-panel); min-width:0}
+.phead{display:flex; align-items:center; justify-content:space-between; gap:10px; min-height:48px; padding-block:8px; padding-inline:16px 10px}
+.phead h2, .panel h2{margin:0; font-size:15px; font-weight:600}
+.phead small{font-size:12px; color:var(--muted)}
+.plan-dims{margin-inline-start:auto; font-variant-numeric:tabular-nums; white-space:nowrap}
+.phead-tools{display:flex; align-items:center; gap:6px; flex-wrap:wrap; justify-content:flex-end}
+.segbar{display:inline-flex; gap:2px; padding:2px; background:var(--sunk); border:1px solid var(--line); border-radius:999px}
+.segbar button{height:26px; padding:0 10px; border:0; border-radius:999px; background:none; color:var(--muted); font-size:12.5px; white-space:nowrap}
+.segbar button:hover{background:var(--surface); color:var(--ink)}
+
+/* Library */
+.library{display:flex; flex-direction:column; min-height:0}
+.tabs{display:flex; flex-wrap:wrap; gap:4px; padding:0 10px 10px}
+.tabs button{height:30px; padding:0 12px; border:0; border-radius:999px; background:none; color:var(--muted); font-size:13px; white-space:nowrap}
+.tabs button:hover{color:var(--ink); background:var(--sunk)}
+.tabs button[aria-selected="true"]{background:var(--active); color:var(--ink); font-weight:600}
+.lib{flex:1; min-height:0; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; padding:2px 10px 10px; overflow:auto; align-content:start}
+.tile{min-width:0; border:1px solid var(--line); background:var(--surface); border-radius:var(--radius-inner); padding:6px; text-align:start; display:flex; flex-direction:column; gap:4px; cursor:grab; user-select:none; touch-action:manipulation; transition:border-color .15s}
+.tile:hover{border-color:var(--control)}
+.tile:active{cursor:grabbing}
+.lib.replacing .tile{border-color:var(--accent); background:var(--accent-soft)}
+.sw{height:52px; border-radius:7px; background-size:cover; position:relative}
+.sw .fp{position:absolute; inset:0; margin:auto; border-radius:2px}
+.tile b{font-size:12.5px; font-weight:500; line-height:1.3; padding:0 2px; overflow-wrap:anywhere; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden}
+.tile .meta{display:flex; flex-wrap:wrap; justify-content:space-between; gap:0 6px; font-size:11.5px; color:var(--muted); font-variant-numeric:tabular-nums; padding:0 2px}
+.hint{font-size:12px; color:var(--muted); padding:10px 14px 12px; margin:0; border-top:1px solid var(--rule)}
+.hint.flash{color:var(--accent); font-weight:500}
+.uploadbtn{margin:0 10px 10px}
+.sizerow{display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:6px}
+
 /* Account dialog */
 .authcard{position:relative; background:var(--surface); border:1px solid var(--line); border-radius:16px; width:100%; max-width:400px; max-height:92vh; overflow:auto; padding:28px 28px 22px; box-shadow:0 24px 60px rgba(10,14,13,.28)}
 .authcard form, #accIn{display:flex; flex-direction:column; gap:16px}
@@ -105,69 +161,102 @@ button{cursor:pointer}
 #accIn .afoot.err{color:var(--danger)}
 .aacts{display:flex; justify-content:flex-end; gap:8px}
 @media (max-width:480px){ .authcard{padding:24px 18px 18px; border-radius:14px} }
-.lib + .hint{border-top:1px solid var(--line)}
 
-/* Selection bar: what's selected and its settings, in one row under the view settings */
-.inspect{display:flex; flex-wrap:wrap; align-items:center; gap:8px 18px; padding:8px 14px; background:var(--surface); border:1px solid var(--line); border-inline-start:3px solid var(--accent); border-radius:10px}
-.inspect .what{font-size:13px; font-weight:600; display:flex; align-items:baseline; gap:8px; flex-wrap:wrap}
-.inspect .what em{font-style:normal; font-weight:400; color:var(--muted); font-size:12px}
-.inspect .acts{display:flex; gap:6px; flex-wrap:wrap; margin-inline-start:auto}
-.inspect .acts .btn{padding:4px 10px; font-size:12.5px}
-.inspect .dims, .inspect .sizes{display:flex; gap:6px 12px; flex-wrap:wrap; align-items:center}
-.inspect .num{display:flex; align-items:center; gap:5px; font-size:12px; color:var(--muted)}
-.inspect .num input{width:62px; font:inherit; color:var(--ink); background:var(--sunk); border:1px solid var(--line); border-radius:6px; padding:3px 5px; text-align:end}
-.inspect .num input:focus-visible{outline:none; border-color:var(--accent)}
-.inspect .num em{font-style:normal}
-.inspect .rests{font-size:12px; color:var(--muted); align-self:center}
-.inspect .dims .btn{padding:2px 8px; font-size:12px}
-
-/* Workspace */
-.work{display:grid; grid-template-columns:1fr 1fr; gap:12px; min-width:0}
-.view{display:flex; flex-direction:column; min-width:0}
-.stage{height:440px; position:relative; background:var(--stage); border-radius:0 0 10px 10px; overflow:hidden}
-#plan{width:100%; height:100%; display:block; touch-action:none; user-select:none}
+/* Workspace: the selection toolbar across the top, then library | plan + 3D | estimate. On wide screens it fills the window. */
+.workspace{flex:1; min-height:0; display:grid; grid-template-columns:252px minmax(0,1fr) 300px; grid-template-rows:auto minmax(0,1fr); gap:8px; padding:0 8px 8px; align-items:stretch}
+.workspace.est-closed{grid-template-columns:252px minmax(0,1fr) 44px}
+.workspace > .inspect{grid-column:1 / -1}
+.views{display:grid; grid-template-columns:1fr 1fr; grid-template-rows:minmax(0,1fr); gap:8px; min-width:0; min-height:0}
+.view{display:flex; flex-direction:column; min-width:0; min-height:0}
+.stage{flex:1; min-height:380px; position:relative; margin:0 8px 8px; background:var(--stage); border-radius:var(--radius-inner); overflow:hidden}
+#plan{width:100%; height:100%; display:block; position:absolute; inset:0; touch-action:none; user-select:none}
 #three{position:absolute; inset:0}
 #three canvas{display:block}
 .drop-on{outline:2px dashed var(--accent); outline-offset:-6px}
-/* View settings bar (full width, above the panels) */
-.viewbar{display:flex; flex-wrap:wrap; align-items:center; gap:8px 16px; padding:8px 14px; background:var(--surface); border:1px solid var(--line); border-radius:10px; font-size:12.5px; color:var(--muted)}
-.viewbar label, .viewbar .cams{display:flex; align-items:center; gap:6px}
-.viewbar select{font:inherit; color:var(--ink); background:var(--sunk); border:1px solid var(--line); border-radius:7px; padding:3px 6px; cursor:pointer}
-.viewbar select:hover, .viewbar select:focus-visible{border-color:var(--accent)}
-.viewbar .sep{width:1px; align-self:stretch; background:var(--line)}
-.sun-time{flex:1 1 260px}
-.sun-time input{flex:1; min-width:120px; accent-color:var(--accent)}
-.sun-time output{font-family:var(--font-data); color:var(--ink); min-width:3.2em; text-align:end}
-.seg{display:flex}
-.seg .btn{padding:3px 10px; font-size:12.5px; white-space:nowrap; border-radius:0; margin-inline-start:-1px}
-.seg .btn:first-child{border-start-start-radius:7px; border-end-start-radius:7px; margin-inline-start:0}
-.seg .btn:last-child{border-start-end-radius:7px; border-end-end-radius:7px}
-.seg .btn:hover{position:relative}
+.caption{position:absolute; inset-inline-start:8px; bottom:8px; max-width:calc(100% - 16px); margin:0; padding:3px 8px; border-radius:6px;
+  background:var(--surface); color:var(--muted); font-size:12px; pointer-events:none; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
 
-/* Budget: collapsible to a slim strip showing the total */
-.app{transition:grid-template-columns .2s}
-.budget h2{padding-inline-end:8px}
-.est-title{display:flex; align-items:baseline; gap:8px; flex:1; min-width:0}
-.est-toggle{padding:3px 5px; line-height:0; color:var(--muted)}
-.est-toggle svg{transition:transform .2s}
-[dir="rtl"] .est-toggle svg{transform:scaleX(-1)}
-.est-mini{display:none; border:0; background:none; padding:0; font:inherit; font-family:var(--font-data); font-weight:600; color:var(--ink); cursor:pointer; direction:ltr; white-space:nowrap}
-.app.est-closed{grid-template-columns:250px minmax(0,1fr) 46px}
-.est-closed .est, .est-closed .est-title{display:none}
-.est-closed .budget h2{flex-direction:column; justify-content:flex-start; padding:8px 0; border-bottom:0; gap:12px}
-.est-closed .est-mini{display:block; writing-mode:vertical-rl; transform:rotate(180deg)}
-.est-closed .est-toggle{order:-1}
-.est-closed .est-toggle svg{transform:scaleX(-1)}
-[dir="rtl"] .est-closed .est-toggle svg{transform:none}
-.est{padding:4px 0 0}
-.est table{width:100%; border-collapse:collapse; font-size:12.5px}
-.est td{padding:6px 14px; border-bottom:1px solid var(--line); vertical-align:top}
-.est td.n{text-align:end; font-family:var(--font-data); font-variant-numeric:tabular-nums; white-space:nowrap; direction:ltr}
-.est .grp td{background:var(--sunk); color:var(--muted); font-size:11.5px; letter-spacing:.3px; padding-block:4px}
-.est .sub{display:block; color:var(--muted); font-size:11.5px; font-family:var(--font-data); text-align:start}
-.total{display:flex; justify-content:space-between; align-items:baseline; padding:12px 14px; font-weight:600}
-.total .n{font-family:var(--font-data); font-size:18px; direction:ltr}
-.note{font-size:11.5px; color:var(--muted); padding:0 14px 12px; margin:0}
+/* Selection bar: one row (wrapping when narrow) above the views, at a steady height so the views don't jump */
+.inspect{flex:none; min-height:60px; padding:10px 12px 10px 16px; display:flex; flex-wrap:wrap; align-items:center; gap:8px 16px; container-type:inline-size}
+/* Three groups, split by thin rules: what it is | its fields | its actions. Every control is 34px high. */
+.inspect .what{min-width:0; max-width:280px; padding-inline-end:16px; border-inline-end:1px solid var(--line)}
+.inspect.empty .what, .inspect .noselect{border:0}
+.inspect .what h2{font-size:14.5px; line-height:20px; overflow-wrap:anywhere}
+.inspect .what p{margin:0; font-size:12.5px; line-height:18px; color:var(--muted)}
+.inspect .what p.warn{color:var(--danger)}
+.inspect .acts{display:flex; flex-wrap:wrap; gap:6px; margin-inline-start:auto}
+.inspect .btn{height:34px; padding:0 12px; font-size:13px}
+.inspect .acts .btn{justify-content:flex-start}
+.inspect .acts .btn .ico{color:var(--muted)}
+.inspect .acts .btn.danger .ico{color:inherit}
+.inspect .dims, .inspect .sizes{display:flex; flex-wrap:wrap; align-items:center; gap:8px}
+/* A field is one control: label, value, unit and its up/down stepper inside a single bordered box */
+.inspect .num{display:inline-flex; align-items:stretch; height:34px; border:1px solid var(--control); border-radius:10px; background:var(--surface);
+  font-size:13px; line-height:1; color:var(--muted); white-space:nowrap; overflow:hidden; transition:border-color .15s, box-shadow .15s}
+.inspect .num:hover{border-color:var(--muted)}
+.inspect .num:focus-within{border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft)}
+.inspect .num label{display:flex; align-items:center; cursor:text}
+.inspect .num label > span{padding-inline:12px 6px}
+/* The value box fits its number: about one ch per digit, between a 3- and a 10-digit width */
+.inspect .num input{flex:none; width:calc(var(--chars, 3) * 1ch + 1.2ch); min-width:calc(3ch + 1.2ch); max-width:calc(10ch + 1.2ch); height:100%; padding:0 2px;
+  border:0; border-radius:0; background:none; color:var(--ink); font:inherit; font-size:13.5px; font-weight:600; font-variant-numeric:tabular-nums;
+  direction:ltr; text-align:end; outline:none; appearance:textfield; -moz-appearance:textfield}
+.inspect .num input::-webkit-inner-spin-button, .inspect .num input::-webkit-outer-spin-button{-webkit-appearance:none; margin:0}
+.inspect .num em{font-style:normal; font-size:13px; padding-inline:6px 10px}
+.stepper{display:flex; flex-direction:column; border-inline-start:1px solid var(--line)}
+.stepper button{flex:1; width:24px; display:grid; place-items:center; padding:0; border:0; background:none; color:var(--muted)}
+.stepper button + button{border-top:1px solid var(--line)}
+.stepper button:hover{background:var(--sunk); color:var(--ink)}
+.stepper .ico{width:12px; height:12px}
+.stepper button:first-child .ico{transform:rotate(180deg)}
+/* The price is information here (it is edited in the Price list) */
+.pricetag{display:inline-flex; align-items:baseline; gap:6px; font-size:13px; color:var(--muted); white-space:nowrap}
+.pricetag b{font-size:13.5px; font-weight:600; color:var(--ink); font-variant-numeric:tabular-nums}
+/* A narrow bar: actions with an icon show just the icon (the button keeps its name and a tooltip) */
+@container (max-width:1100px){
+  .inspect .acts .btn:has(.ico){width:34px; padding:0; justify-content:center}
+  .inspect .acts .btn:has(.ico) span{position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap}
+}
+.inspect.empty{padding-block:10px}
+/* Nothing selected: one quiet line, the icon centred on it */
+.noselect{display:flex; align-items:center; gap:10px; min-height:34px; color:var(--muted); min-width:0}
+.noselect .ico{flex:none; width:20px; height:20px}
+.noselect > div{display:flex; flex-wrap:wrap; align-items:baseline; column-gap:10px; min-width:0}
+.noselect h2{font-size:14px; line-height:20px; color:var(--ink)}
+.noselect p{margin:0; font-size:13px; line-height:20px}
+
+/* Estimate: the total always shows in its header; the lines fold away under it */
+.budget{flex:1; min-height:0; display:flex; flex-direction:column; overflow:hidden}
+/* The fold handle sits on the panel's left (inline-start) edge: a chevron pointing to the edge it folds into. */
+.est-head .ico, .est-rail .ico{flex:none; color:var(--muted); transform:rotate(-90deg)}
+[dir=rtl] .est-head .ico{transform:rotate(90deg)}
+.est-rail .ico{transform:rotate(90deg)}
+[dir=rtl] .est-rail .ico{transform:rotate(-90deg)}
+.est-head{display:flex; align-items:center; gap:10px; width:100%; padding-block:12px; padding-inline:12px 16px; border:0; background:none; text-align:start}
+/* Folded: a slim rail with the total written down it */
+.budget.closed > .est-head{display:none}
+.est-rail{flex:1; display:flex; flex-direction:column; align-items:center; gap:12px; width:100%; padding:14px 0; border:0; background:none; color:var(--ink)}
+.est-rail:hover{background:var(--sunk)}
+.est-rail-text{writing-mode:vertical-rl; display:flex; gap:10px; font-size:13px; white-space:nowrap}
+.est-rail-text b{font-weight:600}
+.est-rail-text b.num{direction:ltr; unicode-bidi:isolate}
+.est-head:hover{background:var(--sunk)}
+.est-label{display:flex; flex-direction:column; min-width:0}
+.est-label small{font-size:12px; color:var(--muted)}
+.est-total{margin-inline-start:auto; font-size:16px; font-weight:600; white-space:nowrap}
+.est{flex:1; min-height:0; overflow:auto; border-top:1px solid var(--rule); display:flex; flex-direction:column}
+/* The total sits at the foot of the panel, like the bottom line of an invoice. */
+.est > *{flex:none}
+.est .total{margin-top:auto; border-top:1px solid var(--line)}
+.est table{width:100%; border-collapse:collapse; font-size:13px}
+.est td{padding:8px 16px; border-bottom:1px solid var(--rule); vertical-align:top}
+.est td.n{text-align:end; font-variant-numeric:tabular-nums; white-space:nowrap; direction:ltr}
+.est .grp td{color:var(--muted); font-size:12px; font-weight:600; padding:14px 16px 4px; border-bottom:0}
+.est .sum td{color:var(--muted)}
+.est .sub{display:block; color:var(--muted); font-size:12px; font-variant-numeric:tabular-nums}
+.total{display:flex; justify-content:space-between; align-items:baseline; padding:12px 16px; font-weight:600}
+.total .n{font-size:18px; font-variant-numeric:tabular-nums}
+.note{font-size:12px; color:var(--muted); padding:0 16px 14px; margin:0}
 
 /* Modal */
 .modal{position:fixed; inset:0; background:rgba(10,14,13,.55); display:flex; align-items:center; justify-content:center; padding:20px; z-index:20}
@@ -196,14 +285,8 @@ details p{margin:6px 0 0; font-family:var(--font-data); font-size:11.5px; line-h
 .acts2{display:flex; gap:8px; flex-wrap:wrap}
 .acts2 a.btn{text-decoration:none}
 
-.tools{display:flex; gap:6px; flex-wrap:wrap}
-.tools .btn{padding:6px 10px; font-size:13px}
-.langbtn{font-weight:600}
+.tools{display:flex; gap:6px; flex-wrap:wrap; align-items:center}
 
-/* Price field in the inspector */
-.pricefield{display:flex; align-items:center; gap:6px; font-size:12.5px; color:var(--muted); flex-wrap:wrap}
-.pricefield input{width:96px; padding:4px 6px; border:1px solid var(--line); border-radius:6px; background:var(--sunk); font-family:var(--font-data); direction:ltr; text-align:end}
-.pricefield .unit{font-size:11.5px}
 
 /* Settings, price list and PDF dialogs */
 .sheet3{background:var(--surface); border:1px solid var(--line); border-radius:12px; max-width:520px; width:100%; max-height:92vh; overflow:auto; padding:18px; display:flex; flex-direction:column; gap:12px}
@@ -289,7 +372,8 @@ details p{margin:6px 0 0; font-family:var(--font-data); font-size:11.5px; line-h
 .projects h2{margin:0; font-size:16px; font-weight:600; display:flex; align-items:center; gap:8px}
 .projcount{font-size:12px; font-weight:600; color:var(--muted); background:var(--sunk); border:1px solid var(--line); border-radius:999px; padding:1px 8px}
 .projerr{margin:0; padding:8px 12px; border-radius:8px; background:var(--danger-soft); color:var(--danger); font-size:13px}
-.projs{list-style:none; margin:0; padding:0; border:1px solid var(--line); border-radius:12px; background:var(--surface); overflow:hidden}
+.projs{list-style:none; margin:0; padding:0; border:1px solid var(--line); border-radius:12px; background:var(--surface)}
+.proj:first-child{border-radius:11px 11px 0 0} .proj:last-child{border-radius:0 0 11px 11px} .proj:only-child{border-radius:11px}
 .proj{display:flex; align-items:center; gap:12px; padding:12px 14px; border-bottom:1px solid var(--line)}
 .proj:last-child{border-bottom:none}
 .proj:hover{background:var(--sunk)}
@@ -340,7 +424,6 @@ details p{margin:6px 0 0; font-family:var(--font-data); font-size:11.5px; line-h
 .ofields{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px}
 .oerr{margin:0; color:#c0392b; font-size:12px}
 .oerr:empty{display:none}
-.btn.small{padding:3px 9px; font-size:12px}
 .dnote.err{color:#c0392b}
 .photos{display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:8px}
 .photos:empty{display:none}
@@ -356,27 +439,56 @@ details p{margin:6px 0 0; font-family:var(--font-data); font-size:11.5px; line-h
 .setup-actions .primary:disabled{opacity:.45; cursor:not-allowed}
 @media (max-width:900px){ .setup-grid{grid-template-columns:1fr} .col-preview{position:static; order:-1} .choices{grid-template-columns:1fr} }
 @media (max-width:560px){ .fgrid, .ofields{grid-template-columns:repeat(2,minmax(0,1fr))} }
-@media (max-width:1150px){
-  .app{grid-template-columns:240px minmax(0,1fr)}
-  .budget{grid-column:1 / -1}
-  .work{grid-template-columns:1fr}
-  .stage{height:380px}
-  /* the estimate sits below the views here, so it folds up instead of sideways */
-  .app.est-closed{grid-template-columns:240px minmax(0,1fr)}
-  .est-toggle svg{transform:rotate(-90deg)}
-  [dir="rtl"] .est-toggle svg{transform:rotate(-90deg)}
-  .est-closed .est-toggle svg, [dir="rtl"] .est-closed .est-toggle svg{transform:rotate(90deg)}
-  .est-closed .budget h2{flex-direction:row; padding:10px 8px 10px 14px; gap:8px}
-  .est-closed .est-toggle{order:0}
-  .est-closed .est-title{display:flex}
-  .est-closed .est-title small{display:none}
-  .est-closed .est-mini{writing-mode:horizontal-tb; transform:none}
+/* Maximizing a view: only where plan and 3D sit side by side. The other view folds into a thin rail. */
+.maxbtn, .view-rail{display:none}
+@media (min-width:1280px){
+  .maxbtn{display:inline-flex}
+  .views{transition:grid-template-columns .2s ease}
+  .views.max-plan{grid-template-columns:minmax(0,1fr) 44px}
+  .views.max-3d{grid-template-columns:44px minmax(0,1fr)}
+  .view.folded > :not(.view-rail){display:none}
+  .view.folded > .view-rail{display:flex}
 }
-@media (max-width:760px){
-  .app, .app.est-closed{grid-template-columns:1fr}
-  .viewbar .sep{display:none}
-  .lib{grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); max-height:none}
-  .stage{height:330px}
+.view-rail{flex:1; flex-direction:column; align-items:center; gap:12px; width:100%; padding:14px 0; border:0; border-radius:inherit; background:none; color:var(--ink)}
+.view-rail:hover{background:var(--sunk)}
+.view-rail .ico{flex:none; color:var(--muted)}
+.view-rail span{writing-mode:vertical-rl; font-size:13px; font-weight:600; white-space:nowrap}
+@media (prefers-reduced-motion: reduce){ .views{transition:none} }
+
+/* Responsive: below 1280 the page scrolls and the views stack; below 1000 everything is one column. */
+@media (max-width:1279px){
+  .studio{height:auto}
+  .workspace{grid-template-columns:236px minmax(0,1fr) 280px; grid-template-rows:auto; align-items:start}
+  .views{grid-template-rows:auto}
+  .views{grid-template-columns:1fr}
+  .stage{flex:none; height:400px; min-height:0}
+  .workspace.est-closed{grid-template-columns:236px minmax(0,1fr) 44px}
+  .library, .budget{position:sticky; top:8px; max-height:calc(100vh - 16px)}
+}
+@media (max-width:1100px){
+  .tb-wide{display:none}
+  .tb-narrow{display:inline-flex}
+}
+@media (max-width:999px){
+  .workspace, .workspace.est-closed{grid-template-columns:1fr; padding:0 8px 12px}
+  .library, .budget{position:static; max-height:none}
+  .workspace > .inspect{order:0} .views{order:1} .budget{order:2} .library{order:3}
+  /* One column: a folded estimate is just its header */
+  .budget.closed > .est-head{display:flex}
+  .est-rail{display:none}
+  .inspect.empty{display:none}
+  .budget{flex:none}
+  .est{max-height:60vh}
+  .lib{grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); max-height:480px}
+  .stage{height:340px}
   .pair{grid-template-columns:1fr}
+}
+@media (max-width:560px){
+  .topbar{gap:6px}
+  .tb-name{max-width:34vw}
+  .tb-start > .tb-div{display:none}
+  .topbar .btn.primary{padding:0 12px}
+  .stage{height:300px}
+  .caption{display:none}
 }
 @media (prefers-reduced-motion: reduce){*{transition:none!important}}
