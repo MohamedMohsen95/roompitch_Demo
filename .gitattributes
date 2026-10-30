@@ -1,0 +1,9 @@
+# Text files are stored with LF line endings; binary assets are left alone.
+* text=auto eol=lf
+*.glb binary
+*.bin binary
+*.hdr binary
+*.mp4 binary
+*.jpg binary
+*.png binary
+*.webp binary

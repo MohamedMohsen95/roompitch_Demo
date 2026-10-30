@@ -4,3 +4,7 @@ dist
 .vercel
 .env*
 !.env.example
+
+# local design mockups and tooling, not part of the app
+mockups/
+.taste-skill/

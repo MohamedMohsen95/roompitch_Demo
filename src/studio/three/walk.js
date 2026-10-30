@@ -76,18 +76,17 @@ export function startWalk(){
 
 // Back to orbiting, around a point a little in front of where you stand, then out to the corner view
 // (unless `toCorner` is false: a view or a focus that ended the walk takes the camera itself).
-export function stopWalk(toCorner = true){
+// `quiet`: no "Exiting walk mode" (leaving the studio mid-walk; nobody is there to see it).
+export function stopWalk(toCorner = true, quiet = false){
   if (!isWalking()) return;
-  exitAt = performance.now();
-  if (toCorner) exitTimer = setTimeout(() => setCam("corner", false, EXIT_GLIDE_MS), EXIT_GLIDE_AT);
+  if (!quiet) exitAt = performance.now();
+  if (toCorner && !quiet) exitTimer = setTimeout(() => setCam("corner", false, EXIT_GLIDE_MS), EXIT_GLIDE_AT);
   enter = null; held.clear(); pointers.clear();
   nav.mode = "orbit"; nav.step = null; nav.exit = null;
   controls.target.copy(camera.position).addScaledVector(camera.getWorldDirection(new THREE.Vector3()), 1.5);
   controls.enabled = true; controls.update();
   notify();
 }
-
-export const toggleWalk = () => isWalking() ? stopWalk() : startWalk();
 
 // Move by (dx, dz) in the scene, sliding along a wall rather than stopping dead at it.
 // If you're already outside (the room just changed), any move is allowed.

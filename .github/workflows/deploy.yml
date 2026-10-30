@@ -1,4 +1,4 @@
-# Deploys main to Vercel production. Other branches never deploy.
+# Deploys main to Vercel production, once the typecheck and tests pass. Other branches never deploy.
 # Needs repo secrets VERCEL_TOKEN, VERCEL_ORG_ID and VERCEL_PROJECT_ID.
 name: Deploy to Vercel
 
@@ -12,7 +12,20 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+
   deploy:
+    needs: check
     runs-on: ubuntu-latest
     env:
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}

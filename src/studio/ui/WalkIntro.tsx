@@ -1,6 +1,7 @@
 // "Walk inside": the 3D header's button for walk mode, and the intro that shows before walking
 // (a looping clip of a walk with the main controls over it) until the designer ticks "Don't show this again".
-// Starting a walk expands the 3D view; leaving it puts the views back as they were.
+// Starting a walk expands the 3D view; leaving it puts the views back as they were. Leaving the studio
+// mid-walk ends the walk quietly and puts the views back too, so the room opens normally next time.
 import { useCallback, useEffect, useRef, useState } from "react";
 import { startWalk, stopWalk, isWalking } from "../three/walk.js";
 import { t } from "../i18n.js";
@@ -30,6 +31,14 @@ export default function WalkButton({max, onMax}: MaxProps){
     const {prev} = expanded.current; expanded.current = null;
     if (max === "3d") onMax(prev);
   }, [walking]);
+  const latest = useRef({max, onMax}); latest.current = {max, onMax};
+  useEffect(() => () => {
+    if (!isWalking()) return;
+    stopWalk(false, true);
+    const {max, onMax} = latest.current;
+    if (expanded.current && max === "3d") onMax(expanded.current.prev);
+    expanded.current = null;
+  }, []);
 
   const click = () => walking ? stopWalk() : skipped() ? begin() : setIntro(true);
   return <>
