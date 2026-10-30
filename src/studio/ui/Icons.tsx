@@ -42,4 +42,9 @@ export const IconSound = () => <I><path d="M2.5 6v4h2.5L8.5 13V3L5 6z"/><path d=
 export const IconMuted = () => <I><path d="M2.5 6v4h2.5L8.5 13V3L5 6z"/><path d="M11 6l3 4M14 6l-3 4"/></I>;
 export const IconClose = () => <I><path d="M4 4l8 8M12 4l-8 8"/></I>;
 export const IconArrowRight = () => <I><path d="M3 8h10M9 4l4 4-4 4"/></I>;
+export const IconArmchair = () => <I><path d="M4 7.5V5.2c0-.9.7-1.7 1.7-1.7h4.6c1 0 1.7.8 1.7 1.7v2.3"/><path d="M2.5 8.2a1.2 1.2 0 0 1 2.4 0v1.3h6.2V8.2a1.2 1.2 0 0 1 2.4 0v3.3H2.5zM4 11.5v1.5M12 11.5v1.5"/></I>;
+export const IconDoor = () => <I><path d="M4 13.5v-11h8v11M2.5 13.5h11"/><circle cx="10" cy="8.3" r=".6" fill="currentColor"/></I>;
+export const IconWall = () => <I><path d="M2 3.5h12v9H2zM2 6.5h12M2 9.5h12M6.5 3.5v3M10 6.5v3M6.5 9.5v3"/></I>;
+export const IconFloor = () => <I><path d="M4.6 4h6.8l2.4 8.5H2.2zM3.4 8.2h9.2M8 4v8.5"/></I>;
+export const IconSearch = () => <I><circle cx="7" cy="7" r="4.3"/><path d="m10.2 10.2 3.3 3.3"/></I>;
 export const IconSelect = () => <I><path d="M3 2.5l9 4.2-3.9 1.4L6.7 12z"/></I>;

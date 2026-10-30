@@ -45,6 +45,9 @@ export const FURN = [
   {id:"rug-shag",     name:"Geometric shag rug", ar:"سجادة شاج بنقشة", w:2, d:1.4, h:.012, price:9500, c:"#6e4a4f", rug:true, tex:"faux_fur_geometric", tile:.3}
 ];
 FURN.find(f => f.id === "rug").rug = true;
+// Built-in pieces' thumbnails ship in public/thumbs (npm run thumbs); a missing one is rendered in the browser (thumbs.js).
+const builtinThumb = (id) => `/thumbs/${id}.webp`;
+for (const f of FURN) f.thumb = builtinThumb(f.id);
 
 // Photo textures for the door leaves (windows keep white painted frames).
 // turn: the photo's grain runs across, so it's turned to run up the door.
@@ -58,6 +61,22 @@ export function texMaps(m){
   return {base:at("base"), normal:at("normal"), arm:at("arm")};
 }
 export const isRug = (type) => Boolean(FU[type]?.rug);
+
+// The library's furniture groups. A piece's group is its catalog category when it has a known one,
+// otherwise guessed from its English name (models added from files have none); "other" when nothing fits.
+export const FURN_CATS = ["seating", "table", "storage", "bed", "rug", "decor"];
+const CAT_WORDS = [
+  ["rug", /\brug|carpet/], ["bed", /\bbed\b/],
+  ["seating", /sofa|couch|chair|ottoman|stool|bench|pouf/],   // before tables: a dining chair is seating
+  ["table", /table|desk/], ["storage", /cabinet|unit|shel(f|ves)|wardrobe|dresser|drawer|sideboard|bookcase/],
+  ["decor", /plant|vase|lamp|mirror|decor|\bpot\b|frame/]
+];
+export function furnCat(f){
+  if (f.rug) return "rug";
+  if (FURN_CATS.includes(f.cat)) return f.cat;
+  const name = f.name.toLowerCase();
+  return CAT_WORDS.find(([, re]) => re.test(name))?.[0] || "other";
+}
 
 const byId = (arr) => Object.fromEntries(arr.map(o => [o.id, o]));
 export const WM = byId(WALL_MATS), FM = byId(FLOOR_MATS), FU = byId(FURN);
@@ -88,6 +107,7 @@ export function addModels(models){
     if (FU[m.id]) continue;
     // table/cabinet height and deep enough to hold things -> a surface (e.g. the desk, not the chair)
     m.surface = m.h >= .3 && m.h <= 1.1 && m.d >= .45 && m.w >= .9;
+    m.thumb = builtinThumb(m.id);
     FURN.push(m); FU[m.id] = m;
     EN[m.id] = m.name.toLowerCase();
     added++;
@@ -105,7 +125,9 @@ export function applyCatalog(rows){
     const [list, index] = lists[r.kind] || [];
     if (!list) continue;
     const e = {id:r.id, name:r.name_en, ar:r.name_ar || undefined, price:Number(r.price) || 0, c:r.color || "#8a8580"};
-    if (r.kind === "furniture") Object.assign(e, {w:r.w, d:r.d, h:r.h, surface:r.surface, model:r.modelUrl || undefined, rug:r.category === "rug"});
+    if (r.kind === "furniture") Object.assign(e, {w:r.w, d:r.d, h:r.h, surface:r.surface, model:r.modelUrl || undefined, rug:r.category === "rug", cat:r.category || undefined,
+      // remote: a row in the cloud, so a thumbnail rendered here can be saved to it; owner: whose it is (null: shared)
+      thumb:r.thumbUrl || index[r.id]?.thumb || (r.owner ? undefined : builtinThumb(r.id)), owner:r.owner ?? null, remote:true});
     else Object.assign(e, {kind:r.material || "paint"});
     if (r.textures?.tile) e.tile = r.textures.tile;
     if (r.textures?.turn) e.turn = true;

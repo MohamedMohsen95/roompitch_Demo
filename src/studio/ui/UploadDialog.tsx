@@ -1,7 +1,8 @@
 // Upload a 3D model: pick a .glb, check its size (measured from the file), name and price it.
 // It's saved to the account (model-upload.js) and joins the furniture library.
 import { useEffect, useState, type ChangeEvent } from "react";
-import { applyCatalog } from "../catalog.js";
+import { applyCatalog, FU } from "../catalog.js";
+import { requestThumb } from "../thumbs.js";
 import { MAX_BYTES, measureModel, uploadModel } from "../model-upload.js";
 import { flashHint } from "../actions.js";
 import { notify } from "../store.js";
@@ -55,6 +56,7 @@ export default function UploadDialog({open, onClose}: {open: boolean, onClose: (
       const row = await uploadModel({file, name, nameAr:f.nameAr.trim(), price, currency:settings.currency, w, d, h,
         shared:Boolean(account?.admin) && who === "everyone"});
       applyCatalog([row]); notify();
+      requestThumb(FU[row.id]);   // its library picture, saved with it
       onClose();
       flashHint(t("umDone", {name}), 5000);
     } catch (e: any) {

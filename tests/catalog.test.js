@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-const { FURN, FU, WM, FLOOR_MATS, EN, applyCatalog } = await import("../src/studio/catalog.js");
+const { FURN, FU, WM, FLOOR_MATS, EN, applyCatalog, furnCat } = await import("../src/studio/catalog.js");
 
 test("applyCatalog updates known ids in place and adds new ones", () => {
   const sofa = FU.sofa, count = FURN.length, floors = FLOOR_MATS.length;
@@ -21,4 +21,17 @@ test("applyCatalog updates known ids in place and adds new ones", () => {
   assert.equal(FLOOR_MATS.length, floors + 1);
   assert.equal(FLOOR_MATS.at(-1).tile, .6);
   assert.equal(WM.odd, undefined);
+});
+
+test("furniture groups: catalog category first, else guessed from the name", () => {
+  const g = (name, extra = {}) => furnCat({id:"x", name, price:0, c:"#000", w:1, d:1, h:1, ...extra});
+  assert.equal(g("Dining chair 02"), "seating");
+  assert.equal(g("Dining table (6)"), "table");
+  assert.equal(g("Metal office desk"), "table");
+  assert.equal(g("TV unit"), "storage");
+  assert.equal(g("Bed 160"), "bed");
+  assert.equal(g("Potted plant 01"), "decor");
+  assert.equal(g("Wool plaid rug", {rug:true}), "rug");
+  assert.equal(g("Lounge thing", {cat:"seating"}), "seating");
+  assert.equal(g("Lounge thing", {cat:"spaceship"}), "other");
 });

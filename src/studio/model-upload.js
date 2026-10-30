@@ -23,6 +23,22 @@ export async function measureModel(file){
   return {w:r(size.x), d:r(size.z), h:r(size.y), scaled:k > 1};
 }
 
+// Save a piece's library thumbnail (rendered in the browser, three/thumbs.js) next to its model and on its row.
+// Returns the picture's URL, or null when this account may not change that piece (RLS says no).
+export async function saveThumb(f, blob){
+  const sb = await cloudReady();
+  if (!sb) return null;
+  const ext = blob.type === "image/webp" ? "webp" : "png", bucket = f.owner ? "files" : "catalog";
+  const path = f.owner ? `${f.owner}/catalog/${f.id}.${ext}` : f.id.startsWith("u-") ? `uploads/${f.id}.${ext}` : `builtin/thumbs/${f.id}.${ext}`;
+  const up = await sb.storage.from(bucket).upload(path, blob, {contentType:blob.type, upsert:true, cacheControl:f.owner ? "3600" : "31536000"});
+  if (up.error) return null;
+  const { error } = await sb.from("catalog_items").update({thumbnail_path:path}).eq("id", f.id);
+  if (error) return null;
+  if (!f.owner) return sb.storage.from("catalog").getPublicUrl(path).data.publicUrl;
+  const { data:signed } = await sb.storage.from("files").createSignedUrl(path, SIGNED_FOR);
+  return signed?.signedUrl || null;
+}
+
 // Store the file and its row. Returns the row, with modelUrl, ready for applyCatalog().
 export async function uploadModel({file, name, nameAr, price, currency, w, d, h, shared = false}){
   const sb = await cloudReady();

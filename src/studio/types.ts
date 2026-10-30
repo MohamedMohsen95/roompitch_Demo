@@ -35,5 +35,6 @@ export type Room = {
 export type CatalogEntry = {
   id: string, name: string, ar?: string, price: number, c: string;
   kind?: string, tile?: number, turn?: boolean, tex?: string, texUrls?: {base: string, normal?: string, arm?: string};
-  w: number, d: number, h: number, surface?: boolean, rug?: boolean, model?: string;
+  w: number, d: number, h: number, surface?: boolean, rug?: boolean, model?: string, cat?: string,
+  thumb?: string, owner?: string | null, remote?: boolean;
 };

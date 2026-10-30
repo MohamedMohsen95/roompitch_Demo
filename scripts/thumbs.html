@@ -1,0 +1,28 @@
+<!doctype html>
+<!-- The page npm run thumbs (render-thumbs.mjs) opens in a hidden browser: it renders the built-in pieces'
+     library thumbnails with the studio's own code (src/studio/three/thumbs.js). Development only. -->
+<html lang="en">
+<head><meta charset="utf-8"><title>Thumbnails</title></head>
+<body>
+<script type="module">
+  import { FURN, addModels } from "/src/studio/catalog.js";
+  import { renderThumb } from "/src/studio/three/thumbs.js";
+
+  const dataUrl = (blob) => new Promise(res => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(blob); });
+
+  // Every built-in piece (the box pieces and the models in public/models) except `skip`: [{id, type, data}]
+  window.renderThumbs = async (skip = []) => {
+    const {models = []} = await (await fetch("/api/models")).json();
+    addModels(models.map(m => ({...m, model:"/" + m.model})));
+    const out = [];
+    for (const f of FURN){
+      if (skip.includes(f.id)) continue;
+      const blob = await renderThumb(f.id);
+      out.push({id:f.id, type:blob.type, data:await dataUrl(blob)});
+    }
+    return out;
+  };
+  window.thumbsReady = true;
+</script>
+</body>
+</html>

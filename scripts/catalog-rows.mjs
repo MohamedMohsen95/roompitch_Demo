@@ -1,7 +1,7 @@
 // The built-in catalog ("RoomPitch basics") as catalog_items rows: the finishes and box furniture from
 // src/studio/catalog.js, and the models in public/models (measured the same way GET /api/models does).
 // Ids stay the ones saved rooms use. Shared by catalog-sync.mjs and seed-catalog.mjs.
-import { readFile } from "node:fs/promises";
+import { readFile, access } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { WALL_MATS, FLOOR_MATS, FURN, EN, OPENING_TEX } from "../src/studio/catalog.js";
@@ -47,10 +47,10 @@ async function credits(model){
   } catch { return {license:null, credits:null}; }
 }
 
-// Every row, plus file: the local .glb behind model_path (models only).
+// Every row, plus file: the local .glb behind model_path (models only), and thumb: the local thumbnail.
 export async function builtinRows(){
   const base = {catalog_id:BUILTIN_CATALOG.id, owner:null, currency:"EGP", category:null, name_ar:null,
-    w:null, d:null, h:null, surface:false, material:null, model_path:null, textures:null, license:null, credits:null};
+    w:null, d:null, h:null, surface:false, material:null, model_path:null, thumbnail_path:null, textures:null, license:null, credits:null};
   const rows = [
     ...await Promise.all(WALL_MATS.map(async m => ({...base, id:m.id, kind:"wall_finish", name_en:m.name, name_ar:m.ar, price:m.price,
       unit:"m2", color:m.c, material:m.kind, textures:texJson(m), ...await texCredits(m)}))),
@@ -67,6 +67,11 @@ export async function builtinRows(){
       price:m.price, unit:"each", color:m.c, model_path:"builtin/" + rel,
       file:join(ROOT, "public", "models", rel), ...await credits(m.model)});
   }
-  for (const r of rows) r.ai_description = EN[r.id] ?? r.name_en.toLowerCase();
+  for (const r of rows){
+    r.ai_description = EN[r.id] ?? r.name_en.toLowerCase();
+    // the library thumbnail from public/thumbs (npm run thumbs), uploaded next to the models
+    const thumb = join(ROOT, "public", "thumbs", `${r.id}.webp`);
+    if (r.kind === "furniture" && await access(thumb).then(() => true, () => false)){ r.thumbnail_path = `builtin/thumbs/${r.id}.webp`; r.thumb = thumb; }
+  }
   return rows;
 }

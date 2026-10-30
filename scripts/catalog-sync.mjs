@@ -1,5 +1,6 @@
 // npm run catalog:sync — one command to publish the built-in catalog to Supabase:
-//   1. optimises new or changed models in models-src/ into public/models/ (npm run models)
+//   1. optimises new or changed models in models-src/ into public/models/ (npm run models) and renders the
+//      library thumbnails of pieces that have none (npm run thumbs; needs Edge or Chrome installed)
 //   2. downloads missing photo textures (npm run textures) and uploads each model and texture to the public
 //      "catalog" bucket under builtin/ (skips files already there, same size)
 //   3. adds the "RoomPitch basics" catalog and any catalog_items rows it doesn't have yet
@@ -36,12 +37,14 @@ const fail = (what, error) => { console.error(`✗ ${what}: ${error.message}`); 
 // 1. Optimise models, fetch textures
 execFileSync(process.execPath, [fileURLToPath(new URL("optimize-models.mjs", import.meta.url))], {stdio:"inherit"});
 execFileSync(process.execPath, [fileURLToPath(new URL("fetch-textures.mjs", import.meta.url))], {stdio:"inherit"});
+execFileSync(process.execPath, [fileURLToPath(new URL("render-thumbs.mjs", import.meta.url))], {stdio:"inherit"});
 
 const rows = await builtinRows();
 const files = [...rows.filter(r => r.file).map(r => ({path:r.model_path, file:r.file, type:"model/gltf-binary"})),
-  ...textureFiles().map(t => ({...t, type:"image/webp"}))];
+  ...textureFiles().map(t => ({...t, type:"image/webp"})),
+  ...rows.filter(r => r.thumb).map(r => ({path:r.thumbnail_path, file:r.thumb, type:"image/webp"}))];
 
-// 2. Upload models and textures
+// 2. Upload models, textures and thumbnails
 let uploaded = 0;
 for (const r of files){
   const size = (await stat(r.file)).size;
@@ -58,7 +61,7 @@ for (const r of files){
 }
 
 // 3. Rows
-const items = rows.map(({file, ...r}) => r);
+const items = rows.map(({file, thumb, ...r}) => r);
 if (dry){
   console.log(`would add any of these ${items.length} rows that are missing: ${items.map(r => r.id).join(", ")}`);
   process.exit(0);
@@ -70,6 +73,12 @@ if (readError) fail("catalog_items", readError);
 const known = new Set(before.map(r => r.id));
 const { error } = await sb.from("catalog_items").upsert(items, {onConflict:"id", ignoreDuplicates:!update});
 if (error) fail("catalog_items", error);
+
+// Rows that were already there get their thumbnail too (without --update the upsert leaves them as they are).
+for (const r of items.filter(r => r.thumbnail_path && known.has(r.id))){
+  const { error } = await sb.from("catalog_items").update({thumbnail_path:r.thumbnail_path}).eq("id", r.id).is("thumbnail_path", null);
+  if (error) fail(`thumbnail of ${r.id}`, error);
+}
 
 const added = items.filter(r => !known.has(r.id)).map(r => r.id);
 const gone = [...known].filter(id => !id.startsWith("u-") && !items.some(r => r.id === id));   // u-: uploaded by admins

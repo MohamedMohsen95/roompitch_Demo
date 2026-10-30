@@ -4,12 +4,15 @@ import * as THREE from "three";
 
 const loader = new THREE.TextureLoader();
 const files = new Map();     // url -> texture as loaded
+const loaded = new Map();    // url -> Promise, settled once its image has arrived (or failed)
 const tiled = new Map();     // url|repeat -> clone with that repeat (shares the image)
 
 function map(url, rx, ry, srgb, turn){
   let src = files.get(url);
   if (!src){
-    src = loader.load(url, undefined, undefined, () => console.warn("Texture failed to load", url));
+    let done;
+    loaded.set(url, new Promise(res => { done = res; }));
+    src = loader.load(url, () => done(), undefined, () => { console.warn("Texture failed to load", url); done(); });
     src.wrapS = src.wrapT = THREE.RepeatWrapping; src.anisotropy = 8;
     if (srgb) src.colorSpace = THREE.SRGBColorSpace;
     src.userData.cached = true;
@@ -41,6 +44,9 @@ function roughnessFloor(mat){
   mat.customProgramCacheKey = () => "roughness-floor";
   return mat;
 }
+
+// Resolves when the photo maps of `maps` have arrived (after photoMaterial() asked for them).
+export const photoMapsReady = (maps) => Promise.all(Object.values(maps).map(u => u && loaded.get(u))).then(() => {});
 
 // A material showing the photo texture `maps` repeated rx × ry times over the geometry's 0..1 UVs
 // (or once per metre / per tile when the UVs are already in metres). turn: rotate the photo a quarter.

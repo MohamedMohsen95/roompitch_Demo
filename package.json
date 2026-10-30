@@ -10,6 +10,7 @@
     "preview": "vite preview",
     "models": "node scripts/optimize-models.mjs",
     "textures": "node scripts/fetch-textures.mjs",
+    "thumbs": "node scripts/render-thumbs.mjs",
     "test": "node --test",
     "db:generate": "drizzle-kit generate",
     "db:custom": "drizzle-kit generate --custom",
@@ -37,6 +38,7 @@
     "@vitejs/plugin-react": "6.1.2",
     "drizzle-kit": "0.31.11",
     "drizzle-orm": "0.45.4",
+    "playwright-core": "1.64.1",
     "typescript": "5.9.3",
     "vite": "8.3.5"
   }
