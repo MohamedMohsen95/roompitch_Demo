@@ -1,5 +1,5 @@
 // A dialog over a dimmed backdrop. Clicking the backdrop or pressing Escape closes it;
-// the first field (or button) gets the focus when it opens.
+// the first field (or button), or the one marked data-autofocus, gets the focus when it opens.
 import { useEffect, useRef, type ReactNode } from "react";
 
 type Props = {
@@ -16,7 +16,7 @@ export default function Modal({open, onClose, labelledBy, className = "sheet3", 
   close.current = onClose;
   useEffect(() => {
     if (!open) return;
-    sheet.current?.querySelector<HTMLElement>("input, select, textarea, button")?.focus();
+    (sheet.current?.querySelector<HTMLElement>("[data-autofocus]") ?? sheet.current?.querySelector<HTMLElement>("input, select, textarea, button"))?.focus();
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape"){ e.stopPropagation(); close.current(); } };
     document.addEventListener("keydown", onKey, true);
     return () => document.removeEventListener("keydown", onKey, true);

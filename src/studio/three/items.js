@@ -6,9 +6,10 @@ import { shade, cssVar } from "../utils.js";
 import { scene, itemGroup } from "./scene.js";
 import { loadModel, fitModel, disposeTree } from "./models.js";
 import { photoMaterial } from "./photo-tex.js";
+import { multiIds } from "../selection.js";
 
 const itemObjs = new Map();   // item id -> THREE.Group
-let selHelper = null;
+let selHelpers = [];
 
 function buildItem(it){
   const f = FU[it.type], g = new THREE.Group(), {w, d, h, c} = f;
@@ -87,13 +88,22 @@ export function syncItem(it){ const o = itemObjs.get(it.id); if (o){ placeObj(o,
 // Reposition every piece (after a move that may have carried or re-stacked others).
 export function syncAll(){ for (const it of S.items){ const o = itemObjs.get(it.id); if (o) placeObj(o, it); } refreshHelper(); }
 
+// The box around these pieces in the scene (null if none is built).
+export function itemsBox(ids){
+  const box = new THREE.Box3();
+  for (const id of ids){ const o = itemObjs.get(id); if (o) box.expandByObject(o); }
+  return box.isEmpty() ? null : box;
+}
+
 export function refreshHelper(){
-  if (selHelper){ scene.remove(selHelper); selHelper.geometry.dispose(); selHelper = null; }
-  if (S.sel && S.sel.kind === "item"){
-    const o = itemObjs.get(S.sel.id);
-    if (o){ selHelper = new THREE.BoxHelper(o, new THREE.Color(cssVar("--accent"))); scene.add(selHelper); }
+  for (const h of selHelpers){ scene.remove(h); h.geometry.dispose(); }
+  selHelpers = [];
+  const ids = multiIds().length ? multiIds() : S.sel && S.sel.kind === "item" ? [S.sel.id] : [];
+  for (const id of ids){
+    const o = itemObjs.get(id);
+    if (o){ const h = new THREE.BoxHelper(o, new THREE.Color(cssVar("--accent"))); scene.add(h); selHelpers.push(h); }
   }
 }
 
 // Called every frame so the outline follows a model that finished loading.
-export function updateHelper(){ if (selHelper) selHelper.update(); }
+export function updateHelper(){ for (const h of selHelpers) h.update(); }

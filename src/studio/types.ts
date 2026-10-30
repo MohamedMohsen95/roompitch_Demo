@@ -2,7 +2,7 @@
 
 export type Point = [number, number];
 
-export type Item = {id: number, type: string, x: number, y: number, rot: number, z?: number, zAuto?: boolean};
+export type Item = {id: number, type: string, x: number, y: number, rot: number, z?: number, zAuto?: boolean, locked?: boolean};
 
 export type Opening = {id: string, type: "door" | "window" | string, wall: number, offset: number, width: number, height: number, sill: number, fromAI?: boolean};
 

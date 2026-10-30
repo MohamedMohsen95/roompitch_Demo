@@ -2,13 +2,14 @@
 import { S } from "./state.js";
 import { bbox } from "./geometry.js";
 import { FU, WM, FM } from "./catalog.js";
+import { record, resetHistory } from "./history.js";
 
 const KEY = "rp_room";
 let paused = false;
 let afterSave = null;
 
 // While screen 1 is showing nothing is saved, so an untouched sample room never becomes "the last room".
-export const setSaving = (on) => { paused = !on; };
+export const setSaving = (on) => { paused = !on; if (on) resetHistory(); };
 
 // Something else that also keeps each saved room (cloud-store.js), called after every save.
 export const onSaved = (fn) => { afterSave = fn; };
@@ -18,6 +19,7 @@ export function saveRoom(){
   const data = {v:1, savedAt:Date.now(), form:S.form, poly:S.poly, openings:S.openings, H:S.H, walls:S.walls, floor:S.floor, items:S.items, nextId:S.nextId, sun:S.sun};
   try { localStorage.setItem(KEY, JSON.stringify(data)); } catch { /* storage full or blocked: keep working */ }
   afterSave?.(data);
+  record();
 }
 
 // Forget this browser's room (its cloud project was deleted).

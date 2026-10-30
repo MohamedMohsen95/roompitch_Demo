@@ -5,6 +5,7 @@
 //   sill   = height of the bottom edge above the floor (0 for doors; a window with sill 0 is a glass door)
 import { S, walls, wallLen } from "./state.js";
 import { clamp, snap } from "./utils.js";
+import { alongWall } from "./geometry.js";
 
 // Library presets (sizes in metres). A preset is a starting point; the inspector edits sizes after.
 export const OPENING_PRESETS = [
@@ -24,6 +25,16 @@ const GAP = .05;          // minimum distance to a corner or another opening
 const TOP_GAP = .05;      // minimum distance below the ceiling
 
 export const findOpening = (id) => S.openings.find(o => o.id === id);
+
+// An opening as a fixed alignment reference (geometry.js snapAlign / alignRects): a flat rect along its wall
+// that counts on that axis only, so a piece can line up with its centre or edges. Null on a slanted wall.
+export function openingRect(o){
+  const w = walls()[o.wall]; if (!w) return null;
+  const c = alongWall(w, o.offset + o.width / 2), horizontal = Math.abs(w.a[1] - w.b[1]) < 1e-6, vertical = Math.abs(w.a[0] - w.b[0]) < 1e-6;
+  if (horizontal) return {x:c[0], y:c[1], w:o.width, d:0, only:"x"};
+  if (vertical) return {x:c[0], y:c[1], w:0, d:o.width, only:"y"};
+  return null;
+}
 export const openingsOn = (wall, exceptId) => S.openings.filter(o => o.wall === wall && o.id !== exceptId);
 
 let seq = 0;

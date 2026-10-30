@@ -3,6 +3,8 @@
 // estimate (which folds sideways into a rail).
 import { useCallback, useEffect, useState } from "react";
 import { studioKey } from "../actions.js";
+import { nudgeKeyUp, nudgeStop } from "../nudge.js";
+import { walkKeyUp, walkStop } from "../three/walk.js";
 import { t } from "../i18n.js";
 import { listProjects } from "../cloud-store.js";
 import { useStudio, useKeydown } from "./hooks";
@@ -64,6 +66,12 @@ export default function StudioScreen({onProjects, onRoomSetup, onLang}: Props){
 
   // Shortcuts act on the room, never while a dialog is open (the dialog takes Escape itself).
   useKeydown(useCallback((e: KeyboardEvent) => { if (!dialog) studioKey(e); }, [dialog]));
+  // Arrow-key moves and walking end when the key comes up, or when the window loses focus.
+  useEffect(() => {
+    const up = (e: KeyboardEvent) => { nudgeKeyUp(e); walkKeyUp(e); }, blur = () => { nudgeStop(); walkStop(); };
+    window.addEventListener("keyup", up); window.addEventListener("blur", blur);
+    return () => { window.removeEventListener("keyup", up); window.removeEventListener("blur", blur); };
+  }, []);
 
   const toggleEst = (v: boolean) => {
     setEstClosed(v);

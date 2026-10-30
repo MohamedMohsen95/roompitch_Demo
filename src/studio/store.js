@@ -12,5 +12,9 @@ export const getVersion = () => version;
 export const ui = {
   flash:null,          // a short message shown in place of the library hint (flashHint in actions.js)
   canUpload:false,     // "Upload 3D model" shows once Supabase is reachable
-  inspectMsg:null      // a short message in the selection bar (e.g. a size that doesn't fit), cleared on the next selection
+  inspectMsg:null,     // a short message in the selection bar (e.g. a size that doesn't fit), cleared on the next selection
+  guides:null,         // alignment guides while a piece is dragged (align.js), drawn on the plan
+  multi:null,          // ids of several selected pieces (selection.js)
+  multiOps:null,       // ids of windows/doors selected with them, to align to (selection.js)
+  keyView:"plan"       // the view last clicked, "plan" | "3d": arrow keys move pieces as seen there (nudge.js)
 };

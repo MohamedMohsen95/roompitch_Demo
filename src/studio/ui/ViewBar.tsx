@@ -7,10 +7,13 @@ import { t } from "../i18n.js";
 import { LIGHTING, getLighting, setLighting } from "../three/lighting.js";
 import { FACINGS, SEASONS, sunAngles, updateSun, formatTime } from "../three/sun.js";
 import { setCam } from "../three/scene.js";
+import { useStudio } from "./hooks";
 import Menu from "./Menu";
 import { IconSun } from "./Icons";
 
+// The preset views glide there (and end a walk). Walking has its own button (WalkIntro.tsx).
 export function CameraViews(){
+  useStudio();
   return (
     <div className="segbar" role="group" aria-label={t("camView")}>
       <button type="button" onClick={() => setCam("corner")}>{t("camCorner")}</button>

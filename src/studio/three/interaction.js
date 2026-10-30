@@ -1,17 +1,19 @@
 // Mouse/touch in the 3D view: select, drag pieces across the floor, double-click to rotate,
 // and drop library entries onto the floor, a wall or a piece.
 import * as THREE from "three";
-import { S, clampItem, findItem, isSelectedItem } from "../state.js";
+import { S, clampItem, findItem, isSelectedItem, isLocked } from "../state.js";
 import { FU } from "../catalog.js";
 import { nearestWallAny } from "../openings.js";
 import { saveRoom } from "../room-store.js";
 import { snap } from "../utils.js";
 import { update } from "../app.js";
 import { applyPayload, rotateSel } from "../actions.js";
-import { notify } from "../store.js";
-import { renderer, scene, camera, controls, itemGroup, pickables } from "./scene.js";
+import { notify, ui } from "../store.js";
+import { renderer, scene, camera, controls, itemGroup, pickables, nav } from "./scene.js";
 import { syncAll, refreshHelper } from "./items.js";
 import { startCarry, carry } from "../stacking.js";
+import { snapToGuides, showGuides, clearGuides } from "../align.js";
+import { toggleInMulti, isMulti, endMulti } from "../selection.js";
 
 const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
 const floorPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), floorHit = new THREE.Vector3();
@@ -55,15 +57,19 @@ export function initInteraction(){
   };
   cv.addEventListener("pointerdown", e => {
     down = {x:e.clientX, y:e.clientY};
+    ui.keyView = "3d";
     const h = hit3D(e.clientX, e.clientY, itemGroup.children), id = h && h.object.userData.itemId;
     const it = id && findItem(id);
     if (!it) return;
+    // Ctrl/Cmd+click: add the piece to the selection, or take it out (Shift is for raising)
+    if (e.ctrlKey || e.metaKey){ e.stopImmediatePropagation(); down = null; toggleInMulti(id); update(); return; }
+    if (isLocked(it)) return;   // locked: the press orbits as on the floor, and a click still selects it
     drag = {it, moved:false, grabY:h.point.y, riders:startCarry(it)};
     startMode(e);
     if (!drag.vertical && drag.dx === undefined){ drag = null; return; }
     e.stopImmediatePropagation();
     controls.enabled = false; cv.setPointerCapture(e.pointerId); cv.style.cursor = drag.vertical ? "ns-resize" : "grabbing";
-    if (!isSelectedItem(id)){ S.sel = {kind:"item", id}; notify(); refreshHelper(); }
+    if (!isSelectedItem(id) || isMulti()){ S.sel = {kind:"item", id}; endMulti(); notify(); refreshHelper(); }
   }, {capture:true});
 
   cv.addEventListener("pointermove", e => {
@@ -77,21 +83,24 @@ export function initInteraction(){
       } else {
         const p = levelPoint(e.clientX, e.clientY, drag.grabY); if (!p) return;
         drag.it.x = snap(p.x - drag.dx); drag.it.y = snap(p.y - drag.dy);
+        if (!e.altKey) snapToGuides(drag.it, drag.riders);   // line up with other pieces (Alt: place freely)
       }
       clampItem(drag.it);
       carry(drag.it, drag.riders);   // things on it come along; it lands on whatever is below
+      if (drag.vertical) clearGuides(); else showGuides(drag.it, drag.riders);
       drag.moved = true; syncAll(); notify();   // the plan and the height readout follow live
       return;
     }
     if (e.buttons) return; // orbiting
     const h = hit3D(e.clientX, e.clientY, itemGroup.children);
-    cv.style.cursor = h && h.object.userData.itemId ? "grab" : "";
+    const over = h && h.object.userData.itemId;
+    cv.style.cursor = over ? (isLocked(findItem(over)) ? "pointer" : "grab") : "";
   });
 
   const endDrag = () => {
     if (!drag) return false;
-    const moved = drag.moved; drag = null;
-    controls.enabled = true; cv.style.cursor = "grab";
+    const moved = drag.moved; drag = null; clearGuides();
+    controls.enabled = nav.mode !== "walk"; cv.style.cursor = "grab";
     if (moved){ notify(); saveRoom(); }
     return true;
   };
@@ -102,6 +111,9 @@ export function initInteraction(){
     if (!down || Math.hypot(e.clientX - down.x, e.clientY - down.y) > 5){ down = null; return; } // that was an orbit
     down = null;
     const h = hit3D(e.clientX, e.clientY, [...itemGroup.children, ...pickables]);
+    // Ctrl/Cmd+click on a window or door: add it to the selection, to align pieces with
+    if (h && h.object.userData.kind === "opening" && (e.ctrlKey || e.metaKey)){ toggleInMulti(h.object.userData.id, "opening"); update(); return; }
+    endMulti();
     if (!h) S.sel = null;
     else if (h.object.userData.itemId) S.sel = {kind:"item", id:h.object.userData.itemId};
     else if (h.object.userData.kind === "opening") S.sel = {kind:"opening", id:h.object.userData.id};
@@ -112,7 +124,7 @@ export function initInteraction(){
 
   cv.addEventListener("dblclick", e => {
     const h = hit3D(e.clientX, e.clientY, itemGroup.children);
-    if (h && h.object.userData.itemId){ S.sel = {kind:"item", id:h.object.userData.itemId}; rotateSel(); }
+    if (h && h.object.userData.itemId){ S.sel = {kind:"item", id:h.object.userData.itemId}; endMulti(); rotateSel(); }
   });
 }
 

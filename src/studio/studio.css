@@ -5,7 +5,7 @@
   --ink:#131614; --muted:#5a625f; --line:#e1e6e3; --rule:#eef1ef; --control:#cdd4d0;
   --accent:#2c6a5c; --accent-ink:#ffffff; --accent-soft:rgba(44,106,92,.10);
   --primary:#17201d; --primary-ink:#ffffff;
-  --grid:rgba(19,22,20,.07); --danger:#b3261e; --danger-soft:rgba(179,38,30,.08);
+  --grid:rgba(19,22,20,.07); --danger:#b3261e; --guide:#e5366a; --danger-soft:rgba(179,38,30,.08);
   --radius-panel:14px; --radius-inner:10px;
   --font-body:"IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
   --font-data:"IBM Plex Mono", ui-monospace, "Cascadia Mono", monospace;
@@ -15,13 +15,13 @@
   --ink:#e8ecea; --muted:#9da7a3; --line:#262c2a; --rule:#202624; --control:#3a423f;
   --accent:#5fb39d; --accent-ink:#0d1211; --accent-soft:rgba(95,179,157,.14);
   --primary:#e8ecea; --primary-ink:#0e1110;
-  --grid:rgba(232,236,234,.06); --danger:#f2867a; --danger-soft:rgba(242,134,122,.12); color-scheme:dark}}
+  --grid:rgba(232,236,234,.06); --danger:#f2867a; --guide:#ff5c8a; --danger-soft:rgba(242,134,122,.12); color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#0e1110; --surface:#161a19; --sunk:#1b201e; --stage:#1c2120; --active:#242a28;
   --ink:#e8ecea; --muted:#9da7a3; --line:#262c2a; --rule:#202624; --control:#3a423f;
   --accent:#5fb39d; --accent-ink:#0d1211; --accent-soft:rgba(95,179,157,.14);
   --primary:#e8ecea; --primary-ink:#0e1110;
-  --grid:rgba(232,236,234,.06); --danger:#f2867a; --danger-soft:rgba(242,134,122,.12); color-scheme:dark}
+  --grid:rgba(232,236,234,.06); --danger:#f2867a; --guide:#ff5c8a; --danger-soft:rgba(242,134,122,.12); color-scheme:dark}
 html[lang="ar"]{--font-body:"IBM Plex Sans Arabic", "Segoe UI", Tahoma, sans-serif}
 
 *{box-sizing:border-box}
@@ -101,9 +101,49 @@ button{cursor:pointer}
 .phead small{font-size:12px; color:var(--muted)}
 .plan-dims{margin-inline-start:auto; font-variant-numeric:tabular-nums; white-space:nowrap}
 .phead-tools{display:flex; align-items:center; gap:6px; flex-wrap:wrap; justify-content:flex-end}
+.phead-start{display:flex; align-items:center; gap:10px; min-width:0}
+
+/* Walk inside: the 3D header's call to walk, with a sheen that sweeps across it now and then */
+.walkbtn{position:relative; overflow:hidden; isolation:isolate; display:inline-flex; align-items:center; gap:6px; height:28px; padding-inline:10px 12px;
+  border:1px solid color-mix(in srgb, var(--accent) 75%, #000); border-radius:999px; background:var(--accent); color:var(--accent-ink);
+  font-size:12.5px; font-weight:600; white-space:nowrap; cursor:pointer; box-shadow:0 1px 3px color-mix(in srgb, var(--accent) 35%, transparent)}
+.walkbtn::after{content:""; position:absolute; inset:0; z-index:-1; pointer-events:none;
+  background:linear-gradient(100deg, transparent 30%, rgba(255,255,255,.4) 50%, transparent 70%); transform:translateX(-120%); animation:walk-sheen 3.6s ease-in-out infinite}
+.walkbtn:hover{background:color-mix(in srgb, var(--accent) 88%, #fff)}
+.walkbtn:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+.walkbtn[aria-pressed="true"]{background:var(--surface); color:var(--ink); border-color:var(--control); box-shadow:none}
+.walkbtn[aria-pressed="true"]::after{content:none}
+@keyframes walk-sheen{0%, 60%{transform:translateX(-120%)} 100%{transform:translateX(120%)}}
+@media (prefers-reduced-motion: reduce){ .walkbtn::after{animation:none; content:none} }
+
+/* The walk intro: a looping clip with the main controls over it, then a line and the buttons */
+.walkintro{position:relative; width:min(560px, 100%); animation:wi-in .38s cubic-bezier(.2, .8, .2, 1) both; max-height:92vh; overflow:auto; background:var(--surface); border:1px solid var(--line); border-radius:16px; display:flex; flex-direction:column}
+.modal:has(> .walkintro){animation:wi-fade .3s ease-out both}
+@keyframes wi-fade{from{background:rgba(10,14,13,0)}}
+@keyframes wi-in{from{opacity:0; transform:translateY(14px) scale(.96)}}
+@media (prefers-reduced-motion: reduce){ .walkintro, .modal:has(> .walkintro){animation:none} }
+.wi-clip{position:relative; aspect-ratio:4 / 3; background:#1c2120; flex:none}
+.wi-clip video{display:block; width:100%; height:100%; object-fit:cover}
+.wi-pills{position:absolute; inset-inline:0; bottom:14px; margin:0; padding:0 12px; list-style:none; display:flex; justify-content:center; flex-wrap:wrap; gap:8px; pointer-events:none}
+.wi-pills li{display:inline-flex; align-items:center; gap:7px; padding:6px 12px; border-radius:999px; background:rgba(28,32,30,.55); border:1px solid rgba(255,255,255,.18);
+  color:#fff; font-size:12.5px; font-weight:500; backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px)}
+.wi-pills kbd{padding:1px 6px; border:1px solid rgba(255,255,255,.45); border-radius:4px; font:500 10.5px var(--font-data); letter-spacing:.04em; direction:ltr}
+.wi-x{position:absolute; top:12px; inset-inline-end:12px; width:30px; height:30px; display:grid; place-items:center; border:0; border-radius:50%;
+  background:rgba(28,32,30,.55); color:#fff; cursor:pointer; backdrop-filter:blur(8px)}
+.wi-x:hover{background:rgba(28,32,30,.8)}
+.wi-body{padding:14px 20px 16px}
+.wi-body h3{display:flex; align-items:center; gap:8px; margin:0; font-size:18px}
+.wi-body h3 .ico{width:20px; height:20px; color:var(--accent)}
+.wi-body p{margin:4px 0 0; font-size:13px; color:var(--muted); line-height:1.5; text-wrap:pretty}
+.wi-foot{display:flex; align-items:center; gap:10px; margin-top:14px; flex-wrap:wrap}
+.wi-foot label{flex:1; display:flex; align-items:center; gap:6px; font-size:12.5px; color:var(--muted); min-width:max-content}
+.wi-foot .btn .ico{margin-inline-start:2px}
+[dir="rtl"] .wi-foot .btn .ico{transform:scaleX(-1)}
+
 .segbar{display:inline-flex; gap:2px; padding:2px; background:var(--sunk); border:1px solid var(--line); border-radius:999px}
 .segbar button{height:26px; padding:0 10px; border:0; border-radius:999px; background:none; color:var(--muted); font-size:12.5px; white-space:nowrap}
 .segbar button:hover{background:var(--surface); color:var(--ink)}
+.segbar button[aria-pressed="true"]{background:var(--surface); color:var(--ink); font-weight:600; box-shadow:0 1px 2px rgba(10,14,13,.12)}
 
 /* Library */
 .library{display:flex; flex-direction:column; min-height:0}
@@ -173,8 +213,18 @@ button{cursor:pointer}
 #three{position:absolute; inset:0}
 #three canvas{display:block}
 .drop-on{outline:2px dashed var(--accent); outline-offset:-6px}
-.caption{position:absolute; inset-inline-start:8px; bottom:8px; max-width:calc(100% - 16px); margin:0; padding:3px 8px; border-radius:6px;
-  background:var(--surface); color:var(--muted); font-size:12px; pointer-events:none; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+/* Tips in a view's corner: one line with an info icon; open, a card with every tip on its own line */
+.hints{position:absolute; inset-inline-start:8px; bottom:8px; max-width:min(340px, calc(100% - 16px)); max-height:calc(100% - 16px); display:flex; flex-direction:column;
+  background:var(--surface); border:1px solid var(--line); border-radius:8px; box-shadow:0 1px 2px rgba(10,14,13,.12); font-size:12px; color:var(--muted)}
+.hints button{flex:none; display:flex; align-items:center; gap:6px; min-width:0; height:26px; padding:0 9px 0 7px; border:0; border-radius:8px; background:none; color:inherit; font:inherit; text-align:start}
+.hints button:hover{color:var(--ink)}
+.hints button span{white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.hints .ico{flex:none; color:var(--accent)}
+.hints ul{margin:0; padding:10px 12px 4px 26px; min-height:0; overflow:auto; color:var(--ink); line-height:1.45}
+.hints li{padding:2px 0}
+.hints li::first-letter{text-transform:uppercase}
+.hints li::marker{color:var(--muted)}
+.hints.open button{border-top:1px solid var(--line); border-radius:0 0 8px 8px}
 
 /* Selection bar: one row (wrapping when narrow) above the views, at a steady height so the views don't jump */
 .inspect{flex:none; min-height:60px; padding:10px 12px 10px 16px; display:flex; flex-wrap:wrap; align-items:center; gap:8px 16px; container-type:inline-size}
@@ -209,14 +259,28 @@ button{cursor:pointer}
 .stepper button:hover{background:var(--sunk); color:var(--ink)}
 .stepper .ico{width:12px; height:12px}
 .stepper button:first-child .ico{transform:rotate(180deg)}
+/* Distance to the walls: one group, each wall's arrow, number and distance */
+.gaps{display:inline-flex; align-items:center; gap:4px; font-size:13px; color:var(--muted); white-space:nowrap}
+.gaps-label{margin-inline-end:4px}
+.gap{display:inline-flex; align-items:center; gap:5px; height:28px; padding:0 9px 0 7px; border-radius:999px; background:var(--accent-soft); color:var(--ink)}
+.gap-arrow{color:var(--accent); font-weight:600; font-size:12px}
+.gap-wall{display:grid; place-items:center; width:16px; height:16px; border-radius:50%; background:var(--surface); border:1px solid var(--muted); font-size:10.5px; color:var(--ink); font-variant-numeric:tabular-nums}
+.gap b{font-weight:600; font-variant-numeric:tabular-nums}
+.gaps-unit{margin-inline-start:2px}
+/* Several pieces selected: two groups of align buttons */
+.aligns{display:inline-flex; align-items:center; gap:8px; font-size:13px; color:var(--muted)}
+.aligns .segbar button{width:34px; height:28px; padding:0; display:grid; place-items:center}
+.aligns .segbar .ico{color:var(--ink)}
+.aligns .segbar button:disabled{opacity:.35; background:none; cursor:default}
 /* The price is information here (it is edited in the Price list) */
 .pricetag{display:inline-flex; align-items:baseline; gap:6px; font-size:13px; color:var(--muted); white-space:nowrap}
 .pricetag b{font-size:13.5px; font-weight:600; color:var(--ink); font-variant-numeric:tabular-nums}
-/* A narrow bar: actions with an icon show just the icon (the button keeps its name and a tooltip) */
-@container (max-width:1100px){
-  .inspect .acts .btn:has(.ico){width:34px; padding:0; justify-content:center}
-  .inspect .acts .btn:has(.ico) span{position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap}
-}
+/* Actions with an icon show just the icon, so they stay on one row (the button keeps its name and a tooltip) */
+.inspect .acts .btn:has(.ico){width:34px; padding:0; justify-content:center}
+.inspect .acts .btn:has(.ico) span{position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap}
+.inspect .acts .btn[aria-pressed="true"]{background:var(--active); border-color:var(--ink)}
+.inspect .acts .btn[aria-pressed="true"] .ico{color:var(--ink)}
+.inspect .btn:disabled{opacity:.4; cursor:default; pointer-events:none}
 .inspect.empty{padding-block:10px}
 /* Nothing selected: one quiet line, the icon centred on it */
 .noselect{display:flex; align-items:center; gap:10px; min-height:34px; color:var(--muted); min-width:0}
@@ -489,6 +553,5 @@ details p{margin:6px 0 0; font-family:var(--font-data); font-size:11.5px; line-h
   .tb-start > .tb-div{display:none}
   .topbar .btn.primary{padding:0 12px}
   .stage{height:300px}
-  .caption{display:none}
 }
 @media (prefers-reduced-motion: reduce){*{transition:none!important}}

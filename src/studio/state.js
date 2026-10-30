@@ -28,11 +28,15 @@ export const S = {
 
 export const findItem = (id) => S.items.find(i => i.id === id);
 export const selectedItem = () => S.sel && S.sel.kind === "item" ? findItem(S.sel.id) : null;
+// A locked piece stays put: it can be selected, duplicated and aligned to, but not moved, turned, replaced or deleted.
+export const isLocked = (it) => Boolean(it && it.locked);
 export const isSelectedItem = (id) => Boolean(S.sel && S.sel.kind === "item" && S.sel.id === id);
 
 // Footprint on the floor, taking rotation into account.
 export const foot = (it) => { const f = FU[it.type]; return (it.rot % 180) ? {w:f.d, d:f.w} : {w:f.w, d:f.d}; };
 export const walls = () => G.wallsOf(S.poly);
+// How far a piece's sides are from the walls they face (see geometry.js clearances).
+export const itemClearances = (it) => { const f = foot(it); return G.clearances({x:it.x, y:it.y, w:f.w, d:f.d}, S.poly); };
 export const wallLen = (i) => (walls()[i] || {len:0}).len;
 
 // Keep a piece inside the room outline (cheap box clamp first; the full search only for L-shapes),

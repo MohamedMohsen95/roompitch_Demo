@@ -23,6 +23,7 @@ import { initLighting } from "../three/lighting.js";
 import { updateSun } from "../three/sun.js";
 import { updateHelper } from "../three/items.js";
 import { initInteraction } from "../three/interaction.js";
+import { initWalk } from "../three/walk.js";
 import { applyStatic, setLang, getLang, t } from "../i18n.js";
 import { S, applyRoom } from "../state.js";
 import { loadRoom, restoreRoom, setSaving, saveRoom, onSaved, clearRoom } from "../room-store.js";
@@ -53,7 +54,7 @@ let catalogReady: Promise<void> | null = null;
 let opened = false;   // a room has been opened (or started) since the page loaded
 function boot(){
   if (catalogReady) return;
-  initScene(); initLighting(); initInteraction();
+  initScene(); initLighting(); initInteraction(); initWalk();
   startLoop(() => { updateHelper(); cullForCamera(camera); });
   setSaving(false);
   // Every save also goes to Supabase (when keys are set); sign in now so the first save is quick.
@@ -150,7 +151,7 @@ function RoomRoute({onProjects, onRoomSetup, onLang, continueLast}: {onProjects:
   // Saving is on while the studio shows, so an untouched sample room never becomes "the last room".
   useEffect(() => {
     if (!ready) return;
-    setSaving(true); updateSun(); rebuildAll(); setCam("corner"); saveRoom();
+    setSaving(true); updateSun(); rebuildAll(); setCam("corner", true); saveRoom();
     return () => { setSaving(false); S.sel = null; S.replacing = null; ui.inspectMsg = null; update(); };
   }, [ready]);
   if (!ready) return null;
