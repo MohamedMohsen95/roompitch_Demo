@@ -204,13 +204,17 @@ button{cursor:pointer}
 /* Library */
 .library{display:flex; flex-direction:column; min-height:0}
 /* Library: the categories as one row of icon buttons, then search and (furniture) group chips */
-.libtabs{display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:2px; margin:0 10px 10px; padding:3px; border-radius:11px; background:var(--sunk)}
-.libtabs button{display:flex; flex-direction:column; align-items:center; gap:3px; min-width:0; padding:7px 2px 6px; border:0; border-radius:9px;
-  background:none; color:var(--muted); font-size:11.5px; line-height:1.2; transition:color .15s, background .15s}
+.libtabs{position:relative; display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:2px; margin:0 10px 10px; padding:3px; border-radius:11px; background:var(--sunk)}
+.libtabs button{position:relative; display:flex; flex-direction:column; align-items:center; gap:3px; min-width:0; padding:7px 2px 6px; border:0; border-radius:9px;
+  background:none; color:var(--muted); font-size:10.5px; line-height:1.2; transition:color .2s}
+/* The raised highlight under the selected category; it slides to the one clicked (--i: its index) */
+.libtabs-pill{position:absolute; top:3px; bottom:3px; inset-inline-start:3px; width:calc((100% - 12px) / 4); border-radius:9px; background:var(--surface);
+  box-shadow:0 1px 2px rgba(0,0,0,.08), 0 0 0 1px var(--line); translate:calc(var(--i) * (100% + 2px)) 0; transition:translate .28s cubic-bezier(.3,.7,.2,1)}
+[dir="rtl"] .libtabs-pill{translate:calc(var(--i) * (-100% - 2px)) 0}
 .libtabs button span{max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
 .libtabs button .ico{width:20px; height:20px}
 .libtabs button:hover{color:var(--ink)}
-.libtabs button[aria-selected="true"]{background:var(--surface); color:var(--ink); font-weight:600; box-shadow:0 1px 2px rgba(0,0,0,.08), 0 0 0 1px var(--line)}
+.libtabs button[aria-selected="true"]{color:var(--ink); font-weight:600}
 .libtabs button[aria-selected="true"] .ico{color:var(--accent)}
 .libsearch{position:relative; margin:0 10px 8px}
 .libsearch .ico{position:absolute; inset-inline-start:10px; top:50%; translate:0 -50%; color:var(--muted); pointer-events:none}

@@ -153,6 +153,7 @@ export default function Library({onUpload}: {onUpload: () => void}){
     <aside ref={aside} className="panel library">
       <div className="phead"><h2>{t("library")}</h2><small>{t(COUNT_KEYS[S.tab], {n:shown.length})}</small></div>
       <div className="libtabs" role="tablist" aria-label={t("libCategories")}>
+        <span className="libtabs-pill" aria-hidden="true" style={{"--i":TABS.findIndex(([id]) => id === S.tab)} as React.CSSProperties}/>
         {TABS.map(([id, key, Icon]) => (
           <button key={id} type="button" role="tab" aria-selected={S.tab === id} title={t(id === "open" ? "tabOpenTitle" : key)} onClick={() => setTab(id)}>
             <Icon/><span>{t(key)}</span>
