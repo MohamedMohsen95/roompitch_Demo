@@ -18,5 +18,6 @@ export const ui = {
   multiOps:null,       // ids of windows/doors selected with them, to align to (selection.js)
   keyView:"plan",      // the view last clicked, "plan" | "3d": arrow keys move pieces as seen there (nudge.js)
   libQuery:"",         // the library's search text (cleared when its tab changes)
-  libCat:"all"         // the library's furniture group: "all" or one of FURN_CATS (catalog.js)
+  libCat:"all",        // the library's furniture group: "all" or one of FURN_CATS (catalog.js)
+  libPreview:/** @type {string | null} */ (null)   // id of the furniture piece whose preview is open (ui/ItemPreview.tsx)
 };

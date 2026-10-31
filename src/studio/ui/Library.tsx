@@ -1,4 +1,6 @@
 // Library panel: furniture, windows & doors, wall and floor tiles that can be clicked or dragged into the room.
+// A furniture tile opens the piece's preview when clicked (ItemPreview.tsx) and is added on a double-click or
+// a drag; while a piece waits to be replaced, one click swaps it.
 // The categories are a row of icon buttons; every category can be searched (by English or Arabic
 // name, in the browser: the whole catalog is already loaded), and furniture narrowed to a group (seating, tables...).
 import { S } from "../state.js";
@@ -11,8 +13,9 @@ import { applyPayload } from "../actions.js";
 import { t, nameOf } from "../i18n.js";
 import { priceOf } from "../settings.js";
 import { toCm } from "../geometry.js";
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { thumbOf, thumbBroken, requestThumb } from "../thumbs.js";
+import { ItemPreview, HoverCard, openPreview, closePreview, hasMouse } from "./ItemPreview";
 import { IconUpload, IconArmchair, IconDoor, IconWall, IconFloor, IconSearch, IconClose } from "./Icons";
 
 const TABS = [["furn", "tabFurn", IconArmchair], ["open", "tabOpen", IconDoor], ["wall", "tabWall", IconWall], ["floor", "tabFloor", IconFloor]] as const;
@@ -36,7 +39,9 @@ function OpeningIcon({p}: {p: any}){
   );
 }
 
-function Tile({tab, o}: {tab: string, o: any}){
+type Hover = (o: any, tile: HTMLElement | null) => void;
+
+function Tile({tab, o, onHover}: {tab: string, o: any, onHover: Hover}){
   const payload = `${tab}:${o.id}`;
   let body;
   const thumb = tab === "furn" ? thumbOf(o) : null;
@@ -63,10 +68,13 @@ function Tile({tab, o}: {tab: string, o: any}){
       <b>{nameOf(o)}</b><span className="meta"><bdi>{fmt(priceOf(o.id))} / {t("m2")}</bdi></span>
     </>;
   }
+  const preview = tab === "furn" && !S.replacing;
   return (
-    <button type="button" className="tile" draggable title={nameOf(o)}
-      onDragStart={e => { e.dataTransfer.setData("text/plain", payload); e.dataTransfer.effectAllowed = "copy"; }}
-      onClick={() => applyPayload(payload, null)}>
+    <button type="button" className="tile" draggable title={preview ? undefined : nameOf(o)} aria-pressed={preview ? ui.libPreview === o.id : undefined}
+      onDragStart={e => { onHover(null, null); closePreview(); e.dataTransfer.setData("text/plain", payload); e.dataTransfer.effectAllowed = "copy"; }}
+      onClick={e => { onHover(null, null); if (!preview){ ui.libPreview = null; applyPayload(payload, null); } else if (e.detail < 2) openPreview(o.id); }}
+      onDoubleClick={() => { if (preview){ closePreview(); applyPayload(payload, null); } }}
+      onMouseEnter={e => { if (preview && hasMouse()) onHover(o, e.currentTarget); }} onMouseLeave={() => onHover(null, null)}>
       {body}
     </button>
   );
@@ -76,7 +84,7 @@ function Tile({tab, o}: {tab: string, o: any}){
 const fold = (s: string) => s.toLowerCase().replace(/[\u064B-\u065F\u0670]/g, "").replace(/[أإآ]/g, "ا").replace(/ة/g, "ه").replace(/ى/g, "ي").trim();
 const matches = (o: any, q: string) => !q || [o.name, o.ar, EN[o.id]].some(s => s && fold(s).includes(q));
 
-function setTab(id: typeof S.tab){ S.tab = id; ui.libQuery = ""; notify(); }
+function setTab(id: typeof S.tab){ S.tab = id; ui.libQuery = ""; ui.libPreview = null; notify(); }
 
 // Search box and (furniture) group chips. Only the groups that have pieces show.
 function Filters({tab}: {tab: string}){
@@ -129,8 +137,20 @@ export default function Library({onUpload}: {onUpload: () => void}){
   const q = fold(ui.libQuery);
   const cat = S.tab === "furn" ? ui.libCat : "all";
   const shown = LISTS[S.tab]().filter(o => matches(o, q) && (cat === "all" || furnCat(o) === cat));
+  // The hover card: after a short rest on a furniture tile, beside the library at the tile's height.
+  const aside = useRef<HTMLElement>(null), timer = useRef(0);
+  const [hover, setHover] = useState<{o: any, top: number} | null>(null);
+  const onHover: Hover = (o, tile) => {
+    clearTimeout(timer.current); setHover(null);
+    if (o && tile) timer.current = window.setTimeout(() => {
+      if (ui.libPreview || !aside.current) return;
+      const a = aside.current.getBoundingClientRect(), r = tile.getBoundingClientRect();
+      setHover({o, top:Math.max(0, Math.min(r.top - a.top - 8, innerHeight - a.top - 290))});
+    }, 450);
+  };
+  useEffect(() => () => clearTimeout(timer.current), []);
   return (
-    <aside className="panel library">
+    <aside ref={aside} className="panel library">
       <div className="phead"><h2>{t("library")}</h2><small>{t(COUNT_KEYS[S.tab], {n:shown.length})}</small></div>
       <div className="libtabs" role="tablist" aria-label={t("libCategories")}>
         {TABS.map(([id, key, Icon]) => (
@@ -140,12 +160,14 @@ export default function Library({onUpload}: {onUpload: () => void}){
         ))}
       </div>
       <Filters tab={S.tab}/>
-      <div className={"lib" + (replacing ? " replacing" : "")}>
-        {shown.map(o => <Tile key={o.id} tab={S.tab} o={o}/>)}
+      <div className={"lib" + (replacing ? " replacing" : "")} onScroll={() => onHover(null, null)}>
+        {shown.map(o => <Tile key={o.id} tab={S.tab} o={o} onHover={onHover}/>)}
         {!shown.length && <Empty q={q} cat={cat}/>}
       </div>
       {ui.canUpload && S.tab === "furn" && <button className="btn uploadbtn" type="button" onClick={onUpload}><IconUpload/><span>{t("uploadModel")}</span></button>}
       <p className={"hint" + (ui.flash ? " flash" : "")} role="status">{hint}</p>
+      {S.tab === "furn" && !replacing && <ItemPreview/>}
+      {hover && !ui.libPreview && <HoverCard f={hover.o} top={hover.top}/>}
     </aside>
   );
 }

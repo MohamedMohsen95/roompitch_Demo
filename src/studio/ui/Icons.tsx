@@ -40,6 +40,7 @@ export const IconWalk = () => <I><circle cx="9.2" cy="2.6" r="1.2"/><path d="M5 
 export const IconHand = () => <I><path d="M5.5 8.5V3.8a1 1 0 0 1 2 0v3.7M7.5 7V2.8a1 1 0 0 1 2 0V7M9.5 7.2V3.8a1 1 0 0 1 2 0v5.4c0 2.6-1.6 4.3-4 4.3-1.7 0-2.6-.8-3.5-2.1L2.6 9.1a1 1 0 0 1 1.6-1.2l1.3 1.4"/></I>;
 export const IconSound = () => <I><path d="M2.5 6v4h2.5L8.5 13V3L5 6z"/><path d="M11 5.8a3 3 0 0 1 0 4.4M12.8 4a5.5 5.5 0 0 1 0 8"/></I>;
 export const IconMuted = () => <I><path d="M2.5 6v4h2.5L8.5 13V3L5 6z"/><path d="M11 6l3 4M14 6l-3 4"/></I>;
+export const IconPlus = () => <I><path d="M8 3v10M3 8h10"/></I>;
 export const IconClose = () => <I><path d="M4 4l8 8M12 4l-8 8"/></I>;
 export const IconArrowRight = () => <I><path d="M3 8h10M9 4l4 4-4 4"/></I>;
 export const IconArmchair = () => <I><path d="M4 7.5V5.2c0-.9.7-1.7 1.7-1.7h4.6c1 0 1.7.8 1.7 1.7v2.3"/><path d="M2.5 8.2a1.2 1.2 0 0 1 2.4 0v1.3h6.2V8.2a1.2 1.2 0 0 1 2.4 0v3.3H2.5zM4 11.5v1.5M12 11.5v1.5"/></I>;
