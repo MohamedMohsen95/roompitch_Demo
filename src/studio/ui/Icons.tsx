@@ -40,6 +40,13 @@ export const IconWalk = () => <I><circle cx="9.2" cy="2.6" r="1.2"/><path d="M5 
 export const IconHand = () => <I><path d="M5.5 8.5V3.8a1 1 0 0 1 2 0v3.7M7.5 7V2.8a1 1 0 0 1 2 0V7M9.5 7.2V3.8a1 1 0 0 1 2 0v5.4c0 2.6-1.6 4.3-4 4.3-1.7 0-2.6-.8-3.5-2.1L2.6 9.1a1 1 0 0 1 1.6-1.2l1.3 1.4"/></I>;
 export const IconSound = () => <I><path d="M2.5 6v4h2.5L8.5 13V3L5 6z"/><path d="M11 5.8a3 3 0 0 1 0 4.4M12.8 4a5.5 5.5 0 0 1 0 8"/></I>;
 export const IconMuted = () => <I><path d="M2.5 6v4h2.5L8.5 13V3L5 6z"/><path d="M11 6l3 4M14 6l-3 4"/></I>;
+export const IconUndo = () => <I><path d="M5.5 3.5 2.5 6.5l3 3"/><path d="M2.5 6.5h7a3.5 3.5 0 0 1 0 7H7"/></I>;
+export const IconRedo = () => <I><path d="M10.5 3.5l3 3-3 3"/><path d="M13.5 6.5h-7a3.5 3.5 0 0 0 0 7H9"/></I>;
+export const IconSparkle = () => <I><path d="M8 2.5c.4 2.6 1.4 3.6 4 4-2.6.4-3.6 1.4-4 4-.4-2.6-1.4-3.6-4-4 2.6-.4 3.6-1.4 4-4z"/><path d="M12.5 10.5v3M11 12h3"/></I>;
+export const IconCloudCheck = () => <I><path d="M4.5 12.5a3 3 0 0 1-.4-6 4 4 0 0 1 7.7-.8 3.4 3.4 0 0 1 .2 6.8z"/><path d="m6.3 9.2 1.4 1.4 2.6-2.6"/></I>;
+export const IconCloudOff = () => <I><path d="M4.5 12.5a3 3 0 0 1-.4-6 4 4 0 0 1 7.7-.8 3.4 3.4 0 0 1 .2 6.8z"/><path d="M8 6.8v2.4M8 11v.01"/></I>;
+export const IconFolder = () => <I><path d="M2 4.5h4l1.5 1.5H14v7H2z"/></I>;
+export const IconLogout = () => <I><path d="M6.5 2.5h-4v11h4M10.5 5l3 3-3 3M13.5 8H6"/></I>;
 export const IconPlus = () => <I><path d="M8 3v10M3 8h10"/></I>;
 export const IconClose = () => <I><path d="M4 4l8 8M12 4l-8 8"/></I>;
 export const IconArrowRight = () => <I><path d="M3 8h10M9 4l4 4-4 4"/></I>;
@@ -49,3 +56,12 @@ export const IconWall = () => <I><path d="M2 3.5h12v9H2zM2 6.5h12M2 9.5h12M6.5 3
 export const IconFloor = () => <I><path d="M4.6 4h6.8l2.4 8.5H2.2zM3.4 8.2h9.2M8 4v8.5"/></I>;
 export const IconSearch = () => <I><circle cx="7" cy="7" r="4.3"/><path d="m10.2 10.2 3.3 3.3"/></I>;
 export const IconSelect = () => <I><path d="M3 2.5l9 4.2-3.9 1.4L6.7 12z"/></I>;
+
+// The product's mark: a room in plan with its door swing, in the accent.
+export const Mark = () => (
+  <svg className="mark" width="22" height="22" viewBox="0 0 22 22" aria-hidden="true">
+    <rect x="1" y="1" width="20" height="20" rx="5" fill="var(--accent)"/>
+    <path d="M6 16V6h10v10h-4" fill="none" stroke="var(--accent-ink)" strokeWidth="1.6" strokeLinejoin="round"/>
+    <path d="M12 16a4 4 0 0 0-4-4" fill="none" stroke="var(--accent-ink)" strokeWidth="1.2" strokeDasharray="1.5 1.5"/>
+  </svg>
+);

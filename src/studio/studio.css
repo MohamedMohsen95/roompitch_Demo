@@ -63,14 +63,44 @@ button{cursor:pointer}
 .studio{display:flex; flex-direction:column; height:100vh; height:100dvh}
 .topbar{flex:none; display:flex; align-items:center; justify-content:space-between; gap:12px; height:56px;
   padding:0 max(12px, env(safe-area-inset-right,0px)) 0 max(12px, env(safe-area-inset-left,0px))}
-.tb-start, .tb-end, .tb-group{display:flex; align-items:center; gap:6px; min-width:0}
-.tb-start{gap:10px}
-.tb-start > .btn{padding-inline-start:10px}
-[dir=rtl] .tb-start > .btn .ico, [dir=rtl] .backbtn .ico{transform:scaleX(-1)}
-.tb-div{width:1px; height:20px; background:var(--control); flex:none; margin:0 4px}
-.tb-title{display:flex; align-items:baseline; gap:10px; margin:0; font-size:15px; font-weight:600; min-width:0}
-.tb-name{overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:30vw}
-.tb-narrow{display:none}
+.tb-start, .tb-end{display:flex; align-items:center; gap:4px; min-width:0}
+.tb-start{flex:1}
+.tb-div{width:1px; height:20px; background:var(--control); flex:none; margin:0 6px}
+.tb-home{flex:none; display:grid; place-items:center; width:34px; height:34px; padding:0; border:0; border-radius:9px; background:none}
+.tb-home:hover{background:var(--active)}
+.tb-home .mark{width:26px; height:26px}
+.tb-crumb{display:flex; align-items:center; gap:2px; min-width:0}
+.tb-crumblink{height:30px; padding:0 8px; border:0; border-radius:8px; background:none; color:var(--muted); font-size:14px; white-space:nowrap}
+.tb-crumblink:hover{background:var(--active); color:var(--ink)}
+.tb-sep{color:var(--control); font-size:15px}
+.tb-crumb .menu{min-width:0}
+.tb-namebtn{display:inline-flex; align-items:center; gap:4px; min-width:0; height:32px; padding:0 8px; border:0; border-radius:8px; background:none; color:var(--ink)}
+.tb-namebtn:hover, .tb-namebtn.open{background:var(--active)}
+.tb-namebtn .ico{flex:none; color:var(--muted)}
+.tb-name{font-size:15px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:28vw}
+.tb-rename{height:32px; width:min(280px, 40vw); padding:0 8px; border:1px solid var(--accent); border-radius:8px; background:var(--surface); color:var(--ink); font:inherit; font-size:15px; font-weight:600; box-shadow:0 0 0 3px var(--accent-soft); outline:none}
+.tb-saved{display:inline-flex; align-items:center; gap:5px; margin-inline-start:6px; font-size:12.5px; color:var(--muted); white-space:nowrap}
+.tb-saved .ico{color:var(--accent)}
+.tb-saved.busy .ico{color:var(--muted); animation:tb-pulse 1s ease-in-out infinite alternate}
+.tb-saved.bad, .tb-saved.bad .ico{color:var(--danger)}
+@keyframes tb-pulse{to{opacity:.35}}
+.tb-start .btn.icon{flex:none}
+.tb-start .btn.icon:disabled{opacity:.35; cursor:default}
+[dir="rtl"] .tb-start .btn.icon .ico{transform:scaleX(-1)}   /* undo points back, which is right in Arabic */
+.tb-render-short{display:none}
+.tb-acct{padding:0 8px; gap:4px}
+.tb-acct.has-avatar{padding:0 4px; border-radius:999px}
+.tb-acct .ico:last-child{color:var(--muted)}
+.menusep{height:1px; margin:4px; background:var(--line)}
+.menuhead{display:flex; flex-direction:column; padding:8px 10px 10px; margin-bottom:2px; border-bottom:1px solid var(--line)}
+.menuhead b{font-size:13.5px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:240px}
+.menuhead small{font-size:12px; color:var(--muted)}
+.menulabel{padding:4px 10px 2px; font-size:11.5px; color:var(--muted)}
+.menulangs{display:flex; gap:4px; padding:2px 6px 4px}
+.menulangs button{flex:1; height:30px; border:1px solid var(--line); border-radius:8px; background:none; color:var(--muted); font-size:13px}
+.menulangs button:hover{color:var(--ink)}
+.menulangs button[aria-pressed="true"]{background:var(--accent-soft); border-color:var(--accent); color:var(--accent); font-weight:600}
+.menuitem small{margin-inline-start:auto; padding-inline-start:12px; font-size:12px; color:var(--muted)}
 .acct{padding:0 6px}
 .avatar{width:24px; height:24px; border-radius:50%; display:grid; place-items:center; background:var(--accent); color:var(--accent-ink); font-size:12px; font-weight:600; text-transform:uppercase}
 .accountbtn{display:inline-flex; align-items:center; max-width:260px; min-width:0}
@@ -658,10 +688,6 @@ details p{margin:6px 0 0; font-family:var(--font-data); font-size:11.5px; line-h
   .workspace.est-closed{grid-template-columns:236px minmax(0,1fr) 44px}
   .library, .budget{position:sticky; top:8px; max-height:calc(100vh - 16px)}
 }
-@media (max-width:1100px){
-  .tb-wide{display:none}
-  .tb-narrow{display:inline-flex}
-}
 @media (max-width:999px){
   .workspace, .workspace.est-closed{grid-template-columns:1fr; padding:0 8px 12px}
   .library, .budget{position:static; max-height:none}
@@ -677,10 +703,14 @@ details p{margin:6px 0 0; font-family:var(--font-data); font-size:11.5px; line-h
   .pair{grid-template-columns:1fr}
 }
 @media (max-width:560px){
-  .topbar{gap:6px}
-  .tb-name{max-width:34vw}
-  .tb-start > .tb-div{display:none}
-  .topbar .btn.primary{padding:0 12px}
+  .topbar{gap:4px; padding-inline:6px}
+  .tb-div{display:none}
+  .tb-render{padding:0 12px}
+  .tb-render-long{display:none}
+  .tb-render-short{display:inline}
+  .tb-acct > span:not(.avatar){display:none}   /* signed out: just the person icon */
+  .tb-acct .ico:last-child{display:none}   /* no chevron */
+  .tb-name{max-width:36vw}
   .stage{height:300px}
 }
 @media (prefers-reduced-motion: reduce){*{transition:none!important}}

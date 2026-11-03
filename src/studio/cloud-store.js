@@ -13,6 +13,14 @@ let pending = null, timer = null;
 let chain = Promise.resolve();         // saves and changes of the current project run one at a time, in call order
 let nextName = null;                   // the name of the next new row (newProject)
 
+// Where the latest change is: "saved" (in the cloud), "saving", "local" (only in this browser: no cloud),
+// or "failed" (the cloud refused it; it's still in this browser). The top bar shows it (ui/TopBar.tsx).
+let status = "saved";
+const statusSubs = new Set();
+const setStatus = (s) => { if (s !== status){ status = s; statusSubs.forEach(fn => fn()); } };
+export const saveStatus = () => status;
+export const onSaveStatus = (fn) => { statusSubs.add(fn); return () => statusSubs.delete(fn); };
+
 const warn = (what, e) => { if (import.meta.env?.DEV) console.warn(`[cloud] ${what}:`, e?.message || e); };
 // The row id only while the same user is signed in (another user's row can't be read or written).
 async function getId(sb){
@@ -50,12 +58,12 @@ export function cloudReady(){
 
 // Upload the room a moment after the last change (dragging saves often).
 export function pushRoom(data){
-  pending = data;
+  pending = data; setStatus("saving");
   clearTimeout(timer);
   timer = setTimeout(flush, DELAY);
 }
 
-const queue = (fn) => (chain = chain.then(fn).catch(e => warn("queue", e)));
+const queue = (fn) => (chain = chain.then(fn).catch(e => { warn("queue", e); if (status === "saving") setStatus("failed"); }));
 
 // Send the waiting room now (before the current project changes).
 function flush(){
@@ -64,7 +72,7 @@ function flush(){
   if (!room) return chain;
   return queue(async () => {
     const sb = await cloudReady();
-    if (!sb) return;
+    if (!sb) return setStatus("local");
     let id = await getId(sb);
     const row = {id, kind:"studio", data:room};
     if (!id){
@@ -73,6 +81,7 @@ function flush(){
     }
     const { error } = await sb.from("projects").upsert(row);
     if (error) warn("save", error);
+    if (!pending) setStatus(error ? "failed" : "saved");   // a newer change waiting keeps it "saving"
   });
 }
 

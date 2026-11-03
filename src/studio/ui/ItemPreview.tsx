@@ -2,7 +2,7 @@
 // the piece turning slowly (drag to turn it) with its size, price and group, and "Add to room". Beside the
 // library on wide screens; a sheet from the bottom on narrow ones. On a mouse, resting on a tile shows a
 // smaller card with the picture first (nothing 3D).
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { FU, furnCat } from "../catalog.js";
 import { fmt } from "../utils.js";
@@ -11,12 +11,11 @@ import { applyPayload } from "../actions.js";
 import { t, nameOf, getLang } from "../i18n.js";
 import { priceOf } from "../settings.js";
 import { thumbOf } from "../thumbs.js";
+import { useMedia } from "./hooks";
 import { IconClose, IconPlus, IconRotate, IconFocus } from "./Icons";
 
 const NARROW = "(max-width:999px)";   // the one-column layout (studio.css): the preview is a bottom sheet
 const MOUSE = "(hover:hover) and (pointer:fine)";
-const media = (q: string) => (fn: () => void) => { const m = matchMedia(q); m.addEventListener("change", fn); return () => m.removeEventListener("change", fn); };
-const useMedia = (q: string) => useSyncExternalStore(media(q), () => matchMedia(q).matches);
 export const hasMouse = () => matchMedia(MOUSE).matches;
 
 let three: Promise<typeof import("../three/preview.js")> | null = null;

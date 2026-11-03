@@ -8,7 +8,7 @@ import SetupPreview from "./SetupPreview";
 import PhotosSection from "./PhotosSection";
 import ProjectsList from "./ProjectsList";
 import { AccountButton } from "../AccountDialog";
-import { Mark } from "../StudioScreen";
+import { Mark } from "../Icons";
 import { IconGlobe } from "../Icons";
 import { useLang } from "../hooks";
 

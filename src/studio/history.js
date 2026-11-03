@@ -14,7 +14,7 @@ const snapshot = () => JSON.stringify({form:S.form, poly:S.poly, openings:S.open
   floor:S.floor, items:S.items, nextId:S.nextId, sun:S.sun});
 
 // A new room is open: its current state is where undo stops.
-export function resetHistory(){ past = []; future = []; cur = null; lastGroup = null; }
+export function resetHistory(){ past = []; future = []; cur = null; lastGroup = null; changed(); }
 
 // The next change belongs to `key` (e.g. "nudge"), so it can merge with the one before.
 export function groupNext(key){ pending = key; }
@@ -28,6 +28,7 @@ export function record(){
   if (!(group && group === lastGroup && now - lastAt < MERGE_MS)){ past.push(cur); if (past.length > MAX) past.shift(); }
   lastGroup = group; lastAt = now;
   cur = snap; future = [];
+  changed();
 }
 
 function apply(snap){
@@ -47,5 +48,11 @@ function apply(snap){
 
 export const canUndo = () => past.length > 0;
 export const canRedo = () => future.length > 0;
-export function undo(){ if (!past.length) return false; future.push(cur); apply(past.pop()); return true; }
-export function redo(){ if (!future.length) return false; past.push(cur); apply(future.pop()); return true; }
+export function undo(){ if (!past.length) return false; future.push(cur); apply(past.pop()); changed(); return true; }
+export function redo(){ if (!future.length) return false; past.push(cur); apply(future.pop()); changed(); return true; }
+
+// The undo and redo buttons (ui/TopBar.tsx) listen for whether there is anything to undo or redo.
+const subs = new Set();
+let was = "";
+function changed(){ const now = `${past.length > 0}${future.length > 0}`; if (now !== was){ was = now; subs.forEach(fn => fn()); } }
+export const onHistory = (fn) => { subs.add(fn); return () => subs.delete(fn); };

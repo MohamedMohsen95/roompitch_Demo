@@ -7,3 +7,6 @@ export function openProject(id: string): Promise<any>;
 export function newProject(name: string): void;
 export function renameProject(id: string, name: string): Promise<boolean>;
 export function deleteProject(id: string): Promise<{ok: boolean, current?: boolean}>;
+export type SaveStatus = "saved" | "saving" | "local" | "failed";
+export function saveStatus(): SaveStatus;
+export function onSaveStatus(fn: () => void): () => void;
