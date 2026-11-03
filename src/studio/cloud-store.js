@@ -107,12 +107,16 @@ export async function listProjects(){
   if (!sb) return null;
   await flush();   // so the room just edited is listed with its latest change
   const { data, error } = await sb.from("projects")
-    .select("id, name, updated_at, form:data->form, items:data->items")
+    .select("id, name, updated_at, form:data->form, items:data->items, poly:data->poly, openings:data->openings, H:data->H")
     .eq("kind", "studio").order("updated_at", {ascending:false}).limit(100);
   if (error){ warn("list", error); return null; }
   const current = await getId(sb);
-  return data.map(r => ({id:r.id, name:r.name, updatedAt:r.updated_at, form:r.form,
-    pieces:Array.isArray(r.items) ? r.items.length : 0, current:r.id === current}));
+  return data.map(r => {
+    const items = Array.isArray(r.items) ? r.items : [], openings = Array.isArray(r.openings) ? r.openings : [];
+    return {id:r.id, name:r.name, updatedAt:r.updated_at, form:r.form, pieces:items.length, current:r.id === current, H:r.H || 0,
+      plan:Array.isArray(r.poly) && r.poly.length > 2 ? {poly:r.poly, items} : null,
+      windows:openings.filter(o => o.type === "window").length, doors:openings.filter(o => o.type === "door").length};
+  });
 }
 
 // Make a project the current one; returns its room, or null when it can't be read.

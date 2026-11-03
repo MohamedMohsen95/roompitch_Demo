@@ -13,6 +13,7 @@ import Modal from "../Modal";
 import Menu, { MenuItem } from "../Menu";
 import { IconMore, IconEye, IconEyeOff, IconTrash, IconLayout } from "../Icons";
 
+const FEW = 4;   // shown until "See all"
 const nameOf = (c: TemplateCard) => getLang() === "ar" && c.nameAr ? c.nameAr : c.name;
 const facts = (c: TemplateCard) => `${toCm(c.L)} × ${toCm(c.W)} ${t("cm")} · ${t("tplPieces", {n:c.pieces})}`;
 
@@ -62,6 +63,7 @@ export default function Templates({onUse, show}: {onUse: (c: TemplateCard, name:
   const [list, setList] = useState<TemplateCard[] | null>(null);
   const [open, setOpen] = useState<TemplateCard | null>(null);
   const [busy, setBusy] = useState(false), [failed, setFailed] = useState(false);
+  const [all, setAll] = useState(Boolean(show));
   const load = () => listTemplates().then(setList).catch(() => setList(null));
   useEffect(() => { load(); }, [account?.admin]);
   const box = useRef<HTMLElement>(null), shown = useRef(false);
@@ -81,10 +83,14 @@ export default function Templates({onUse, show}: {onUse: (c: TemplateCard, name:
   };
   return (
     <section ref={box} className="templates" aria-labelledby="tplsTitle">
-      <h2 id="tplsTitle">{t("templatesTitle")}</h2>
+      <div className="tplhead">
+        <h2 id="tplsTitle">{t("templatesTitle")}</h2>
+        {list.length > FEW && <button className="linkbtn" type="button" aria-expanded={all} aria-controls="tplGrid" onClick={() => setAll(a => !a)}>
+          {all ? t("tplSeeLess") : t("tplSeeAll", {n:list.length})}</button>}
+      </div>
       <p className="dnote">{t("templatesSub")}</p>
-      <ul className="tplgrid">
-        {list.map(c => (
+      <ul className="tplgrid" id="tplGrid">
+        {(all ? list : list.slice(0, FEW)).map(c => (
           <li key={c.id} className={"tplcard" + (c.published ? "" : " hidden")}>
             <button type="button" className="tplopen" onClick={() => { setOpen(c); setFailed(false); }}>
               <Cover c={c}/>

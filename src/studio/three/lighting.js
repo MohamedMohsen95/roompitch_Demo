@@ -8,7 +8,7 @@
 import * as THREE from "three";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { HDRLoader } from "three/addons/loaders/HDRLoader.js";
-import { renderer, scene, fill } from "./scene.js";
+import { renderer, scene, fill, shown } from "./scene.js";
 import { updateSun } from "./sun.js";
 
 export const LIGHTING = [
@@ -50,6 +50,8 @@ export async function setLighting(id){
   const mine = ++request;
   current = p;
   try { localStorage.setItem(STORE_KEY, p.id); } catch {}
+  await envReady;
+  if (mine !== request) return;
 
   renderer.toneMappingExposure = p.exposure;
   updateSun();   // sun tint/strength
@@ -66,10 +68,15 @@ export async function setLighting(id){
   }
 }
 
+// Pre-blurring an environment compiles its shaders on the spot, freezing the page for most of a second, so it
+// waits until the 3D view first shows (not on the New room screen, where nothing is drawn).
+let envReady = null;
 export function initLighting(){
-  if (pmrem) return;
-  pmrem = new THREE.PMREMGenerator(renderer);
-  generatedEnv = pmrem.fromScene(new RoomEnvironment(), .04).texture;
+  if (envReady) return;
+  envReady = shown.then(() => {
+    pmrem = new THREE.PMREMGenerator(renderer);
+    generatedEnv = pmrem.fromScene(new RoomEnvironment(), .04).texture;
+  });
 
   // ?lighting=warm in the address wins, then the last choice on this device, then Daylight.
   let saved = null; try { saved = localStorage.getItem(STORE_KEY); } catch {}

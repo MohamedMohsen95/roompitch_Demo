@@ -12,6 +12,10 @@ export const pickables = [];   // floor + walls, for clicks and drops
 // How the camera is driven: "orbit" (OrbitControls) or "walk" (walk.js sets step and exit while walking).
 export const nav = {mode:"orbit", step:null, exit:null};
 let looping = false;
+let compiled = false;
+// Resolves when the 3D view first goes on the page: work only it needs (the lighting) waits for this.
+let markShown;
+export const shown = new Promise(r => { markShown = r; });   // the shaders, compiled in parallel the first time the view shows (no frame until then)
 
 // Made once; the studio page puts the canvas into its 3D panel with attachScene() each time it shows.
 export function initScene(){
@@ -48,6 +52,10 @@ export function initScene(){
 export function attachScene(el){
   host = el;
   el.appendChild(renderer.domElement);
+  markShown();
+  // Linking every shader at the first frame froze the page for about a second; let the GPU driver do it
+  // alongside (KHR_parallel_shader_compile) and start drawing once it's done.
+  if (!compiled) renderer.compileAsync(scene, camera).catch(() => {}).finally(() => { compiled = true; });
   const ro = new ResizeObserver(resize); ro.observe(el);
   resize();
   return () => { ro.disconnect(); renderer.domElement.remove(); if (host === el) host = null; };
@@ -112,12 +120,14 @@ export function resize(){
 }
 
 // Render loop; `beforeRender` lets other modules update per frame (e.g. the selection outline).
+// Nothing is drawn while the 3D view isn't on the page (the New room screen), so it costs nothing there.
 export function startLoop(beforeRender){
   if (looping) return;
   looping = true;
   let last = performance.now();
   renderer.setAnimationLoop(() => {
     const now = performance.now(), dt = Math.min(.1, (now - last) / 1000); last = now;
+    if (!host || !compiled) return;
     if (nav.step) nav.step(dt); else { stepGlide(); keepTarget(); controls.update(); }
     beforeRender?.(); renderer.render(scene, camera);
   });

@@ -1,16 +1,15 @@
-// The landing page's 3D drawings, in white line on the page's blue, built from the studio's own models
-// (public/models):
+// The landing page's 3D drawings, in white line on the page's blue, from the studio's own models: their edges
+// come ready-made in public/landing/lines.bin (npm run landing-lines), so the page loads no GLB and does no
+// geometry work while it animates.
 //   mountRoom   the "living room" template: the walls rise, the pieces settle in one by one, then it turns
 //               slowly and can be dragged sideways
 //   mountPiece  one catalogue piece at a time inside its size box, turning on a metre grid
 // Line colour comes from the page's --room-line custom property. Both pause off screen, keep still with
 // reduced motion, and return a function that frees the renderer when the page goes away.
 import * as THREE from "three";
-import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
-import { MeshoptDecoder } from "three/addons/libs/meshopt_decoder.module.js";
 import room from "./room.json";
+import LINES from "./lines.json";
 
-const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
 const still = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
 const ease = (t) => 1 - Math.pow(1 - Math.min(1, Math.max(0, t)), 3);
 
@@ -22,21 +21,34 @@ function cssColor(el, name, fallback = "#fff"){
   return new THREE.Color().setRGB(r / 255, g / 255, b / 255, THREE.SRGBColorSpace);
 }
 
-// A model's meshes as edge lines, scaled into the piece's catalogue size and stood on the floor.
+// Every model's edges, fetched once: 16-bit positions as fractions of the model's size.
+let linesBin = null;
+const lineData = () => linesBin ||= fetch("/landing/lines.bin").then(r => { if (!r.ok) throw new Error("lines.bin " + r.status); return r.arrayBuffer(); });
+const geos = new Map();
+async function lineGeometry(url){
+  if (!geos.has(url)) geos.set(url, lineData().then(buf => {
+    const e = LINES[url]; if (!e) throw new Error("no lines for " + url);
+    const q = new Uint16Array(buf, e.offset, e.count), [sx, sy, sz] = e.size, pos = new Float32Array(e.count);
+    for (let i = 0; i < e.count; i += 3){
+      pos[i] = (q[i] / 65535 - 0.5) * sx; pos[i + 1] = q[i + 1] / 65535 * sy; pos[i + 2] = (q[i + 2] / 65535 - 0.5) * sz;
+    }
+    return {geo:new THREE.BufferGeometry().setAttribute("position", new THREE.BufferAttribute(pos, 3)), size:e.size};
+  }));
+  return geos.get(url);
+}
+
+// A model as edge lines, scaled into the piece's catalogue size and stood on the floor.
 async function lineModel(it, mat){
-  const obj = (await loader.loadAsync(it.model)).scene;
-  const box = new THREE.Box3().setFromObject(obj), size = box.getSize(new THREE.Vector3()), c = box.getCenter(new THREE.Vector3());
-  const k = Math.min(it.w / size.x, it.d / size.z, it.h / size.y);
-  obj.scale.setScalar(k); obj.position.set(-c.x * k, -box.min.y * k, -c.z * k); obj.updateMatrixWorld(true);
-  const lines = new THREE.Group();
-  obj.traverse(n => { if (n.isMesh){ const e = new THREE.LineSegments(new THREE.EdgesGeometry(n.geometry, 35), mat); e.applyMatrix4(n.matrixWorld); lines.add(e); } });
+  const {geo, size:[sx, sy, sz]} = await lineGeometry(it.model);
+  const lines = new THREE.LineSegments(geo, mat);
+  lines.scale.setScalar(Math.min(it.w / sx, it.d / sz, it.h / sy));
   return lines;
 }
 
 // The renderer, its canvas, resizing, and a frame loop that only runs while the host is on screen.
 function stage(host, draw){
   const renderer = new THREE.WebGLRenderer({antialias:true, alpha:true});
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
   renderer.domElement.setAttribute("aria-hidden", "true");
   host.appendChild(renderer.domElement);
   const camera = new THREE.PerspectiveCamera(32, 1, 0.05, 100);

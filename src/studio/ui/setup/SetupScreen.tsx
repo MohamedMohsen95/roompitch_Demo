@@ -1,4 +1,4 @@
-// "New room": choose how to start (and the saved projects), then set the shape and size in cm,
+// "New room": choose how to start (beside the saved rooms and the templates), then set the shape and size in cm,
 // place doors and windows (by hand or found by the AI in photos), and hand the room to the studio.
 import { useReducer, useState } from "react";
 import { t } from "../../i18n.js";
@@ -6,7 +6,7 @@ import { newDraft, newOpening, draftWalls, draftToRoom, fitDraftToWalls } from "
 import NumField from "../NumField";
 import SetupPreview from "./SetupPreview";
 import PhotosSection from "./PhotosSection";
-import ProjectsList from "./ProjectsList";
+import RoomsPanel from "./RoomsPanel";
 import Templates from "./Templates";
 import { AccountButton } from "../AccountDialog";
 import { Mark } from "../Icons";
@@ -35,7 +35,6 @@ export default function SetupScreen(props: Props){
   const [keepDesign, setKeepDesign] = useState(Boolean(props.initialDraft));
   const [, redraw] = useReducer((n: number) => n + 1, 0);
   const [active, setActive] = useState<string | null>(null);     // the selected photo
-  const [listed, setListed] = useState(false);                    // the projects list shows the current room
 
   const start = (mode: string) => { setDraft(newDraft(mode)); setKeepDesign(false); setActive(null); window.scrollTo(0, 0); };
 
@@ -43,21 +42,25 @@ export default function SetupScreen(props: Props){
   if (!draft){
     body = (
       <div className="choose">
-        <h1>{t("newRoom")}</h1>
-        <p className="dnote">{t("newRoomSub")}</p>
-        <div className="choices">
-          <button className="choice" type="button" onClick={() => start("manual")}>
-            <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M8 40V8h32v32z M8 30h10v10 M30 8v8" fill="none" stroke="currentColor" strokeWidth="2.4"/></svg>
-            <b>{t("chooseManual")}</b><span>{t("chooseManualSub")}</span>
-          </button>
-          <button className="choice" type="button" onClick={() => start("photos")}>
-            <svg viewBox="0 0 48 48" aria-hidden="true"><rect x="6" y="12" width="36" height="26" rx="3" fill="none" stroke="currentColor" strokeWidth="2.4"/><circle cx="24" cy="25" r="7" fill="none" stroke="currentColor" strokeWidth="2.4"/><path d="M17 12l3-5h8l3 5" fill="none" stroke="currentColor" strokeWidth="2.4"/></svg>
-            <b>{t("choosePhotos")}</b><span>{t("choosePhotosSub")}</span>
-          </button>
-        </div>
+        <section className="start" aria-labelledby="startHead">
+          <h1 id="startHead" className="colhead">{t("newRoom")}</h1>
+          <p className="dnote">{t("newRoomSub")}</p>
+          <div className="ways">
+            <button className="way primary" type="button" onClick={() => start("manual")}>
+              <span className="glyph"><svg viewBox="0 0 30 30" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><path d="M4 26V4h22v22z"/><path d="M4 19h7v7M19 4v5"/><path d="M4 1.5h22M2 4v22" strokeWidth="1" strokeDasharray="2 2"/></svg></span>
+              <span><b>{t("chooseManual")}</b><small>{t("chooseManualSub")}</small></span>
+              <svg className="go" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><path d="M6 3l5 5-5 5"/></svg>
+            </button>
+            <button className="way" type="button" onClick={() => start("photos")}>
+              <span className="glyph"><svg viewBox="0 0 30 30" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><rect x="3" y="8" width="24" height="17" rx="2"/><circle cx="15" cy="16.5" r="4.5"/><path d="M10 8l2-3.5h6L20 8"/></svg></span>
+              <span><b>{t("choosePhotos")}</b><small>{t("choosePhotosSub")}</small></span>
+              <svg className="go" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><path d="M6 3l5 5-5 5"/></svg>
+            </button>
+          </div>
+        </section>
+        <RoomsPanel onOpen={props.onOpenProject} onNew={() => start("manual")} onCurrentDeleted={props.onCurrentDeleted}
+          canContinue={props.canContinue} onContinue={props.onContinue} error={props.projectError}/>
         <Templates onUse={props.onUseTemplate} show={props.showTemplates}/>
-        {props.canContinue && !listed && <button className="btn" type="button" onClick={props.onContinue}>{t("continueLast")}</button>}
-        <ProjectsList onOpen={props.onOpenProject} onCurrentDeleted={props.onCurrentDeleted} onHasCurrent={setListed} error={props.projectError}/>
       </div>
     );
   } else {

@@ -1,0 +1,74 @@
+{
+ "/models/sofa_03/sofa_03_2k.glb": {
+  "offset": 0,
+  "count": 16638,
+  "size": [
+   2.73118,
+   1.11833,
+   0.92495
+  ]
+ },
+ "/models/Rockingchair_01/Rockingchair_01_2k.glb": {
+  "offset": 33276,
+  "count": 12612,
+  "size": [
+   0.70814,
+   0.99493,
+   0.83351
+  ]
+ },
+ "/models/potted_plant_01/potted_plant_01_2k.glb": {
+  "offset": 58500,
+  "count": 66000,
+  "size": [
+   0.5874,
+   1.33646,
+   0.63356
+  ]
+ },
+ "/models/modern_wooden_cabinet/modern_wooden_cabinet_2k.glb": {
+  "offset": 190500,
+  "count": 62508,
+  "size": [
+   2.44,
+   0.68009,
+   0.52006
+  ]
+ },
+ "/models/Ottoman_01/Ottoman_01_2k.glb": {
+  "offset": 315516,
+  "count": 2946,
+  "size": [
+   0.88456,
+   0.6243,
+   0.62116
+  ]
+ },
+ "/models/round_wooden_table_01/round_wooden_table_01_2k.glb": {
+  "offset": 321408,
+  "count": 9816,
+  "size": [
+   1.39935,
+   1.00504,
+   1.39935
+  ]
+ },
+ "/models/dining_chair_02/dining_chair_02_2k.glb": {
+  "offset": 341040,
+  "count": 27204,
+  "size": [
+   0.43362,
+   0.97338,
+   0.57648
+  ]
+ },
+ "/models/ceramic_vase_03/ceramic_vase_03_2k.glb": {
+  "offset": 395448,
+  "count": 90,
+  "size": [
+   0.11226,
+   0.41436,
+   0.11226
+  ]
+ }
+}
