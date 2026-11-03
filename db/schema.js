@@ -8,12 +8,13 @@
 // Files (photos, renders, logos, PDFs, models) live in Storage; tables keep only their paths:
 //   bucket "files"   (private)  <user id>/...                      the designer's own files
 //   bucket "catalog" (public)   builtin/<folder>/<model>.glb       RoomPitch's built-in models
+//   bucket "templates" (public) <template id>.jpg                  template covers
 import { sql } from "drizzle-orm";
 import {
   pgTable, uuid, text, jsonb, timestamp, integer, real, numeric, boolean,
   index, foreignKey, primaryKey, check, pgPolicy
 } from "drizzle-orm/pg-core";
-import { authenticatedRole, authUid, authUsers } from "drizzle-orm/supabase";
+import { anonRole, authenticatedRole, authUid, authUsers } from "drizzle-orm/supabase";
 
 const tz = {withTimezone:true};
 const createdAt = () => timestamp("created_at", tz).notNull().defaultNow();
@@ -235,4 +236,30 @@ export const catalogItems = pgTable("catalog_items", {
   ...catalogPolicies(t, "catalog items",
     sql`${t.owner} = ${authUid} and exists (select 1 from catalogs c where c.id = ${t.catalogId} and c.owner = ${authUid})`,
     sql`${t.owner} is null and exists (select 1 from catalogs c where c.id = ${t.catalogId} and c.owner is null)`)
+]);
+
+/* ── Templates ── */
+
+// A room anyone can start from: admins save one from a room they're working on (data is a copy of the
+// room, as room-store.js saves it; using it copies it again into a new project). Everyone, signed in or
+// not, reads the published ones; admins read all and change them. The cover is in the "templates" bucket.
+export const templates = pgTable("templates", {
+  id:          uuid("id").primaryKey().defaultRandom(),
+  name:        text("name").notNull(),
+  nameAr:      text("name_ar"),
+  description: text("description"),
+  data:        jsonb("data").notNull(),
+  coverPath:   text("cover_path"),                           // templates: <id>.jpg
+  published:   boolean("published").notNull().default(true),
+  sort:        integer("sort").notNull().default(0),
+  createdBy:   uuid("created_by").default(sql`auth.uid()`),
+  createdAt:   createdAt(),
+  updatedAt:   updatedAt()
+}, (t) => [
+  foreignKey({name:"templates_created_by_fkey", columns:[t.createdBy], foreignColumns:[authUsers.id]}).onDelete("set null"),
+  index("templates_published_sort").on(t.published, t.sort),
+  pgPolicy("read published templates", {for:"select", to:[anonRole, authenticatedRole], using:sql`${t.published} or ${isAdmin}`}),
+  pgPolicy("admins add templates",    {for:"insert", to:authenticatedRole, withCheck:isAdmin}),
+  pgPolicy("admins change templates", {for:"update", to:authenticatedRole, using:isAdmin, withCheck:isAdmin}),
+  pgPolicy("admins delete templates", {for:"delete", to:authenticatedRole, using:isAdmin})
 ]);

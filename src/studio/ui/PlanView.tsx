@@ -18,11 +18,12 @@ import PlanSvg, { planViewBox } from "./PlanSvg";
 import { useLang } from "./hooks";
 import { MaxButton, ViewRail, viewClass, type MaxProps } from "./ViewMax";
 import Hints from "./Hints";
+import { IconEdit } from "./Icons";
 
 type Drag = {it: any, dx: number, dy: number, riders: any[]} | null;
 type DragOpen = {o: any, grab: number, moved: boolean} | null;
 
-export default function PlanView({max, onMax}: MaxProps){
+export default function PlanView({max, onMax, onRoomSetup}: MaxProps & {onRoomSetup: () => void}){
   const lang = useLang();
   const svg = useRef<SVGSVGElement>(null);
   const drag = useRef<Drag>(null), dragOpen = useRef<DragOpen>(null);
@@ -99,7 +100,8 @@ export default function PlanView({max, onMax}: MaxProps){
       <ViewRail title={t("planTitle")} onMax={onMax}/>
       <div className="phead">
         <h2>{t("planTitle")}</h2>
-        <div className="phead-tools"><small className="plan-dims" dir="ltr">{toCm(S.L)} × {toCm(S.W)} × {toCm(S.H)} {t("cm")}</small><MaxButton id="plan" max={max} onMax={onMax}/></div>
+        <div className="phead-tools"><button type="button" className="btn small ghost plan-dims" onClick={onRoomSetup} title={t("roomSetupTip")}>
+          <IconEdit/><bdi dir="ltr">{toCm(S.L)} × {toCm(S.W)} × {toCm(S.H)} {t("cm")}</bdi></button><MaxButton id="plan" max={max} onMax={onMax}/></div>
       </div>
       <div className={"stage" + (dropOn ? " drop-on" : "")}
         onDragOver={e => { e.preventDefault(); setDropOn(true); }} onDragLeave={() => setDropOn(false)} onDrop={onDrop}>

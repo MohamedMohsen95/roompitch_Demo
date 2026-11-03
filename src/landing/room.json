@@ -1,0 +1,206 @@
+{
+ "poly": [
+  [
+   0,
+   0
+  ],
+  [
+   9,
+   0
+  ],
+  [
+   9,
+   5
+  ],
+  [
+   0,
+   5
+  ]
+ ],
+ "H": 2.8,
+ "openings": [
+  {
+   "sill": 0.6,
+   "type": "window",
+   "wall": 0,
+   "width": 2.4,
+   "height": 1.4,
+   "offset": 1.35
+  },
+  {
+   "sill": 0,
+   "type": "door",
+   "wall": 3,
+   "width": 0.9,
+   "height": 2.1,
+   "offset": 0.6
+  },
+  {
+   "sill": 0,
+   "type": "window",
+   "wall": 1,
+   "width": 1.6,
+   "height": 2.2,
+   "offset": 1.2
+  }
+ ],
+ "floor": "herringbone",
+ "items": [
+  {
+   "name": "Sofa 03",
+   "x": 2.55,
+   "y": 0.46,
+   "z": 0,
+   "rot": 0,
+   "w": 2.73,
+   "d": 0.92,
+   "h": 1.12,
+   "model": "/models/sofa_03/sofa_03_2k.glb",
+   "c": null
+  },
+  {
+   "name": "Rocking chair",
+   "x": 4.5,
+   "y": 2.345,
+   "z": 0,
+   "rot": 270,
+   "w": 0.71,
+   "d": 0.83,
+   "h": 0.99,
+   "model": "/models/Rockingchair_01/Rockingchair_01_2k.glb",
+   "c": null
+  },
+  {
+   "name": "Shag rug",
+   "x": 2.55,
+   "y": 2.345,
+   "z": 0,
+   "rot": 0,
+   "w": 2,
+   "d": 1.4,
+   "h": 0.012,
+   "model": null,
+   "c": "#6e4a4f"
+  },
+  {
+   "name": "Potted plant",
+   "x": 8.685,
+   "y": 4.685,
+   "z": 0,
+   "rot": 270,
+   "w": 0.59,
+   "d": 0.63,
+   "h": 1.34,
+   "model": "/models/potted_plant_01/potted_plant_01_2k.glb",
+   "c": null
+  },
+  {
+   "name": "Wooden cabinet",
+   "x": 6.35,
+   "y": 0.26,
+   "z": 0,
+   "rot": 0,
+   "w": 2.44,
+   "d": 0.52,
+   "h": 0.68,
+   "model": "/models/modern_wooden_cabinet/modern_wooden_cabinet_2k.glb",
+   "c": null
+  },
+  {
+   "name": "Ottoman",
+   "x": 0.44,
+   "y": 0.31,
+   "z": 0,
+   "rot": 0,
+   "w": 0.88,
+   "d": 0.62,
+   "h": 0.62,
+   "model": "/models/Ottoman_01/Ottoman_01_2k.glb",
+   "c": null
+  },
+  {
+   "name": "TV unit",
+   "x": 2.55,
+   "y": 4.775,
+   "z": 0,
+   "rot": 0,
+   "w": 1.8,
+   "d": 0.45,
+   "h": 0.5,
+   "model": null,
+   "c": "#3a3936"
+  },
+  {
+   "name": "Round table",
+   "x": 6.87,
+   "y": 2.345,
+   "z": 0,
+   "rot": 0,
+   "w": 1.4,
+   "d": 1.4,
+   "h": 1.01,
+   "model": "/models/round_wooden_table_01/round_wooden_table_01_2k.glb",
+   "c": null
+  },
+  {
+   "name": "Dining chair",
+   "x": 5.955,
+   "y": 2.345,
+   "z": 0,
+   "rot": 90,
+   "w": 0.43,
+   "d": 0.58,
+   "h": 0.97,
+   "model": "/models/dining_chair_02/dining_chair_02_2k.glb",
+   "c": null
+  },
+  {
+   "name": "Dining chair",
+   "x": 6.87,
+   "y": 1.6,
+   "z": 0,
+   "rot": 0,
+   "w": 0.43,
+   "d": 0.58,
+   "h": 0.97,
+   "model": "/models/dining_chair_02/dining_chair_02_2k.glb",
+   "c": null
+  },
+  {
+   "name": "Dining chair",
+   "x": 7.7,
+   "y": 2.345,
+   "z": 0,
+   "rot": 270,
+   "w": 0.43,
+   "d": 0.58,
+   "h": 0.97,
+   "model": "/models/dining_chair_02/dining_chair_02_2k.glb",
+   "c": null
+  },
+  {
+   "name": "Dining chair",
+   "x": 6.87,
+   "y": 3.26,
+   "z": 0,
+   "rot": 180,
+   "w": 0.43,
+   "d": 0.58,
+   "h": 0.97,
+   "model": "/models/dining_chair_02/dining_chair_02_2k.glb",
+   "c": null
+  },
+  {
+   "name": "Ceramic vase",
+   "x": 6.35,
+   "y": 0.26,
+   "z": 0.68,
+   "rot": 0,
+   "w": 0.11,
+   "d": 0.11,
+   "h": 0.41,
+   "model": "/models/ceramic_vase_03/ceramic_vase_03_2k.glb",
+   "c": null
+  }
+ ]
+}

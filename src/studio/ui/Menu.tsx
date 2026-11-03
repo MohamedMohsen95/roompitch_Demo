@@ -8,14 +8,18 @@ type Props = {
   className?: string;
   align?: "start" | "end";       // which edge of the button the panel lines up with
   kind?: "menu" | "popover";
+  tip?: string;                  // the button's tooltip, when it's not the label
+  onDoubleClick?: () => void;    // a double-click does this instead (a single click then opens a moment later)
   children: (close: () => void) => ReactNode;
 };
 
-export default function Menu({label, face, className = "btn", align = "end", kind = "menu", children}: Props){
+export default function Menu({label, face, className = "btn", align = "end", kind = "menu", tip, onDoubleClick, children}: Props){
   const [open, setOpen] = useState(false);
   const box = useRef<HTMLDivElement>(null), btn = useRef<HTMLButtonElement>(null), panel = useRef<HTMLDivElement>(null);
   const id = useId();
   const close = () => setOpen(false);
+  const wait = useRef<ReturnType<typeof setTimeout>>(undefined);
+  useEffect(() => () => clearTimeout(wait.current), []);
 
   useEffect(() => {
     if (!open) return;
@@ -38,8 +42,13 @@ export default function Menu({label, face, className = "btn", align = "end", kin
   return (
     <div className="menu" ref={box}>
       <button ref={btn} className={className + (open ? " open" : "")} type="button" aria-haspopup={kind === "menu" ? "menu" : "dialog"}
-        aria-expanded={open} aria-controls={id} aria-label={face ? label : undefined} title={face ? label : undefined}
-        onClick={() => setOpen(o => !o)}>
+        aria-expanded={open} aria-controls={id} aria-label={face ? label : undefined} title={tip ?? (face ? label : undefined)}
+        onClick={e => {
+          clearTimeout(wait.current);
+          if (!onDoubleClick || e.detail === 0) return setOpen(o => !o);   // detail 0: the keyboard
+          if (e.detail === 1) wait.current = setTimeout(() => setOpen(o => !o), 250);
+        }}
+        onDoubleClick={onDoubleClick && (() => { clearTimeout(wait.current); setOpen(false); onDoubleClick(); })}>
         {face ?? label}
       </button>
       {open && (

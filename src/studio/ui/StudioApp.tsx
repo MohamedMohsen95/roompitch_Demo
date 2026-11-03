@@ -8,6 +8,7 @@
 //   three/          the 3D scene, room, furniture, lighting, sun and picking (one canvas, made once)
 //   render-ai.js    the photoreal render request              settings.js  designer settings + own prices
 //   room-store.js   saves the room in this browser; cloud-store.js copies each save to Supabase
+//   templates.js    rooms anyone can start from (admins save them)
 //   catalog-remote.js  the catalog from Supabase; catalog.js is the fallback
 //   ui/             the React interface; ui/setup/ the "New room" screen
 import { useCallback, useEffect, useState } from "react";
@@ -28,6 +29,7 @@ import { applyStatic, setLang, getLang, t } from "../i18n.js";
 import { S, applyRoom } from "../state.js";
 import { loadRoom, restoreRoom, setSaving, saveRoom, onSaved, clearRoom } from "../room-store.js";
 import { cloudReady, pushRoom, pullRoom, openProject, newProject } from "../cloud-store.js";
+import { getTemplate } from "../templates.js";
 import { roomToDraft } from "../setup/draft.js";
 import { savePhotos, loadPhotos } from "../photo-store.js";
 import css from "../studio.css?inline";
@@ -74,6 +76,15 @@ export default function StudioApp(){
   const location = useLocation();
   const [projectError, setProjectError] = useState<string | null>(null);
   const [accountOpen, setAccountOpen] = useState(false);
+  const [accountSignUp, setAccountSignUp] = useState(false);
+  // The landing page's Sign in / Sign up / account links: /studio?auth=signin|signup|account opens the dialog.
+  // The address loses the ?auth first, so the reload after signing in doesn't open it again.
+  useEffect(() => {
+    const auth = new URLSearchParams(location.search).get("auth");
+    if (!auth) return;
+    navigate(location.pathname, {replace:true, state:location.state});
+    setAccountSignUp(auth === "signup"); setAccountOpen(true);
+  }, [location.search, location.pathname, location.state, navigate]);
   const [canContinue, setCanContinue] = useState(() => Boolean(loadRoom()));
 
   useEffect(() => { applyStatic(); }, [lang]);
@@ -105,6 +116,15 @@ export default function StudioApp(){
     await openSaved(room);
   };
 
+  // A template: a copy of it becomes a new project, named after it, and opens in the studio.
+  const useTemplate = async (c: any, name: string) => {
+    const room = await within(getTemplate(c.id), 8000, null);
+    if (!room) return false;
+    newProject(name); savePhotos([]);
+    await openSaved(room);
+    return true;
+  };
+
   // A new room (not the same room's setup again) is a new cloud project.
   const startRoom = (room: any, {keepDesign, draft}: {keepDesign: boolean, draft: any}) => {
     if (!keepDesign) newProject(t("projNewName", {date:new Date().toLocaleDateString(getLang(), {day:"numeric", month:"short"})}));
@@ -126,19 +146,19 @@ export default function StudioApp(){
     <Routes>
       <Route index element={
         <SetupScreen key={location.key} initialDraft={(location.state as any)?.draft || null} canContinue={canContinue}
-          onStart={startRoom} onContinue={continueLast} onOpenProject={openProjectRow}
+          onStart={startRoom} onContinue={continueLast} onOpenProject={openProjectRow} onUseTemplate={useTemplate}
           onCurrentDeleted={() => { clearRoom(); setCanContinue(false); }} projectError={projectError}
-          onAccount={() => setAccountOpen(true)} onLang={toggleLang}/>
+          onAccount={() => { setAccountSignUp(false); setAccountOpen(true); }} onLang={toggleLang} showTemplates={Boolean((location.state as any)?.templates)}/>
       }/>
-      <Route path="room" element={<RoomRoute onProjects={() => navigate("/studio")} onRoomSetup={roomSetup} onLang={toggleLang} continueLast={continueLast}/>}/>
+      <Route path="room" element={<RoomRoute onProjects={() => navigate("/studio")} onTemplates={() => navigate("/studio", {state:{templates:true}})} onRoomSetup={roomSetup} onLang={toggleLang} continueLast={continueLast}/>}/>
     </Routes>
-    <AccountDialog open={accountOpen} onClose={() => setAccountOpen(false)}/>
+    <AccountDialog open={accountOpen} signUp={accountSignUp} onClose={() => setAccountOpen(false)}/>
   </>);
 }
 
 // /studio/room. Opened straight from the address bar (a reload, a link, signing in), it first brings back
 // the last room; with none saved it goes to the New room screen.
-function RoomRoute({onProjects, onRoomSetup, onLang, continueLast}: {onProjects: () => void, onRoomSetup: () => void, onLang: () => void, continueLast: () => Promise<void>}){
+function RoomRoute({onProjects, onTemplates, onRoomSetup, onLang, continueLast}: {onProjects: () => void, onTemplates: () => void, onRoomSetup: () => void, onLang: () => void, continueLast: () => Promise<void>}){
   const navigate = useNavigate();
   const [ready, setReady] = useState(opened);
   useEffect(() => {
@@ -155,5 +175,5 @@ function RoomRoute({onProjects, onRoomSetup, onLang, continueLast}: {onProjects:
     return () => { setSaving(false); S.sel = null; S.replacing = null; ui.inspectMsg = null; update(); };
   }, [ready]);
   if (!ready) return null;
-  return <StudioScreen onProjects={onProjects} onRoomSetup={onRoomSetup} onLang={onLang}/>;
+  return <StudioScreen onProjects={onProjects} onTemplates={onTemplates} onRoomSetup={onRoomSetup} onLang={onLang}/>;
 }

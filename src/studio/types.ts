@@ -29,6 +29,7 @@ export type Room = {
   tab: "furn" | "open" | "wall" | "floor";
   nextId: number;
   replacing: number | null;
+  template: string | null;   // the template this room was started from (admins can update it from here)
 };
 
 // A finish (wall or floor) or a piece of furniture from the catalog.

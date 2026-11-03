@@ -32,6 +32,9 @@ export const IconFocus =() => <I><path d="M2.5 5.5v-3h3M10.5 2.5h3v3M13.5 10.5v3
 export const IconLock = () => <I><path d="M3.5 7.5h9v6h-9z"/><path d="M5.5 7.5V5a2.5 2.5 0 0 1 5 0v2.5"/></I>;
 export const IconUnlock = () => <I><path d="M3.5 7.5h9v6h-9z"/><path d="M5.5 7.5V5a2.5 2.5 0 0 1 4.9-.7"/></I>;
 export const IconCopy =() => <I><path d="M5.5 5.5h8v8h-8z"/><path d="M10.5 5.5v-3h-8v8h3"/></I>;
+export const IconLayout = () => <I><rect x="2.5" y="2.5" width="11" height="11" rx="1.5"/><path d="M2.5 6.5h11M6.5 6.5v7"/></I>;
+export const IconEye = () => <I><path d="M1.5 8s2.4-4.5 6.5-4.5S14.5 8 14.5 8 12.1 12.5 8 12.5 1.5 8 1.5 8z"/><circle cx="8" cy="8" r="2"/></I>;
+export const IconEyeOff = () => <I><path d="M2.5 2.5l11 11M6.6 4A6.6 6.6 0 0 1 8 3.5C12.1 3.5 14.5 8 14.5 8a11 11 0 0 1-1.9 2.5M10.9 11.7A6 6 0 0 1 8 12.5C3.9 12.5 1.5 8 1.5 8a11 11 0 0 1 2.6-3.1"/></I>;
 export const IconTrash = () => <I><path d="M2.5 4.5h11M6 4.5V2.5h4v2M4 4.5l.7 9h6.6l.7-9"/></I>;
 export const IconEdit = () => <I><path d="M10.5 3l2.5 2.5L6 12.5H3.5V10z"/></I>;
 export const IconSwap = () => <I><path d="M2.5 5.5h10l-2.5-2.5M13.5 10.5h-10l2.5 2.5"/></I>;

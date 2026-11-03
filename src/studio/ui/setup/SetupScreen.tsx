@@ -7,6 +7,7 @@ import NumField from "../NumField";
 import SetupPreview from "./SetupPreview";
 import PhotosSection from "./PhotosSection";
 import ProjectsList from "./ProjectsList";
+import Templates from "./Templates";
 import { AccountButton } from "../AccountDialog";
 import { Mark } from "../Icons";
 import { IconGlobe } from "../Icons";
@@ -20,10 +21,12 @@ type Props = {
   onStart: (room: any, opts: {keepDesign: boolean, draft: any}) => void;
   onContinue: () => void;
   onOpenProject: (p: any) => void;
+  onUseTemplate: (c: any, name: string) => Promise<boolean>;
   onCurrentDeleted: () => void;
   projectError: string | null;
   onAccount: () => void;
   onLang: () => void;
+  showTemplates: boolean;            // came from "Start from a template": scroll to them
 };
 
 export default function SetupScreen(props: Props){
@@ -52,6 +55,7 @@ export default function SetupScreen(props: Props){
             <b>{t("choosePhotos")}</b><span>{t("choosePhotosSub")}</span>
           </button>
         </div>
+        <Templates onUse={props.onUseTemplate} show={props.showTemplates}/>
         {props.canContinue && !listed && <button className="btn" type="button" onClick={props.onContinue}>{t("continueLast")}</button>}
         <ProjectsList onOpen={props.onOpenProject} onCurrentDeleted={props.onCurrentDeleted} onHasCurrent={setListed} error={props.projectError}/>
       </div>

@@ -28,9 +28,9 @@ const loadEstClosed = () => { try { return localStorage.getItem(EST_KEY) === "1"
 const MAX_KEY = "rp_view_max";
 const loadMax = (): ViewId | null => { try { const v = localStorage.getItem(MAX_KEY); return v === "plan" || v === "3d" ? v : null; } catch { return null; } };
 
-type Props = {onProjects: () => void, onRoomSetup: () => void, onLang: () => void};
+type Props = {onProjects: () => void, onTemplates: () => void, onRoomSetup: () => void, onLang: () => void};
 
-export default function StudioScreen({onProjects, onRoomSetup, onLang}: Props){
+export default function StudioScreen({onProjects, onTemplates, onRoomSetup, onLang}: Props){
   useStudio();
   const account = useAccount();
   const [dialog, setDialog] = useState<DialogId>(null);
@@ -61,14 +61,14 @@ export default function StudioScreen({onProjects, onRoomSetup, onLang}: Props){
 
   return (
     <div className="studio">
-      <TopBar account={account} onProjects={onProjects} onRoomSetup={onRoomSetup} onLang={onLang}
+      <TopBar account={account} onProjects={onProjects} onTemplates={onTemplates} onRoomSetup={onRoomSetup} onLang={onLang}
         onDialog={setDialog} onAccount={() => openAccount()}/>
 
       <main className={"workspace" + (estClosed ? " est-closed" : "")}>
         <Inspector/>
         <Library onUpload={openUpload}/>
         <section className={"views" + (maxView ? " max-" + maxView : "")}>
-          <PlanView max={maxView} onMax={toggleMax}/>
+          <PlanView max={maxView} onMax={toggleMax} onRoomSetup={onRoomSetup}/>
           <ThreeView max={maxView} onMax={toggleMax}/>
         </section>
         <Estimate closed={estClosed} onToggle={toggleEst}/>

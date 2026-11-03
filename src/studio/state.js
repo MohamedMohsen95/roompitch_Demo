@@ -23,7 +23,8 @@ export const S = {
   sel:null,          // {kind:"item"|"opening", id} | {kind:"wall", id:<wall index>} | {kind:"floor"} | null
   tab:"furn",        // library tab: "furn" | "open" | "wall" | "floor"
   nextId:1,
-  replacing:null     // id of the item waiting to be swapped for a library piece
+  replacing:null,    // id of the item waiting to be swapped for a library piece
+  template:null      // id of the template this room was started from (templates.js)
 };
 
 export const findItem = (id) => S.items.find(i => i.id === id);
@@ -70,6 +71,7 @@ export function applyRoom({form, poly, openings, H}, {keepDesign = false} = {}){
     S.walls = Array(n).fill("paint-white");
     S.floor = "oak";
     S.items = [];
+    S.template = null;
   }
   S.sel = null; S.replacing = null;
 }

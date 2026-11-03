@@ -27,7 +27,8 @@ const authError = (e: any) => AUTH_ERRORS[e.code] ? t(AUTH_ERRORS[e.code]) : t("
 type Msg = {text: string, err: boolean} | null;
 
 // why: shown when opened from "Upload 3D model", to say why an account is needed.
-export default function AccountDialog({open, why, onClose}: {open: boolean, why?: string, onClose: () => void}){
+// signUp: open on "Create account" rather than "Sign in" (the landing page's Sign up).
+export default function AccountDialog({open, why, signUp: startUp = false, onClose}: {open: boolean, why?: string, signUp?: boolean, onClose: () => void}){
   const account = useAccount();
   const signedIn = Boolean(account?.email);
   const [creating, setCreating] = useState(false);
@@ -43,9 +44,9 @@ export default function AccountDialog({open, why, onClose}: {open: boolean, why?
   // Each time it opens: a fresh password box, and the focus where typing starts.
   useEffect(() => {
     if (!open) return;
-    setPassword(""); setPeek(false); setBad(null); setMsg(null); setBusy(false); setOutMsg(null);
+    setPassword(""); setPeek(false); setBad(null); setMsg(null); setBusy(false); setOutMsg(null); setCreating(startUp);
     if (!signedIn) setTimeout(() => (emailRef.current?.value ? passRef.current : emailRef.current)?.focus());
-  }, [open, signedIn]);
+  }, [open, signedIn, startUp]);
 
   const setMode = (create: boolean) => { setCreating(create); setMsg(null); };
 

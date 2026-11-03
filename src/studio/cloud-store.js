@@ -149,6 +149,23 @@ export async function renameProject(id, name){
   return !error;
 }
 
+// "Save a copy": the room on screen (data) becomes a new project called name, and the current one from now on.
+// The one it was copied from keeps its last save. Returns the new id, or null.
+export async function saveCopy(name, data){
+  flush();
+  let id = null;
+  await queue(async () => {
+    const sb = await cloudReady();
+    if (!sb) return;
+    const row = {id:crypto.randomUUID(), kind:"studio", name, data};
+    const { error } = await sb.from("projects").insert(row);
+    if (error){ warn("copy", error); return; }
+    await setId(sb, row.id);
+    id = row.id;
+  });
+  return id;
+}
+
 // Returns {ok, current}: current is true when the room on screen was the one deleted.
 export async function deleteProject(id){
   flush();

@@ -14,9 +14,13 @@ export const setSaving = (on) => { paused = !on; if (on) resetHistory(); };
 // Something else that also keeps each saved room (cloud-store.js), called after every save.
 export const onSaved = (fn) => { afterSave = fn; };
 
+// The room as it's saved (here, in the cloud, and as a template).
+export const roomData = () => ({v:1, savedAt:Date.now(), form:S.form, poly:S.poly, openings:S.openings, H:S.H, walls:S.walls,
+  floor:S.floor, items:S.items, nextId:S.nextId, sun:S.sun, template:S.template || undefined});
+
 export function saveRoom(){
   if (paused) return;
-  const data = {v:1, savedAt:Date.now(), form:S.form, poly:S.poly, openings:S.openings, H:S.H, walls:S.walls, floor:S.floor, items:S.items, nextId:S.nextId, sun:S.sun};
+  const data = roomData();
   try { localStorage.setItem(KEY, JSON.stringify(data)); } catch { /* storage full or blocked: keep working */ }
   afterSave?.(data);
   record();
@@ -52,6 +56,7 @@ export function restoreRoom(d){
   // sunlight settings (rooms saved before they existed keep the defaults)
   const ok = d.sun && ["summer", "equinox", "winter"].includes(d.sun.season) && /^(N|NE|E|SE|S|SW|W|NW)$/.test(d.sun.facing) && d.sun.time >= 5 && d.sun.time <= 20;
   if (ok) S.sun = {time:d.sun.time, facing:d.sun.facing, season:d.sun.season};
+  S.template = typeof d.template === "string" ? d.template : null;
   S.sel = null; S.replacing = null;
   return {dropped:d.items.length - S.items.length};
 }

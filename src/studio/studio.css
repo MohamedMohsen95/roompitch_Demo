@@ -129,7 +129,8 @@ button{cursor:pointer}
 .phead{display:flex; align-items:center; justify-content:space-between; gap:10px; min-height:48px; padding-block:8px; padding-inline:16px 10px}
 .phead h2, .panel h2{margin:0; font-size:15px; font-weight:600}
 .phead small{font-size:12px; color:var(--muted)}
-.plan-dims{margin-inline-start:auto; font-variant-numeric:tabular-nums; white-space:nowrap}
+.plan-dims{margin-inline-start:auto; font-variant-numeric:tabular-nums; white-space:nowrap; color:var(--muted)}
+.plan-dims:hover{color:var(--ink)}
 .phead-tools{display:flex; align-items:center; gap:6px; flex-wrap:wrap; justify-content:flex-end}
 .phead-start{display:flex; align-items:center; gap:10px; min-width:0}
 
@@ -591,6 +592,35 @@ details p{margin:6px 0 0; font-family:var(--font-data); font-size:11.5px; line-h
 .choice svg{width:44px; height:44px; color:var(--accent)}
 .choice b{font-size:17px; font-weight:600}
 .choice span{color:var(--muted); font-size:13.5px}
+.templates{width:100%; margin-top:18px; display:flex; flex-direction:column; gap:6px}
+.templates h2{margin:0; font-size:16px; font-weight:600}
+.tplgrid{list-style:none; margin:6px 0 0; padding:0; display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:12px}
+.tplcard{position:relative}
+.tplopen{display:flex; flex-direction:column; width:100%; padding:0; border:1px solid var(--line); border-radius:12px; background:var(--surface); color:var(--ink); text-align:start; overflow:hidden}
+.tplopen:hover{border-color:var(--accent)}
+.tplcard.hidden .tplopen{opacity:.6; border-style:dashed}
+.tplpic{aspect-ratio:16/10; background:var(--stage); display:grid; place-items:center; color:var(--muted); overflow:hidden}
+.tplpic img{width:100%; height:100%; object-fit:cover; display:block}
+.tplpic .ico{width:28px; height:28px}
+.tplpic.plan{color:var(--ink); padding:8px}
+.tplpic.plan svg{width:100%; height:100%}
+.templates{scroll-margin-top:16px}
+.tpltext{display:flex; flex-direction:column; gap:2px; padding:10px 12px}
+.tpltext b{font-size:14px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.tpltext small{font-size:12px; color:var(--muted)}
+.tplbadge{position:absolute; top:8px; inset-inline-start:8px; font-size:11px; font-weight:600; padding:1px 8px; border-radius:999px; background:var(--surface); border:1px solid var(--line); color:var(--muted)}
+.tplcard .menu{position:absolute; top:6px; inset-inline-end:6px}
+.tplmore{background:var(--surface); box-shadow:0 1px 3px rgb(0 0 0 / .15)}
+.tpllook{display:flex; flex-direction:column; gap:12px}
+.tpllook .tplpic{border-radius:10px}
+.tplabout{margin:0; font-size:14px}
+.tplcover{width:100%; aspect-ratio:16/10; object-fit:cover; border-radius:10px; border:1px solid var(--line); background:var(--stage)}
+.tplmode{display:flex; flex-direction:column; gap:6px}
+.tplmode label{display:flex; align-items:center; gap:8px; font-size:13.5px}
+.tplwarn{margin:0; padding:8px 12px; border-radius:8px; background:var(--sunk); border:1px solid var(--line); font-size:13px}
+.tb-savebtn{height:30px; padding:0 6px 0 8px; border:0; border-radius:8px; background:none; cursor:pointer}
+.tb-savebtn:hover, .tb-savebtn.open{background:var(--active); color:var(--ink)}
+.tb-savebtn .ico:last-child{color:var(--muted)}
 .projects{width:100%; margin-top:18px; display:flex; flex-direction:column; gap:10px}
 .projects h2{margin:0; font-size:16px; font-weight:600; display:flex; align-items:center; gap:8px}
 .projcount{font-size:12px; font-weight:600; color:var(--muted); background:var(--sunk); border:1px solid var(--line); border-radius:999px; padding:1px 8px}

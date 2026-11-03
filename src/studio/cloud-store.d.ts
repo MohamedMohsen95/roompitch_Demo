@@ -6,6 +6,7 @@ export function listProjects(): Promise<{id: string, name: string, updatedAt: st
 export function openProject(id: string): Promise<any>;
 export function newProject(name: string): void;
 export function renameProject(id: string, name: string): Promise<boolean>;
+export function saveCopy(name: string, data: object): Promise<string | null>;
 export function deleteProject(id: string): Promise<{ok: boolean, current?: boolean}>;
 export type SaveStatus = "saved" | "saving" | "local" | "failed";
 export function saveStatus(): SaveStatus;
