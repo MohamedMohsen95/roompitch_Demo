@@ -131,13 +131,30 @@ export function startPathTrace(host, {maxSamples = 128, removal = .75, onStatus 
   // The live view stops drawing meanwhile, so the GPU is all the tracer's.
   loop.hold = true;
   // Walls and the ceiling hidden from the camera in the live view are only made see-through there (they
-  // still shade the room); here they're left out while the dialog is open, so the camera can see in
-  // (the denoiser draws the scene again at the end, so they stay out until then).
+  // still shade the room); here they're swapped for one-sided stand-ins (below) while the dialog is open, so
+  // the camera can see in (the denoiser draws the scene again at the end, so they stay swapped until then).
   // Window glass goes too: the tracer treats a see-through surface as letting each ray through or not at
   // random, which turned the window into grain and held back part of the sunlight.
   const hidden = [];
   const isGlass = (o) => o.userData.kind === "opening" && [].concat(o.material).some(m => m.transparent && m.opacity < .5);
   scene.traverse(o => { if (o.isMesh && o.visible && (o.userData.culled || isGlass(o))){ o.visible = false; hidden.push(o); } });
+  // Left out entirely, those walls and the ceiling would let the sun and sky pour in where the room is closed
+  // (a sunlit patch mid-floor at noon, through the missing ceiling). In their place: their room-facing
+  // surface alone, one-sided (a dollhouse cut). The camera's rays pass through it from outside; light from
+  // inside and the sun's shadow rays (which hit both sides) are stopped as by the real wall.
+  const shell = new THREE.Group();
+  for (const o of hidden){
+    const k = o.userData.kind;
+    if (k !== "wall" && k !== "ceiling") continue;
+    // A wall is its outline extruded outwards from the inner face (room.js), which faces the room (+z);
+    // the ceiling is a flat outline facing down into the room already.
+    const geo = k === "wall" ? new THREE.ShapeGeometry(o.geometry.parameters.shapes) : o.geometry.clone();
+    const mat = /** @type {THREE.Material} */ (o.material).clone();
+    mat.side = THREE.FrontSide; mat.colorWrite = true; mat.depthWrite = true;
+    const face = new THREE.Mesh(geo, mat);
+    face.matrixAutoUpdate = false; face.matrix.copy(o.matrixWorld); face.matrixWorld.copy(o.matrixWorld);
+    shell.add(face);
+  }
 
   (async () => {
     onStatus({phase:"preparing", samples:0});
@@ -159,7 +176,7 @@ export function startPathTrace(host, {maxSamples = 128, removal = .75, onStatus 
     const env = hdr ? (sky = skyWithoutSun(hdr)) : (gradient = gradientEnv());
     portals = windowPortals(new THREE.Color(light.fill.sky));
     const view = Object.create(scene);
-    view.children = [...scene.children, portals];
+    view.children = [...scene.children, portals, shell];
     view.environment = env;
     view.environmentIntensity = light.env;
     // At eye level the windows show bright daylight, as an interior photograph exposed for the room does
@@ -242,6 +259,7 @@ export function startPathTrace(host, {maxSamples = 128, removal = .75, onStatus 
       for (const o of hidden) o.visible = true;
       loop.hold = false;
       pt?.dispose(); gradient?.dispose(); sky?.dispose(); for (const [, , t] of swapped) t.dispose(); portals?.traverse(l => l.dispose?.());
+      shell.traverse(m => { if (m.isMesh){ m.geometry.dispose(); m.material.dispose(); } });
       gpu.dispose(); gpu.domElement.remove(); out.remove();
     }
   };
