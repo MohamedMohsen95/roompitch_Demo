@@ -7,11 +7,12 @@ import { isWalking, lastBlink, lastExit } from "../three/walk.js";
 import { isMuted, setMuted } from "../three/walk-sound.js";
 import { useStudio } from "./hooks";
 import Hints from "./Hints";
+import PathTraceDialog from "./PathTraceDialog";
 import WalkButton from "./WalkIntro";
 import { t } from "../i18n.js";
 import { CameraViews, LightMenu } from "./ViewBar";
 import { MaxButton, ViewRail, viewClass, type MaxProps } from "./ViewMax";
-import { IconSound, IconMuted, IconWalk } from "./Icons";
+import { IconSound, IconMuted, IconWalk, IconRays } from "./Icons";
 
 // How to move things (or, while walking, how to walk), and while walking the sound on/off button.
 function Caption(){
@@ -59,13 +60,15 @@ function ExitCard({at, onEnd}: {at: number, onEnd: () => void}){
 export default function ThreeView({max, onMax}: MaxProps){
   const host = useRef<HTMLDivElement>(null);
   const [dropOn, setDropOn] = useState(false);
+  const [tracing, setTracing] = useState(false);
   useEffect(() => attachScene(host.current), []);
   return (
     <div className={viewClass("3d", max)}>
       <ViewRail title="3D" onMax={onMax}/>
       <div className="phead">
         <div className="phead-start"><h2>3D</h2><WalkButton max={max} onMax={onMax}/></div>
-        <div className="phead-tools"><CameraViews/><LightMenu/><MaxButton id="3d" max={max} onMax={onMax}/></div>
+        <div className="phead-tools"><CameraViews/><LightMenu/>
+          <button type="button" className="btn ghost small icon" title={t("ptTip")} aria-label={t("ptBtn")} onClick={() => setTracing(true)}><IconRays/></button><MaxButton id="3d" max={max} onMax={onMax}/></div>
       </div>
       <div className={"stage" + (dropOn ? " drop-on" : "")}>
         <div id="three" ref={host}
@@ -80,6 +83,7 @@ export default function ThreeView({max, onMax}: MaxProps){
         <WalkExit/>
         <Caption/>
       </div>
+      <PathTraceDialog open={tracing} onClose={() => setTracing(false)}/>
     </div>
   );
 }

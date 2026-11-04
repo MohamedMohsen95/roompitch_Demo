@@ -12,7 +12,7 @@ import { renderer, scene, fill, shown } from "./scene.js";
 import { updateSun } from "./sun.js";
 
 export const LIGHTING = [
-  {id:"daylight", name:"Daylight", hdri:"photo_studio_loft_hall_1k", env:.75, exposure:1.1,
+  {id:"daylight", name:"Daylight", hdri:"garden_nook_1k", env:.75, exposure:1.1,
    sun:{color:0xffffff, intensity:3}, fill:{sky:0xffffff, ground:0x8a8178, intensity:.85},
    prompt:"Soft natural daylight from the window"},
   {id:"warm", name:"Warm interior", hdri:"lebombo_1k", env:.75, exposure:1.15,
@@ -27,6 +27,7 @@ const STORE_KEY = "rp_studio_lighting";
 
 let pmrem, generatedEnv, current = LIGHTING[0], request = 0;
 const envCache = new Map();   // hdri name -> Promise<prefiltered texture>
+const rawEnv = new Map();     // hdri name -> the equirect HDR itself (its pixels stay in memory), for the path tracer
 
 // Download an HDRI once and pre-blur it for rough and shiny surfaces (PMREM).
 function loadEnv(name){
@@ -34,7 +35,8 @@ function loadEnv(name){
     new HDRLoader().load(`/hdri/${encodeURIComponent(name)}.hdr`, hdr => {
       hdr.mapping = THREE.EquirectangularReflectionMapping;
       const tex = pmrem.fromEquirectangular(hdr).texture;
-      hdr.dispose();
+      hdr.dispose();   // frees it on the GPU only; the path tracer (pathtrace.js) uploads it again to its own canvas
+      rawEnv.set(name, hdr);
       resolve(tex);
     }, undefined, reject);
   }).catch(err => { envCache.delete(name); throw err; }));
@@ -42,6 +44,16 @@ function loadEnv(name){
 }
 
 export const getLighting = () => current;
+
+// The current mood's HDRI as a plain equirect texture, for the path tracer (it can't use the pre-blurred one).
+// null for a mood without an HDRI (Studio).
+export async function equirectEnv(){
+  const p = current;
+  if (!p.hdri) return null;
+  await envReady;
+  await loadEnv(p.hdri);
+  return rawEnv.get(p.hdri) || null;
+}
 
 // Lights and exposure change at once; the HDRI swaps in when it has loaded (the first time
 // only; after that it's cached). Until then the neutral generated environment is used.

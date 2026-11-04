@@ -47,6 +47,7 @@ const STR = {
     estNote: "Prices come from your price list. Change them in Price list, or select a piece, wall or the floor.",
     door: "Door", window: "Window",
 
+    ptBtn: "Path-traced", ptTip: "A physically lit still of this view, traced on your computer", ptTitle: "Path-traced render", ptPreparing: "Preparing the scene…", ptPasses: "Pass {n} of {m}", ptPaused: "Paused at pass {n}", ptDone: "Done · {n} passes and denoised, in {s} s", ptDenoising: "Removing the grain…", ptFinish: "Finish now", ptFinishTip: "Stop at the passes done so far and remove the grain", ptFailed: "This browser couldn't path-trace the scene", ptNoGpu: "Path tracing needs WebGPU: use a recent Chrome or Edge", ptProgress: "Passes traced", ptPause: "Pause", ptBright: "Brightness", ptGrain: "Grain removal", ptGrainTip: "How much of the denoised image to use. A little real grain keeps it looking like a photograph.", ptResume: "Resume", ptNote: "Light is followed as it bounces around the room, one pass at a time: grainy at first, cleaner with every pass. At the end an AI denoiser removes the remaining grain.",
     mTitle: "Photoreal render", sceneCap: "Your scene (sent to the AI)", aiCap: "AI render",
     shotAlt: "Snapshot of the 3D scene", outAlt: "Photoreal render",
     rendering: "Rendering…", accessLabel: "Access code (ACCESS_CODE in your .env file)", send: "Send",
@@ -181,6 +182,7 @@ const STR = {
     estNote: "الأسعار من قائمة أسعارك. عدّلها من «قائمة الأسعار»، أو اختر قطعة أو حائطًا أو الأرضية.",
     door: "باب", window: "شباك",
 
+    ptBtn: "تتبع المسار", ptTip: "صورة بإضاءة فيزيائية لهذا العرض، تُحسب على جهازك", ptTitle: "ريندر بتتبع المسار", ptPreparing: "جارٍ تجهيز المشهد…", ptPasses: "تمريرة {n} من {m}", ptPaused: "متوقف عند التمريرة {n}", ptDone: "تم · {n} تمريرة مع إزالة التحبب، في {s} ث", ptDenoising: "جارٍ إزالة التحبب…", ptFinish: "إنهاء الآن", ptFinishTip: "التوقف عند التمريرات الحالية وإزالة التحبب", ptFailed: "تعذر على هذا المتصفح حساب المشهد", ptNoGpu: "تتبع المسار يحتاج WebGPU: استخدم إصدارًا حديثًا من Chrome أو Edge", ptProgress: "التمريرات المحسوبة", ptPause: "إيقاف مؤقت", ptBright: "السطوع", ptGrain: "إزالة التحبب", ptGrainTip: "نسبة الصورة المنقّاة المستخدمة. القليل من التحبب الحقيقي يبقيها كصورة فوتوغرافية.", ptResume: "متابعة", ptNote: "يُتتبع الضوء وهو ينعكس داخل الغرفة، تمريرة بعد أخرى: محبب في البداية وأنقى مع كل تمريرة. وفي النهاية يزيل الذكاء الاصطناعي ما تبقى من تحبب.",
     mTitle: "ريندر واقعي", sceneCap: "المشهد بتاعك (المُرسل للـ AI)", aiCap: "ريندر الـ AI",
     shotAlt: "لقطة من المشهد 3D", outAlt: "الريندر الواقعي",
     rendering: "جاري الريندر…", accessLabel: "كود الدخول (ACCESS_CODE في ملف .env)", send: "إرسال",

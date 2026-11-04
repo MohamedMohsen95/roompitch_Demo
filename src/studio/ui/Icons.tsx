@@ -24,6 +24,7 @@ export const IconGlobe = () => <I><circle cx="8" cy="8" r="5.8"/><path d="M2.2 8
 export const IconUser = () => <I><circle cx="8" cy="5.5" r="2.7"/><path d="M2.8 13.6c.8-2.3 2.8-3.6 5.2-3.6s4.4 1.3 5.2 3.6"/></I>;
 export const IconFile = () => <I><path d="M4 1.8h5l3 3v9.4H4z"/><path d="M9 1.8v3h3M6 9h4M6 11.5h4"/></I>;
 export const IconSun = () => <I><circle cx="8" cy="8" r="2.6"/><path d="M8 1.5v1.3M8 13.2v1.3M1.5 8h1.3M13.2 8h1.3M3.4 3.4l.9.9M11.7 11.7l.9.9M3.4 12.6l.9-.9M11.7 4.3l.9-.9"/></I>;
+export const IconRays = () => <I><path d="M1.8 3.2l5 5.3 2.6-4.6 4.8 8.4"/><circle cx="6.8" cy="8.5" r=".9"/><circle cx="9.4" cy="3.9" r=".9"/></I>;   // a light ray bouncing (path-traced render)
 export const IconUpload = () => <I><path d="M8 10.5V2.5M5 5.5l3-3 3 3M2.5 10.5v3h11v-3"/></I>;
 export const IconRotate = () => <I><path d="M12.8 6.2A5 5 0 1 0 13 9.5"/><path d="M13.2 2.8v3.6H9.6"/></I>;   // clockwise
 export const IconRotateCcw = () => <I><path d="M3.2 6.2A5 5 0 1 1 3 9.5"/><path d="M2.8 2.8v3.6h3.6"/></I>;
