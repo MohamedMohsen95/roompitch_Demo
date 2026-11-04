@@ -23,7 +23,7 @@ let cullables = [];       // [{objs:[meshes], test:(camera) => hidden?}]
 // Finishes with a photo texture (catalog.js tex) use it; the others are drawn in code (textures.js).
 function surfaceMat(m, w, h){
   const maps = texMaps(m);
-  if (maps) return photoMaterial(maps, w / m.tile, h / m.tile, {turn:m.turn});
+  if (maps) return photoMaterial(maps, w / m.tile, h / m.tile, {turn:m.turn, tint:m.tint ? m.c : null});
   const t = new THREE.CanvasTexture(matCanvas(m));
   t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(w / m.tile, h / m.tile); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
   return new THREE.MeshStandardMaterial({map:t, roughness:m.kind === "marble" ? .35 : .85, metalness:0});

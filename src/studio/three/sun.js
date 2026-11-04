@@ -8,7 +8,7 @@
 import * as THREE from "three";
 import { S } from "../state.js";
 import { sun } from "./scene.js";
-import { getLighting } from "./lighting.js";
+import { getLighting, aimSky } from "./lighting.js";
 import { wallsOf, wallFrame } from "../geometry.js";
 
 export const LATITUDE = 30.04;
@@ -52,6 +52,7 @@ export function updateSun(){
   tmp.copy(LOW).lerp(HIGH, Math.min(1, Math.max(0, alt / 35)));
   sun.color.copy(tmp).multiply(new THREE.Color(p.sun.color));
   sun.intensity = alt <= 0 ? 0 : p.sun.intensity * Math.min(1, alt / 12);
+  aimSky();   // the windows may have moved
 }
 
 // Words for the AI prompt, e.g. "late-afternoon sun (16:30) from the back-right".

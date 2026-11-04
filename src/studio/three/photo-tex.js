@@ -50,9 +50,12 @@ export const photoMapsReady = (maps) => Promise.all(Object.values(maps).map(u =>
 
 // A material showing the photo texture `maps` repeated rx × ry times over the geometry's 0..1 UVs
 // (or once per metre / per tile when the UVs are already in metres). turn: rotate the photo a quarter.
-export function photoMaterial(maps, rx, ry, {normalScale = 1, turn = false} = {}){
+// tint: a colour for a neutral grey scan (catalog.js tint), so the surface averages exactly that colour.
+const TINT_GREY = new THREE.Color().setRGB(240 / 255, 240 / 255, 240 / 255, THREE.SRGBColorSpace).r;   // fetch-textures TINT_MEAN, linear
+export function photoMaterial(maps, rx, ry, {normalScale = 1, turn = false, tint = null} = {}){
   const arm = maps.arm && map(maps.arm, rx, ry, false, turn);
   return roughnessFloor(new THREE.MeshPhysicalMaterial({
+    color:tint ? new THREE.Color(tint).multiplyScalar(1 / TINT_GREY) : 0xffffff,
     map:map(maps.base, rx, ry, true, turn),
     normalMap:maps.normal ? map(maps.normal, rx, ry, false, turn) : null, normalScale:new THREE.Vector2(normalScale, normalScale),
     roughnessMap:arm, roughness:arm ? 1 : .8,

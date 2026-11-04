@@ -17,7 +17,7 @@ const MAPS = ["base", "normal", "arm"];
 
 // A photo texture's catalog_items.textures: storage paths in the "catalog" bucket, plus its real size.
 const texJson = (m) => m.tex
-  ? {tile:m.tile, ...(m.turn ? {turn:true} : {}), ...Object.fromEntries(MAPS.map(n => [n, `builtin/textures/${m.tex}/${n}.webp`]))}
+  ? {tile:m.tile, ...(m.turn ? {turn:true} : {}), ...(m.tint ? {tint:true} : {}), ...Object.fromEntries(MAPS.map(n => [n, `builtin/textures/${m.tex}/${n}.webp`]))}
   : {tile:m.tile};
 
 // Every texture file to upload: {path (in the bucket), file (local)}. Door textures aren't rows but upload too.

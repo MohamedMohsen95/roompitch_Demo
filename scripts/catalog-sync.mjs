@@ -8,6 +8,7 @@
 // So adding a model is: put it in models-src/<folder>/ (with a CREDITS.md), then run this.
 //   --update    also overwrite existing rows with the values from code (undoes edits made in the dashboard)
 //   --force     re-upload every model file
+//   --textures  also refresh existing rows' textures, license and credits from code (names and prices stay)
 //   --dry-run   show what would happen; needs no keys
 //
 // Needs in .env.local: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SECRET_KEY (or the older SUPABASE_SERVICE_ROLE_KEY),
@@ -22,7 +23,7 @@ import { BUILTIN_CATALOG, builtinRows, textureFiles } from "./catalog-rows.mjs";
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const args = new Set(process.argv.slice(2));
-const dry = args.has("--dry-run"), update = args.has("--update"), force = args.has("--force");
+const dry = args.has("--dry-run"), update = args.has("--update"), force = args.has("--force"), retex = args.has("--textures");
 
 const env = loadEnv("development", ROOT, "");
 const url = env.NEXT_PUBLIC_SUPABASE_URL || env.SUPABASE_URL;
@@ -68,7 +69,7 @@ if (dry){
 }
 const { error:catError } = await sb.from("catalogs").upsert(BUILTIN_CATALOG, {onConflict:"id", ignoreDuplicates:true});
 if (catError) fail("catalog", catError);
-const { data:before, error:readError } = await sb.from("catalog_items").select("id").eq("catalog_id", BUILTIN_CATALOG.id);
+const { data:before, error:readError } = await sb.from("catalog_items").select("id, textures").eq("catalog_id", BUILTIN_CATALOG.id);
 if (readError) fail("catalog_items", readError);
 const known = new Set(before.map(r => r.id));
 const { error } = await sb.from("catalog_items").upsert(items, {onConflict:"id", ignoreDuplicates:!update});
@@ -78,6 +79,15 @@ if (error) fail("catalog_items", error);
 for (const r of items.filter(r => r.thumbnail_path && known.has(r.id))){
   const { error } = await sb.from("catalog_items").update({thumbnail_path:r.thumbnail_path}).eq("id", r.id).is("thumbnail_path", null);
   if (error) fail(`thumbnail of ${r.id}`, error);
+}
+
+// --textures: rows already there without a photo texture take it from code (a finish that was drawn and now
+// has a scan); rows that have one keep it.
+const bare = new Set(before.filter(r => !r.textures?.base).map(r => r.id));
+if (retex && !update) for (const r of items.filter(r => r.textures?.base && bare.has(r.id))){
+  console.log(`textures for ${r.id}`);
+  const { error } = await sb.from("catalog_items").update({textures:r.textures, license:r.license, credits:r.credits}).eq("id", r.id);
+  if (error) fail(`textures of ${r.id}`, error);
 }
 
 const added = items.filter(r => !known.has(r.id)).map(r => r.id);

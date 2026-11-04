@@ -27,28 +27,10 @@ import { S } from "../state.js";
 import { wallsOf, wallFrame, alongWall } from "../geometry.js";
 import { renderer, scene, camera, loop } from "./scene.js";
 import { toWorld } from "./room.js";
-import { getLighting, equirectEnv } from "./lighting.js";
+import { getLighting, equirectEnv, skyWithoutSun } from "./lighting.js";
 
 const PORTAL_NITS = 6;   // how bright the sky looks through a window, before the mood's exposure
-const SKY_MAX = 12;      // brightest sky the tracer sees: the HDRI's own sun is clipped to this (see skyWithoutSun)
 const MIN_ROUGHNESS = .25;   // polished scans are re-mapped to start here (see satinRoughness)
-
-// An outdoor HDRI has the sun in it, thousands of times brighter than the sky. The scene already has a sun
-// (placed by the time of day), so the HDRI's would be a second one with its own shadows: clip it to bright sky.
-function skyWithoutSun(tex){
-  const {data, width, height} = tex.image, half = data instanceof Uint16Array;
-  const read = half ? (v) => THREE.DataUtils.fromHalfFloat(v) : (v) => v;
-  const n = width * height, src = data.length / n, out = new Float32Array(n * 4);
-  for (let i = 0; i < n; i++){
-    const r = read(data[i * src]), g = read(data[i * src + 1]), b = read(data[i * src + 2]);
-    const k = Math.min(1, SKY_MAX / Math.max(r, g, b, 1e-6));
-    out[i * 4] = r * k; out[i * 4 + 1] = g * k; out[i * 4 + 2] = b * k; out[i * 4 + 3] = 1;
-  }
-  const t = new DataTexture(out, width, height, RGBAFormat, FloatType);
-  t.mapping = EquirectangularReflectionMapping; t.magFilter = t.minFilter = LinearFilter;
-  t.flipY = tex.flipY; t.needsUpdate = true;
-  return t;
-}
 
 // The live view keeps polished scans (herringbone parquet averages roughness 0.1) from looking like mirrors
 // with a shader floor (photo-tex.js) the tracer can't see, so here their roughness maps are re-mapped instead:

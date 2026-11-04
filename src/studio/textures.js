@@ -50,7 +50,7 @@ export function matCanvas(m){
 // Library and price-list swatches: the photo, or the drawn finish (drawn once per finish and colour).
 const swatches = new Map();
 export function swatchURL(m){
-  const photo = texMaps(m)?.base; if (photo) return photo;
+  const photo = !m.tint && texMaps(m)?.base; if (photo) return photo;   // a tinted scan is grey: show the paint colour
   const key = `${m.id}|${m.kind}|${m.c}`;
   if (!swatches.has(key)) swatches.set(key, matCanvas(m).toDataURL("image/png"));
   return swatches.get(key);

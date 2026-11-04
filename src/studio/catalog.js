@@ -2,16 +2,18 @@
 // Example prices in EGP; the designer's own prices live in settings.js. `ar` is the Arabic name.
 // tex: a photo texture in public/textures/<id>/ (a Poly Haven id; npm run textures downloads it), and tile is
 // then the real size of one repeat in metres (turn: rotate it a quarter, e.g. for vertical grain).
-// Finishes without tex are drawn in code (textures.js).
+// texSrc: "ambientcg" when tex is an ambientCG id instead (also CC0).
+// tint: the photo is a neutral light grey (npm run textures makes it so) shaded to the finish colour c, so
+// one scan of real paint on plaster serves every paint colour. Finishes without tex are drawn in code (textures.js).
 
 export const WALL_MATS = [
-  {id:"bare-wall",   name:"Bare plaster (unfinished)", ar:"محارة بدون تشطيب", price:0, kind:"concrete", c:"#b9b4aa", tile:2},
-  {id:"paint-white", name:"Matte white paint", ar:"دهان أبيض مطفي", price:180, kind:"paint", c:"#ecebe6", tile:1},
-  {id:"paint-sage",  name:"Sage green paint", ar:"دهان أخضر زيتي", price:200, kind:"paint", c:"#a7b59d", tile:1},
-  {id:"paint-clay",  name:"Terracotta paint", ar:"دهان طوبي فاتح", price:200, kind:"paint", c:"#c9917a", tile:1},
-  {id:"wood-panel",  name:"Wood panelling", ar:"تجاليد خشب",     price:1400, kind:"panel", c:"#9a6b43", tile:1.2},
-  {id:"marble-wall", name:"Carrara marble", ar:"رخام كرارة",     price:2200, kind:"marble", c:"#e7e6e2", tile:1.4},
-  {id:"wallpaper",   name:"Wallpaper", ar:"ورق حائط",       price:450, kind:"wallpaper", c:"#d6cbb5", tile:.7},
+  {id:"bare-wall",   name:"Bare plaster (unfinished)", ar:"محارة بدون تشطيب", price:0, kind:"concrete", c:"#b9b4aa", tex:"plaster_grey_04", tile:1.5},
+  {id:"paint-white", name:"Matte white paint", ar:"دهان أبيض مطفي", price:180, kind:"paint", c:"#ecebe6", tex:"beige_wall_001", tile:3, tint:true},
+  {id:"paint-sage",  name:"Sage green paint", ar:"دهان أخضر زيتي", price:200, kind:"paint", c:"#a7b59d", tex:"beige_wall_001", tile:3, tint:true},
+  {id:"paint-clay",  name:"Terracotta paint", ar:"دهان طوبي فاتح", price:200, kind:"paint", c:"#c9917a", tex:"beige_wall_001", tile:3, tint:true},
+  {id:"wood-panel",  name:"Wood panelling", ar:"تجاليد خشب",     price:1400, kind:"panel", c:"#9a6b43", tex:"japanese_cedar_planks", tile:1.13},
+  {id:"marble-wall", name:"Carrara marble", ar:"رخام كرارة",     price:2200, kind:"marble", c:"#e7e6e2", tex:"Marble021", texSrc:"ambientcg", tile:2},
+  {id:"wallpaper",   name:"Wallpaper", ar:"ورق حائط",       price:450, kind:"wallpaper", c:"#d6cbb5", tex:"Wallpaper001A", texSrc:"ambientcg", tile:.8, tint:true},
   {id:"plaster-smooth", name:"Smooth plaster", ar:"محارة ناعمة",   price:250,  kind:"paint",  c:"#c9c6c0", tex:"plastered_wall_04", tile:3.2},
   {id:"plaster-rough",  name:"Textured white plaster", ar:"محارة بيضاء خشنة", price:320, kind:"paint", c:"#d9d4ca", tex:"white_plaster_02", tile:1},
   {id:"teak-panel",     name:"Teak veneer panels", ar:"قشرة تيك",    price:2600, kind:"panel",  c:"#a8744a", tex:"teak_veneer", tile:2, turn:true},
@@ -131,6 +133,7 @@ export function applyCatalog(rows){
     else Object.assign(e, {kind:r.material || "paint"});
     if (r.textures?.tile) e.tile = r.textures.tile;
     if (r.textures?.turn) e.turn = true;
+    if (r.textures?.tint) e.tint = true;
     if (r.texUrls) e.texUrls = r.texUrls;
     if (index[r.id]) Object.assign(index[r.id], e); else { list.push(e); index[r.id] = e; }
     EN[r.id] = r.ai_description || r.name_en.toLowerCase();
