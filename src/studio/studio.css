@@ -119,10 +119,32 @@ button{cursor:pointer}
 .menupanel.end{inset-inline-end:0}
 .menupanel.start{inset-inline-start:0}
 .menuitem{display:flex; align-items:center; gap:10px; width:100%; height:36px; padding:0 10px; border:0; border-radius:8px; background:none; text-align:start; font-size:13.5px; white-space:nowrap}
-.menuitem:hover, .menuitem:focus-visible{background:var(--active); outline:none}
 .menuitem .ico{color:var(--muted)}
 .menuitem.danger, .menuitem.danger .ico{color:var(--danger)}
+/* Hovered item: the theme colour (navy; white in the dark theme), its text and icon in the ink that reads on it */
+.menuitem:not(:disabled):hover, .menuitem:focus-visible{background:var(--accent); outline:none}
+.menuitem:not(:disabled):hover, .menuitem:not(:disabled):hover :is(.ico, small),
+.menuitem:focus-visible, .menuitem:focus-visible :is(.ico, small){color:var(--accent-ink)}
+.menuitem.danger:not(:disabled):hover, .menuitem.danger:focus-visible{background:var(--danger)}
+.menuitem.danger:not(:disabled):hover :is(.ico, small), .menuitem.danger:focus-visible :is(.ico, small),
+.menuitem.danger:not(:disabled):hover, .menuitem.danger:focus-visible{color:#fff}
 .menuitem:disabled{opacity:.5; cursor:default}
+
+/* Drop-down lists (<select>): the browser draws their open list, hovered option in system grey. Where it
+   lets a page style that list (Chrome and Edge 135+), it gets the menus' look, hovered option in the theme
+   colour; elsewhere the browser's own list stays. */
+@supports (appearance:base-select){
+  select, ::picker(select){appearance:base-select}
+  select{display:inline-flex; align-items:center; gap:6px}
+  select::picker-icon{color:var(--muted); font-size:11px}
+  ::picker(select){margin-block:4px; padding:4px; background:var(--surface); color:var(--ink); border:1px solid var(--line);
+    border-radius:10px; box-shadow:0 12px 32px rgba(10,14,13,.14)}
+  select option{min-height:32px; padding:0 10px; border-radius:6px; font-size:13.5px}
+  select option::checkmark{order:1; margin-inline-start:auto; color:var(--accent)}
+  select option:checked{font-weight:600}
+  select option:hover, select option:focus-visible{background:var(--accent); color:var(--accent-ink); outline:none}
+  select option:hover::checkmark, select option:focus-visible::checkmark{color:var(--accent-ink)}
+}
 .lightpanel{width:290px; max-width:calc(100vw - 32px); padding:6px; display:flex; flex-direction:column; gap:10px}
 .lp-row{display:grid; grid-template-columns:1fr auto; align-items:center; gap:6px 10px; font-size:13px; color:var(--muted)}
 .lp-row select{height:32px; min-width:150px; padding:0 8px; border:1px solid var(--control); border-radius:8px; background:var(--surface); color:var(--ink); cursor:pointer}
@@ -151,6 +173,21 @@ button{cursor:pointer}
 .walkbtn[aria-pressed="true"]::after{content:none}
 @keyframes walk-sheen{0%, 60%{transform:translateX(-120%)} 100%{transform:translateX(120%)}}
 @media (prefers-reduced-motion: reduce){ .walkbtn::after{animation:none; content:none} }
+
+/* A narrow view (side by side on a smaller screen): its header keeps every button whole. Walk inside goes
+   to its icon (the label stays for screen readers), the camera views tighten, and only then the tools wrap
+   under the title. */
+.view{container-type:inline-size}
+.phead-start, .phead-tools > *{flex:none}
+@container (max-width:560px){
+  .walkbtn{width:28px; padding:0; justify-content:center}
+  .walkbtn span{position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap}
+}
+@container (max-width:460px){
+  .phead{flex-wrap:wrap; row-gap:6px}
+  .phead-tools{margin-inline-start:auto; row-gap:6px}
+  .segbar button{padding:0 8px}
+}
 
 /* Walking: the blinks on entering (eyelids close and open twice as the blur clears),
    and the sound button on the view */

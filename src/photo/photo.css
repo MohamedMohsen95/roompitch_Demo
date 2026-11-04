@@ -374,3 +374,18 @@ td.unit { display: table-cell; }
   .pp-sign div { font-size: 9.5pt; }
   .pp-sign span { display: block; border-bottom: 1px solid #1f1d1a; height: 34px; margin-bottom: 4px; }
 }
+
+/* Drop-down lists: where the browser lets a page style the open list (Chrome and Edge 135+), the hovered
+   option takes the accent instead of system grey; elsewhere the browser's own list stays. */
+@supports (appearance: base-select) {
+  select, ::picker(select) { appearance: base-select; }
+  select { display: flex; align-items: center; gap: 6px; }
+  select::picker-icon { color: var(--ink); opacity: .55; font-size: 11px; }
+  ::picker(select) { margin-block: 4px; padding: 4px; background: var(--surface); color: var(--ink); border: 1px solid var(--line);
+    border-radius: 10px; box-shadow: 0 12px 32px rgba(0, 0, 0, .14); }
+  select option { min-height: 34px; padding: 0 10px; border-radius: 6px; }
+  select option::checkmark { order: 1; margin-inline-start: auto; color: var(--accent); }
+  select option:checked { font-weight: 600; }
+  select option:hover, select option:focus-visible { background: var(--accent); color: var(--accent-ink); outline: none; }
+  select option:hover::checkmark, select option:focus-visible::checkmark { color: var(--accent-ink); }
+}
