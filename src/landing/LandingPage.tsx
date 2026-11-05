@@ -182,6 +182,7 @@ function Stages(){
         ))}
         {armed && <><span className="stages-trail" aria-hidden="true" ref={trail}/><span className="stages-light" aria-hidden="true" ref={dot}/></>}
       </ol>
+      <div className="actions run-cta"><Link className="btn btn--primary btn--shine" to="/studio">Start a room</Link></div>
     </section>
   );
 }
