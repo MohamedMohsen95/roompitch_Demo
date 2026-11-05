@@ -47,7 +47,6 @@ export function initScene(){
   scene.add(sun, sun.target, roomGroup, itemGroup);
 
   themeBg();
-  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", themeBg);
   new MutationObserver(themeBg).observe(document.documentElement, {attributes:true, attributeFilter:["data-theme"]});
 
 }
@@ -65,7 +64,18 @@ export function attachScene(el){
   return () => { ro.disconnect(); renderer.domElement.remove(); if (host === el) host = null; };
 }
 
-function themeBg(){ scene.background = new THREE.Color(cssVar("--stage") || "#dfe4e1"); }
+// The theme's colours are oklch(), which THREE.Color can't read (it fell back to white, wrong in dark mode):
+// a 1-pixel canvas turns any CSS colour into sRGB.
+let swatch = null;
+function cssColor(value, fallback){
+  swatch ??= document.createElement("canvas").getContext("2d", {willReadFrequently:true});
+  swatch.clearRect(0, 0, 1, 1);
+  swatch.fillStyle = fallback; swatch.fillStyle = value;   // an unreadable value leaves the fallback
+  swatch.fillRect(0, 0, 1, 1);
+  const [r, g, b] = swatch.getImageData(0, 0, 1, 1).data;
+  return new THREE.Color().setRGB(r / 255, g / 255, b / 255, THREE.SRGBColorSpace);
+}
+function themeBg(){ scene.background = cssColor(cssVar("--stage"), "#dfe4e1"); }
 
 const GLIDE_MS = 600;
 // The preset views. They glide there (over `ms`), except `instant` (opening a room).

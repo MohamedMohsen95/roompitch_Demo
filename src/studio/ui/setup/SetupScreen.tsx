@@ -12,6 +12,7 @@ import { AccountButton } from "../AccountDialog";
 import { Mark } from "../Icons";
 import { IconGlobe } from "../Icons";
 import { useLang } from "../hooks";
+import ThemeButton from "../ThemeButton";
 
 const ERR_KEY: Record<string, string> = {beyondWall:"errBeyondWall", tooTall:"errTooTall", overlap:"errOverlap", tooSmall:"errTooSmall"};
 
@@ -59,7 +60,7 @@ export default function SetupScreen(props: Props){
           </div>
         </section>
         <RoomsPanel onOpen={props.onOpenProject} onNew={() => start("manual")} onCurrentDeleted={props.onCurrentDeleted}
-          canContinue={props.canContinue} onContinue={props.onContinue} error={props.projectError}/>
+          canContinue={props.canContinue} onContinue={props.onContinue} onAccount={props.onAccount} error={props.projectError}/>
         <Templates onUse={props.onUseTemplate} show={props.showTemplates}/>
       </div>
     );
@@ -167,6 +168,7 @@ export default function SetupScreen(props: Props){
       <header className="bar">
         <div className="brand"><Mark/><strong>RoomPitch</strong></div>
         <div className="tools">
+          <ThemeButton/>
           <button className="btn ghost" type="button" onClick={props.onLang} lang={t("langBtn") === "English" ? "en" : "ar"}><IconGlobe/><span>{t("langBtn")}</span></button>
           <AccountButton onOpen={props.onAccount}/>
         </div>

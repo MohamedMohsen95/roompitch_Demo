@@ -15,13 +15,6 @@
   --display: "Fraunces", Georgia, serif;
   color-scheme: light;
 }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --paper: #171614; --surface: #201f1c; --ink: #f1ede6; --ink-2: #a9a299;
-    --line: #34312c; --accent: #e07a52; --accent-soft: #3a2a22; --shadow: none;
-    color-scheme: dark;
-  }
-}
 :root[data-theme="dark"] {
   --paper: #171614; --surface: #201f1c; --ink: #f1ede6; --ink-2: #a9a299;
   --line: #34312c; --accent: #e07a52; --accent-soft: #3a2a22; --shadow: none;

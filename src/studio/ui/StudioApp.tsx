@@ -28,7 +28,8 @@ import { initWalk } from "../three/walk.js";
 import { applyStatic, setLang, getLang, t } from "../i18n.js";
 import { S, applyRoom } from "../state.js";
 import { loadRoom, restoreRoom, setSaving, saveRoom, onSaved, clearRoom } from "../room-store.js";
-import { cloudReady, pushRoom, pullRoom, openProject, newProject } from "../cloud-store.js";
+import { applyTheme } from "../theme.js";
+import { cloudReady, pushRoom, pullRoom, openProject, newProject, forgetOthersRoom } from "../cloud-store.js";
 import { getTemplate } from "../templates.js";
 import { roomToDraft } from "../setup/draft.js";
 import { savePhotos, loadPhotos } from "../photo-store.js";
@@ -55,6 +56,7 @@ async function loadModelCatalog(){
 let catalogReady: Promise<void> | null = null;
 let opened = false;   // a room has been opened (or started) since the page loaded
 function boot(){
+  applyTheme();   // before the first paint and before the 3D view reads its background colour
   if (catalogReady) return;
   initScene(); initLighting(); initInteraction(); initWalk();
   startLoop(() => { updateHelper(); cullForCamera(camera); });
@@ -90,6 +92,8 @@ export default function StudioApp(){
   useEffect(() => { applyStatic(); }, [lang]);
   // A room saved since (or a project deleted) changes whether "Continue last room" shows.
   useEffect(() => { setCanContinue(Boolean(loadRoom())); }, [location.key]);
+  // A room another account left in this browser isn't this guest's to continue.
+  useEffect(() => { forgetOthersRoom().then(gone => { if (gone) setCanContinue(false); }); }, []);
   const toggleLang = useCallback(() => setLang(getLang() === "ar" ? "en" : "ar"), []);
 
   // Open a saved room once the 3D model pieces are loaded (at most 5 s), so saved model furniture is recognised.
@@ -101,14 +105,19 @@ export default function StudioApp(){
     if (r.dropped) flashHint(t("droppedPieces", {n:r.dropped}), 8000);
   }, [navigate]);
   // The newer of this browser's room and the current cloud project's (at most 5 s) wins.
-  const continueLast = useCallback(async () => {
+  // With none (another account's room was just forgotten), back to the New room screen. Resolves whether it opened one.
+  const continueLast = useCallback(async (): Promise<boolean> => {
+    await within(forgetOthersRoom(), 5000);
     const cloud: any = await within(pullRoom(), 5000, null);
     const local = loadRoom();
-    await openSaved(cloud && (cloud.savedAt || 0) > (local?.savedAt || 0) ? cloud : local);
-  }, [openSaved]);
+    const room = cloud && (cloud.savedAt || 0) > (local?.savedAt || 0) ? cloud : local;
+    if (!room){ setCanContinue(false); navigate("/studio", {replace:true}); return false; }
+    await openSaved(room);
+    return true;
+  }, [openSaved, navigate]);
 
   const openProjectRow = async (p: any) => {
-    if (p.current) return continueLast();
+    if (p.current){ await continueLast(); return; }
     setProjectError(null);
     const room = await within(openProject(p.id), 8000, null);
     if (!room){ setProjectError(t("projOpenFailed")); return; }
@@ -158,7 +167,7 @@ export default function StudioApp(){
 
 // /studio/room. Opened straight from the address bar (a reload, a link, signing in), it first brings back
 // the last room; with none saved it goes to the New room screen.
-function RoomRoute({onProjects, onTemplates, onRoomSetup, onLang, continueLast}: {onProjects: () => void, onTemplates: () => void, onRoomSetup: () => void, onLang: () => void, continueLast: () => Promise<void>}){
+function RoomRoute({onProjects, onTemplates, onRoomSetup, onLang, continueLast}: {onProjects: () => void, onTemplates: () => void, onRoomSetup: () => void, onLang: () => void, continueLast: () => Promise<boolean>}){
   const navigate = useNavigate();
   const [ready, setReady] = useState(opened);
   useEffect(() => {
@@ -166,7 +175,9 @@ function RoomRoute({onProjects, onTemplates, onRoomSetup, onLang, continueLast}:
     // Dev only: /studio/room?sample opens the built-in sample room (for screenshots in a fresh browser).
     if (import.meta.env.DEV && new URLSearchParams(location.search).has("sample")){ setReady(true); return; }
     if (!loadRoom()){ navigate("/studio", {replace:true}); return; }
-    continueLast().then(() => setReady(true));
+    // Only once a room is open: with none, continueLast has gone back to /studio, a navigation React Router
+    // makes in a transition, so becoming ready here would still draw the studio first, on an empty room it saves.
+    continueLast().then(ok => { if (ok) setReady(true); });
   }, []);
   // Saving is on while the studio shows, so an untouched sample room never becomes "the last room".
   useEffect(() => {

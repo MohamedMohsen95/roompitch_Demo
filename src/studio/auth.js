@@ -1,8 +1,9 @@
 // Accounts. Every visitor starts as an anonymous Supabase user (cloud-store.js), which is enough to save
 // rooms. An account (email + password) is needed to upload models; an admin's uploads join the
-// built-in catalog everyone sees. Signing in or out reloads the page, so the library, rooms and models
-// all come from the new user; the room on screen is kept (it's in this browser) and saved to the new account.
-import { cloudReady } from "./cloud-store.js";
+// built-in catalog everyone sees. Signing in reloads the page, so the library, rooms and models all come from
+// the new user; a guest's room on screen is kept (it's in this browser) and saved to the account. Signing out
+// forgets the room in this browser and goes to the landing page, so the next person here starts clean.
+import { cloudReady, forgetLocalRoom } from "./cloud-store.js";
 
 // {email, anonymous, admin} for the signed-in user, or null without Supabase.
 export async function getAccount(){
@@ -42,5 +43,6 @@ export async function signUp(email, password){
 
 export async function signOut(){
   await (await client()).auth.signOut();
-  switchUser();   // the reload starts a new anonymous session
+  await forgetLocalRoom();
+  location.assign("/");   // to the landing page; the studio starts a new anonymous session when next opened
 }

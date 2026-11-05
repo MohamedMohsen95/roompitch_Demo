@@ -13,13 +13,7 @@
   --font-data:"IBM Plex Mono", ui-monospace, "Cascadia Mono", monospace;
   --font-display:"Chakra Petch", var(--font-body);
 }
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:oklch(26.5% .095 258); --surface:oklch(31% .1 257); --sunk:oklch(28.5% .097 257); --stage:oklch(35% .105 256); --active:oklch(39% .1 256);
-  --ink:oklch(97% .012 240); --muted:oklch(80% .045 244); --line:oklch(93% .02 240 / .18); --rule:oklch(93% .02 240 / .12); --control:oklch(93% .02 240 / .34);
-  --accent:oklch(97% .012 240); --accent-ink:oklch(30% .1 257); --accent-soft:oklch(97% .012 240 / .12);
-  --primary:oklch(97% .012 240); --primary-ink:oklch(30% .1 257);
-  --grid:oklch(97% .01 240 / .1); --danger:#f2867a; --guide:#ff5c8a; --danger-soft:rgba(242,134,122,.12);
-  --drawing:oklch(97% .012 240); --drawing-fill:oklch(97% .012 240 / .12); --sheet:oklch(33% .1 257); color-scheme:dark}}
+/* Dark: only when the designer picks it (theme.js); the system's dark mode doesn't switch it */
 :root[data-theme="dark"]{
   --bg:oklch(26.5% .095 258); --surface:oklch(31% .1 257); --sunk:oklch(28.5% .097 257); --stage:oklch(35% .105 256); --active:oklch(39% .1 256);
   --ink:oklch(97% .012 240); --muted:oklch(80% .045 244); --line:oklch(93% .02 240 / .18); --rule:oklch(93% .02 240 / .12); --control:oklch(93% .02 240 / .34);
@@ -699,7 +693,30 @@ details p{margin:6px 0 0; font-family:var(--font-data); font-size:11.5px; line-h
 .lead .cta .btn.icon{width:40px}
 .lead.empty .sheet{min-height:220px; background-size:30px 30px, 30px 30px, 6px 6px, 6px 6px}
 .lead.empty h3{font-size:20px}
-.lead.empty .meta{margin-top:6px}
+.lead.empty .meta{margin-top:6px; line-height:1.5}
+/* No rooms yet: a room draws itself on the sheet, three numbered steps, and the way in */
+.lead.empty .sheet{display:grid; grid-template-columns:minmax(0, 1fr); place-items:center; padding:24px}
+.firstroom{width:min(100%, 520px); height:auto; overflow:visible; fill:none; stroke:currentColor; stroke-linejoin:round; stroke-linecap:round}
+.firstroom .fr-walls{stroke-width:3; stroke-dasharray:1; stroke-dashoffset:1; animation:fr-draw 1.4s cubic-bezier(.45,0,.2,1) .2s forwards}
+.firstroom .fr-door{stroke-width:1; stroke-dasharray:.04 .03; opacity:0; animation:fr-in .4s ease 1.5s forwards}
+.firstroom .fr-dim{stroke-width:1; opacity:0; animation:fr-in .4s ease 1.6s forwards}
+.firstroom .fr-dim text{stroke:none; fill:currentColor; font:500 11px var(--font-data)}
+.firstroom .fr-p{stroke-width:1.4; fill:var(--drawing-fill); opacity:0; transform-box:fill-box; transform-origin:center;
+  animation:fr-place .45s cubic-bezier(.2,.8,.3,1.2) calc(1.9s + var(--d) * .22s) forwards}
+.firstroom .fr-p.rug{fill:none; stroke-dasharray:4 3}
+@keyframes fr-draw{to{stroke-dashoffset:0}}
+@keyframes fr-in{to{opacity:1}}
+@keyframes fr-place{from{opacity:0; transform:scale(.6)} to{opacity:1; transform:none}}
+@media (prefers-reduced-motion: reduce){
+  .firstroom .fr-walls, .firstroom .fr-door, .firstroom .fr-dim, .firstroom .fr-p{animation:none; opacity:1; stroke-dashoffset:0}
+  .firstroom .fr-door{stroke-dasharray:.04 .03}
+}
+.firststeps{list-style:none; margin:18px 0 0; padding:0; display:flex; flex-direction:column; gap:10px; font-size:13.5px; color:var(--ink)}
+.firststeps li{display:flex; align-items:center; gap:10px}
+.firststeps .num{flex:none; display:grid; place-items:center; width:24px; height:24px; border-radius:50%; background:var(--accent-soft); color:var(--accent); font:600 12px var(--font-data)}
+.lead.empty .cta{padding-top:22px}
+.signhint{margin:12px 0 0; font-size:13px; color:var(--muted)}
+.signhint .linkbtn{font-size:13px}
 .continue-local{margin-top:12px; border-radius:var(--radius-inner)}
 
 .strip-head{display:flex; align-items:center; gap:8px; margin:28px 0 10px}

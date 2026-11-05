@@ -9,6 +9,7 @@ import { toCm } from "../../geometry.js";
 import { listProjects, renameProject, deleteProject } from "../../cloud-store.js";
 import type { ProjectCard } from "../../cloud-store.js";
 import { useLang } from "../hooks";
+import { useAccount } from "../account";
 import Menu, { MenuItem } from "../Menu";
 import { IconEdit, IconMore, IconTrash } from "../Icons";
 
@@ -69,16 +70,37 @@ function Plan({p, big}: {p: ProjectCard, big?: boolean}){
 const IconPlus = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>;
 const Chevron = ({back}: {back?: boolean}) => <svg className="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d={back ? "M10 3L5 8l5 5" : "M6 3l5 5-5 5"}/></svg>;
 
+// No rooms yet: a room drawing itself on the sheet, as the first one will. The walls are drawn, the width is
+// marked, then the sofa, rug, table and chairs settle in (studio.css .firstroom; still with reduced motion).
+function FirstRoomDrawing(){
+  return (
+    <svg className="firstroom" viewBox="0 0 320 200" aria-hidden="true">
+      <path className="fr-walls" pathLength={1} d="M236 42H40v120h240V42H268"/>
+      <path className="fr-door" d="M236 42v32a32 32 0 0 0 32-32" pathLength={1}/>
+      <g className="fr-dim"><path d="M40 26h240M40 21v10M280 21v10"/><text x="160" y="20" textAnchor="middle">900 cm</text></g>
+      <g className="fr-pieces">
+        <rect className="fr-p" style={{"--d": 0} as React.CSSProperties} x="52" y="54" width="76" height="24" rx="3"/>
+        <rect className="fr-p rug" style={{"--d": 1} as React.CSSProperties} x="58" y="92" width="64" height="44"/>
+        <circle className="fr-p" style={{"--d": 2} as React.CSSProperties} cx="214" cy="104" r="20"/>
+        {[[214, 76], [214, 132], [186, 104], [242, 104]].map(([x, y], i) =>
+          <rect key={i} className="fr-p" style={{"--d": 2.5 + i * .25} as React.CSSProperties} x={x - 6} y={y - 6} width="12" height="12" rx="2"/>)}
+      </g>
+    </svg>
+  );
+}
+
 type Props = {
   onOpen: (p: ProjectCard) => void;
   onNew: () => void;
   onCurrentDeleted: () => void;
   canContinue: boolean;        // a room kept only in this browser
   onContinue: () => void;
+  onAccount?: () => void;      // sign in, offered to a guest with no rooms
   error: string | null;
 };
 
-export default function RoomsPanel({onOpen, onNew, onCurrentDeleted, canContinue, onContinue, error}: Props){
+export default function RoomsPanel({onOpen, onNew, onCurrentDeleted, canContinue, onContinue, onAccount, error}: Props){
+  const account = useAccount();
   useLang();
   const [rooms, setRooms] = useState<ProjectCard[] | null>(null);   // null while asking the cloud
   const [pick, setPick] = useState<string | null>(null);
@@ -199,12 +221,19 @@ export default function RoomsPanel({onOpen, onNew, onCurrentDeleted, canContinue
         </article>
       ) : (
         <article className="lead empty">
-          <div className="sheet"/>
+          <div className="sheet">{rooms !== null && <FirstRoomDrawing/>}</div>
           <div className="block">
             {rooms !== null && <>
               <h3>{t("roomsEmpty")}</h3>
               <p className="meta">{t("roomsEmptySub")}</p>
-              {canContinue && <div className="cta"><button className="btn primary" type="button" onClick={onContinue}>{t("continueLast")}</button></div>}
+              <ol className="firststeps">
+                <li><span className="num">1</span>{t("firstStep1")}</li>
+                <li><span className="num">2</span>{t("firstStep2")}</li>
+                <li><span className="num">3</span>{t("firstStep3")}</li>
+              </ol>
+              <div className="cta"><button className="btn primary" type="button" onClick={onNew}>{t("firstRoomGo")}</button></div>
+              {account?.anonymous && onAccount &&
+                <p className="signhint">{t("firstSignHint")} <button className="linkbtn" type="button" onClick={onAccount}>{t("signIn")}</button></p>}
             </>}
           </div>
         </article>

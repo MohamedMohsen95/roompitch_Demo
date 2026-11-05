@@ -4,7 +4,8 @@
 // The room on screen is one row, "the current project"; saves go to it, and a new room starts a new row.
 // Every call resolves, even on errors: without keys, network or sign-in the app keeps working locally.
 import { getSupabase } from "./supabase.js";
-import { validRoom } from "./room-store.js";
+import { validRoom, clearRoom } from "./room-store.js";
+import { savePhotos } from "./photo-store.js";
 
 const PROJECT_KEY = "rp_project_id";   // which cloud row is the current room, and whose: {user, id}
 const DELAY = 1500;                    // wait this long after the last change before uploading
@@ -36,6 +37,29 @@ async function setId(sb, id){
     if (id) localStorage.setItem(PROJECT_KEY, JSON.stringify({user:session?.user.id, id}));
     else localStorage.removeItem(PROJECT_KEY);
   } catch { /* private window: a new row next visit */ }
+}
+
+// Forget the room this browser holds: its copy, which cloud row it is, and its photos (signing out, auth.js).
+export function forgetLocalRoom(){
+  clearRoom();
+  try { localStorage.removeItem(PROJECT_KEY); } catch { /* ignore */ }
+  return savePhotos([]);
+}
+
+// A room an account left in this browser (signed out before signing out forgot it, or the session ran out)
+// mustn't open for the guest after it. A guest whose room was saved as someone else's forgets it; a guest who
+// signs in keeps theirs (it becomes the account's), so only a guest session drops a room.
+// Resolves true when it forgot one.
+export async function forgetOthersRoom(){
+  const sb = await cloudReady();
+  if (!sb) return false;
+  const { data:{ session } } = await sb.auth.getSession();
+  if (!session?.user.is_anonymous) return false;
+  let v = null;
+  try { v = JSON.parse(localStorage.getItem(PROJECT_KEY) || "null"); } catch { /* unreadable: as none */ }
+  if (!v || v.user === session.user.id) return false;
+  await forgetLocalRoom();
+  return true;
 }
 
 // The signed-in Supabase client, or null.

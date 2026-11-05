@@ -3,7 +3,7 @@
 //                   rename, room setup...),
 //                   whether it's saved, undo and redo
 //   what you make   Export PDF and Photoreal render
-//   you and the app the account menu: studio details, price list, language, account, sign out
+//   you and the app light/dark, and the account menu: studio details, price list, language, account, sign out
 // "Saved" opens the save options (a copy; admins: a template). Narrower windows drop the "Projects /" crumb,
 // the "Saved" text and Export PDF; Export PDF and the save options move into the room menu.
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
@@ -16,6 +16,7 @@ import { signOut } from "../auth.js";
 import { useMedia } from "./hooks";
 import Menu, { MenuItem } from "./Menu";
 import { SaveCopyDialog, TemplateDialog } from "./SaveDialogs";
+import ThemeButton from "./ThemeButton";
 import type { Account } from "./account";
 import { Mark, IconChevron, IconEdit, IconRoom, IconFile, IconFolder, IconSettings, IconTag, IconUser, IconLogout,
   IconUndo, IconRedo, IconSparkle, IconCloudCheck, IconCloudOff, IconCopy, IconLayout } from "./Icons";
@@ -181,6 +182,7 @@ export default function TopBar({account, onProjects, onTemplates, onRoomSetup, o
           <IconSparkle/><span className="tb-render-long">{t("render")}</span><span className="tb-render-short">{t("renderShort")}</span>
         </button>
         <span className="tb-div" aria-hidden="true"/>
+        <ThemeButton/>
         <AccountMenu account={account} onDialog={onDialog} onAccount={onAccount} onLang={onLang}/>
       </div>
       <SaveCopyDialog open={saveAs === "copy"} project={project} onClose={() => setSaveAs(null)} onSaved={p => setProject(() => p)}/>
