@@ -116,6 +116,12 @@ export function closeSquare(mask, k){
   return filter1D(filter1D(d, k, "h", true), k, "v", true);
 }
 
+// Grow (dilate) by r pixels in every direction (a square of side 2r+1).
+export function dilate(mask, r){
+  if (r < 1) return {w:mask.w, h:mask.h, m:mask.m.slice()};
+  return filter1D(filter1D(mask, 2 * r + 1, "h", false), 2 * r + 1, "v", false);
+}
+
 export const maskOr = (...ms) => { const out = newMask(ms[0].w, ms[0].h); for (const mk of ms) for (let i = 0; i < out.m.length; i++) out.m[i] |= mk.m[i]; return out; };
 export const maskNot = (mk) => ({w:mk.w, h:mk.h, m:mk.m.map(v => 1 - v)});
 
@@ -201,14 +207,17 @@ export function angleContrast(mask, range = 10, step = 1){
 }
 
 // Rotate an image by deg about its centre into an image of the same size (bilinear), filling with fill.
-export function rotateImg(img, deg, fill = [255, 255, 255]){
-  const {w, h, data} = img, out = new Uint8ClampedArray(w * h * 4);
+// With expand, the result is large enough to hold the whole rotated image.
+export function rotateImg(img, deg, fill = [255, 255, 255], expand = false){
+  const {w, h, data} = img;
   const t = deg * Math.PI / 180, c = Math.cos(t), s = Math.sin(t), cx = w / 2, cy = h / 2;
-  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++){
+  const W = expand ? Math.ceil(w * Math.abs(c) + h * Math.abs(s)) : w, H = expand ? Math.ceil(w * Math.abs(s) + h * Math.abs(c)) : h;
+  const out = new Uint8ClampedArray(W * H * 4);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++){
     // inverse rotation: where in the source does (x, y) come from
-    const dx = x + 0.5 - cx, dy = y + 0.5 - cy;
+    const dx = x + 0.5 - W / 2, dy = y + 0.5 - H / 2;
     const sx = c * dx + s * dy + cx - 0.5, sy = -s * dx + c * dy + cy - 0.5;
-    const d = (y * w + x) * 4;
+    const d = (y * W + x) * 4;
     const x0 = Math.floor(sx), y0 = Math.floor(sy), fx = sx - x0, fy = sy - y0;
     for (let ch = 0; ch < 4; ch++){
       let v = 0;
@@ -219,7 +228,7 @@ export function rotateImg(img, deg, fill = [255, 255, 255]){
       out[d + ch] = v;
     }
   }
-  return {w, h, data:out};
+  return {w:W, h:H, data:out};
 }
 
 // Where point p of an image of size from lands after rotating by deg into an image of size to (centres matched).

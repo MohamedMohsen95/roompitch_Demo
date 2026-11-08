@@ -13,5 +13,6 @@ export function components(mask: Mask, value?: number): {labels: Int32Array, cou
 export function floodFromEdges(free: Mask): Mask;
 export function dominantAngle(mask: Mask, range?: number, step?: number): number;
 export function angleContrast(mask: Mask, range?: number, step?: number): {angle: number, best: number, worst: number};
-export function rotateImg(img: Img, deg: number, fill?: number[]): Img;
+export function rotateImg(img: Img, deg: number, fill?: number[], expand?: boolean): Img;
 export function rotatePoint(p: [number, number], deg: number, from: {w: number, h: number}, to: {w: number, h: number}): [number, number];
+export function dilate(mask: Mask, r: number): Mask;

@@ -2,7 +2,7 @@
 #   python3 tests/fixtures/plans/make_fixtures.py
 # Reads src/<name>.png and expect.src.json, writes:
 #   (the plans themselves are src/<name>.png)
-#   <name>_rot3.png       rotated 3° about the centre on white (points and outlines rotated to match)
+#   <name>_rot3.png       rotated 3° on a larger white canvas (points and outlines rotated to match)
 #   <name>_scan.png       brightness gradient, noise, blur and heavy JPEG, like a poor scan
 #   <name>_nolabels.png   every label box painted over with the colour around it
 #   expect.json           expect.src.json plus a reference outline ("ref") for each room marked checked,
@@ -46,9 +46,12 @@ def snap_rect(img, rect):
     return [[L, T], [Rr, T], [Rr, B], [L, B]]
 
 def rot(img, deg):
+    # rotated onto a canvas large enough to keep the whole plan
     H, W = img.shape[:2]
+    t = np.deg2rad(deg); W2 = int(np.ceil(W * abs(np.cos(t)) + H * abs(np.sin(t)))); H2 = int(np.ceil(W * abs(np.sin(t)) + H * abs(np.cos(t))))
     M = cv2.getRotationMatrix2D((W / 2, H / 2), -deg, 1.0)   # positive deg = clockwise on screen
-    return cv2.warpAffine(img, M, (W, H), flags=cv2.INTER_CUBIC, borderValue=(255, 255, 255)), M
+    M[0, 2] += (W2 - W) / 2; M[1, 2] += (H2 - H) / 2
+    return cv2.warpAffine(img, M, (W2, H2), flags=cv2.INTER_CUBIC, borderValue=(255, 255, 255)), M
 
 def rp(M, x, y):
     return [round(M[0, 0] * x + M[0, 1] * y + M[0, 2], 1), round(M[1, 0] * x + M[1, 1] * y + M[1, 2], 1)]
