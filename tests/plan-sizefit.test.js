@@ -29,3 +29,16 @@ test("a size that fits nothing in the picture scores low", () => {
   const {fits} = fitRooms(read, [{name:"X", size:[3048, 3048], p:[400, 400]}], 0.0145);   // a 100-ft room
   assert.ok(!fits.length || fits[0].score < 0.5);
 });
+
+test("fits carry the index of their entry", async () => {
+  const { fitRooms } = await import("../src/studio/plan/sizefit.js");
+  const { readPng } = await import("./helpers/png.js");
+  const { readWalls } = await import("../src/studio/plan/walls.js");
+  const E = JSON.parse((await import("node:fs")).readFileSync("tests/fixtures/plans/expect.json", "utf8")).ex4;
+  const read = readWalls(readPng("tests/fixtures/plans/src/ex4.png"));
+  const { parseRoomSize } = await import("../src/studio/plan/units.js");
+  const l = E.labels.find(x => x.name === "M BEDROOM"), m = E.labels.find(x => x.name === "BEDROOM 2");
+  const entries = [{name:"X", size:null, p:[1, 1]}, {name:"BED", size:parseRoomSize(E.sizes["M BEDROOM"]), p:[l.x, l.y]}, {name:"BED", size:parseRoomSize(E.sizes["BEDROOM 2"]), p:[m.x, m.y]}];
+  const {fits} = fitRooms(read, entries, 0.0141);
+  assert.deepEqual(fits.map(f => f.i).sort(), [1, 2]);
+});

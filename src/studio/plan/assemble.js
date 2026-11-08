@@ -36,6 +36,16 @@ export function readScale(img, max = 2000){
   return {img:{w, h, data:out}, k};
 }
 
+// Overlap of two outlines' bounding boxes: shared area over the smaller box, so a big rectangle over a small
+// room counts as fully overlapping.
+const bboxOf = (o) => [Math.min(...o.map(p => p[0])), Math.min(...o.map(p => p[1])), Math.max(...o.map(p => p[0])), Math.max(...o.map(p => p[1]))];
+export function boxOverlap(a, b){
+  const A = bboxOf(a), B = bboxOf(b);
+  const w = Math.min(A[2], B[2]) - Math.max(A[0], B[0]), h = Math.min(A[3], B[3]) - Math.max(A[1], B[1]);
+  if (w <= 0 || h <= 0) return 0;
+  return (w * h) / (Math.min((A[2] - A[0]) * (A[3] - A[1]), (B[2] - B[0]) * (B[3] - B[1])) || 1);
+}
+
 let seq = 0;
 const nid = (p) => p + (++seq).toString(36) + Math.random().toString(36).slice(2, 5);
 
@@ -116,7 +126,7 @@ export function assembleFlat(read, cands, text, points, image){
       sizeText:n?.size ?? null, areaText:n?.area ?? null, status:"todo", design:null,
       fromAI:names.length > 0, unnamed:names.length === 0
     };
-    if (ok) drawn.push({c, s:space});
+    if (ok) drawn.push({c, names, s:space});
     else if (!hard && names.length && c.hullRatio >= 0.45 && (!m2 || m2 >= 1)) suggested.push({c, names, s:{...space, suggested:true}, score:c.hullRatio});
     else unplaced.push(...names);
   }
@@ -128,26 +138,33 @@ export function assembleFlat(read, cands, text, points, image){
     // (scales: the flat's are metres per image px, the fit's per reading px)
     const res = fitRooms(read, toFit.map(u => ({name:u.name, size:parseRoomSize(u.size), p:u.p})), flat.scale ? flat.scale / k : null);
     const good = res.fits.filter(f => f.score >= 0.5);
-    if (!flat.scale && good.filter(f => f.score >= 0.6).length >= 2){ flat.scale = res.scale * k; flat.scaleFrom = "sizes"; }
+    if (!flat.scale && good.filter(f => f.score >= 0.6).length >= 2){
+      flat.scale = res.scale * k; flat.scaleFrom = "sizes";
+      // the rooms drawn before there was a scale: now their size against the written one
+      for (const d of drawn.splice(0)){
+        const m2 = polyArea(d.s.outline) * flat.scale ** 2, n = d.names.length === 1 ? d.names[0] : null;
+        const size = n && parseRoomSize(n.size), area = n && parseArea(n.area), want = size ? size[0] * size[1] / 1e4 : area;
+        if (m2 < (d.names.length ? 1 : 2)){ unplaced.push(...d.names); continue; }
+        if (want && Math.abs(m2 - want) / want > 0.25){
+          if (d.names.length) suggested.push({c:d.c, names:d.names, s:{...d.s, suggested:true}, score:d.c.hullRatio});
+          else unplaced.push(...d.names);
+          continue;
+        }
+        drawn.push(d);
+      }
+    }
     if (flat.scale) for (const f of good){
-      const u = toFit.find(x => x.name === f.name && !x.used);
-      if (!u) continue;
+      const u = toFit[f.i];
       const [x0, y0, x1, y1] = f.rect;
       const outline = [[x0, y0], [x1, y0], [x1, y1], [x0, y1]].map(p => up(toSource(read, p)));
       suggested.push({s:{id:nid("s"), name:u.name, outline, sizeText:u.size, areaText:u.area ?? null, status:"todo", design:null,
         fromAI:true, unnamed:false, suggested:true}, score:f.score, fit:u});
     }
   }
-  // a suggestion that mostly covers a drawn room or a better suggestion is dropped
-  const bboxOf = (o) => [Math.min(...o.map(p => p[0])), Math.min(...o.map(p => p[1])), Math.max(...o.map(p => p[0])), Math.max(...o.map(p => p[1]))];
-  const overlap = (a, b) => {
-    const A = bboxOf(a), B = bboxOf(b);
-    const w = Math.min(A[2], B[2]) - Math.max(A[0], B[0]), h = Math.min(A[3], B[3]) - Math.max(A[1], B[1]);
-    return w > 0 && h > 0 ? (w * h) / ((A[2] - A[0]) * (A[3] - A[1]) || 1) : 0;
-  };
+  // a suggestion that mostly covers, or is mostly covered by, a drawn room or a better suggestion is dropped
   const kept = drawn.map(d => d.s);
   for (const sg of suggested.sort((a, b) => b.score - a.score)){
-    if (kept.some(o => overlap(sg.s.outline, o.outline) > 0.3)){ if (sg.names) unplaced.push(...sg.names); continue; }
+    if (kept.some(o => boxOverlap(sg.s.outline, o.outline) > 0.3)){ if (sg.names) unplaced.push(...sg.names); continue; }
     kept.push(sg.s);
     if (sg.fit) sg.fit.used = true;
   }

@@ -5,7 +5,7 @@ import { readPng } from "./helpers/png.js";
 import { polyIoU, insidePoly } from "./helpers/poly.js";
 import { readWalls, toStraight } from "../src/studio/plan/walls.js";
 import { roomCandidates } from "../src/studio/plan/rooms.js";
-import { assembleFlat, readScale, isPrivateName } from "../src/studio/plan/assemble.js";
+import { assembleFlat, readScale, isPrivateName, boxOverlap } from "../src/studio/plan/assemble.js";
 import { parseArea } from "../src/studio/plan/units.js";
 
 const E = JSON.parse(readFileSync("tests/fixtures/plans/expect.json", "utf8"));
@@ -172,4 +172,24 @@ test("ex4: rooms with written sizes come back as suggestions where the walls can
   // suggestions don't overlap each other much
   for (const a of flat.spaces) for (const b of flat.spaces) if (a !== b) assert.ok(polyIoU(a.outline, b.outline) < 0.2, `${a.name} over ${b.name}`);
   console.log(`# ex4 suggestions: ${flat.spaces.map(s => s.name).join(", ")}; unplaced: ${flat.unplaced.map(u => u.name).join(", ")}`);
+});
+
+test("ex4: two rooms with the same name each keep their own written size", () => {
+  const img = readPng(file("ex4")), read = readWalls(img), cands = roomCandidates(read), ex = E.ex4;
+  const rn = (n) => (n === "M BEDROOM" || n === "BEDROOM 2") ? "BEDROOM" : n;
+  const labs = [...ex.labels].sort((a, b) => a.y - b.y || a.x - b.x), points = {}, rooms = [];
+  for (const l of labs){ (points[rn(l.name)] ||= []).push([l.x, l.y]); rooms.push({name:rn(l.name), size:ex.sizes[l.name], area:null}); }
+  const flat = assembleFlat(read, cands, {rooms}, points, {w:img.w, h:img.h});
+  const beds = flat.spaces.filter(s => s.name === "BEDROOM");
+  assert.equal(beds.length, 2);
+  assert.deepEqual(beds.map(s => s.sizeText).sort(), [ex.sizes["BEDROOM 2"], ex.sizes["M BEDROOM"]].sort());
+  assert.ok(!flat.unplaced.some(u => u.name === "BEDROOM"), "a drawn bedroom also listed as not drawn");
+});
+
+test("overlap counts a big rectangle over a small room as full", () => {
+  const sq = (x, y, w, h) => [[x, y], [x + w, y], [x + w, y + h], [x, y + h]];
+  assert.equal(boxOverlap(sq(0, 0, 300, 400), sq(50, 50, 100, 100)), 1);
+  assert.equal(boxOverlap(sq(50, 50, 100, 100), sq(0, 0, 300, 400)), 1);
+  assert.equal(boxOverlap(sq(0, 0, 100, 100), sq(200, 0, 100, 100)), 0);
+  assert.ok(Math.abs(boxOverlap(sq(0, 0, 100, 100), sq(80, 0, 100, 100)) - 0.2) < 1e-9);
 });

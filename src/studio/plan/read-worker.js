@@ -15,7 +15,8 @@ function handle(msg){
     k = scaled.k; gen = msg.gen;
     read = readWalls(scaled.img);
     cands = read.quality.ok ? roomCandidates(read) : [];
-    return {quality:read.quality, thick:read.thick / k, candidates:cands.length};
+    // fittable: there are line masks, so rooms can still come from their written sizes
+    return {quality:read.quality, thick:read.thick / k, candidates:cands.length, fittable:!!read.hLines};
   }
   if (!read || msg.gen !== gen) return null;          // a request about an earlier plan
   if (msg.type === "assemble") return assembleFlat(read, cands, msg.text, msg.points, msg.image);

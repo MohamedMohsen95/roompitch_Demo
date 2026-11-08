@@ -59,9 +59,9 @@ function fitAt(cov, e, scale, step){
   return !one ? two : !two ? one : (two.score > one.score ? two : one);
 }
 
-// entries: [{name, size:[cm, cm], p:[x, y] source px}] -> {fits:[{name, rect, score}], scale}
+// entries: [{name, size:[cm, cm], p:[x, y] source px}] -> {fits:[{i, name, rect, score}], scale}; i = index in entries
 export function fitRooms(read, entries, scale){
-  const list = entries.filter(e => e.size && e.p).map(e => ({...e, sp:toStraight(read, e.p)}));
+  const list = entries.map((e, i) => ({...e, i})).filter(e => e.size && e.p).map(e => ({...e, sp:toStraight(read, e.p)}));
   if (!list.length || !read.hLines) return {fits:[], scale};
   const cov = coverage(read, Math.max(1, Math.round(read.thick / 2)));
   const total = (s, step) => list.reduce((acc, e) => acc + (fitAt(cov, e, s, step)?.score || 0), 0);
@@ -74,6 +74,6 @@ export function fitRooms(read, entries, scale){
     for (let s = best.s * 0.95; s <= best.s * 1.05; s *= 1.005){ const t = total(s, 2); if (t > best.t) best = {s, t}; }
     scale = best.s;
   }
-  const fits = list.map(e => { const f = fitAt(cov, e, scale, 1); return f ? {name:e.name, rect:f.rect, score:f.score} : null; }).filter(Boolean);
+  const fits = list.map(e => { const f = fitAt(cov, e, scale, 1); return f ? {i:e.i, name:e.name, rect:f.rect, score:f.score} : null; }).filter(Boolean);
   return {fits, scale};
 }

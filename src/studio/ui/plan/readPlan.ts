@@ -70,7 +70,7 @@ export async function readPlan(image: {dataUrl: string, w: number, h: number}, o
   let notice: string | null = info.quality.ok ? null : t("qualityLow");
   let needCode = false, aiOff = false;
   let text = {rooms:[] as any[]}, points: Record<string, [number, number][]> = {};
-  if (opts.ai && info.quality.ok){
+  if (opts.ai && (info.quality.ok || info.fittable)){
     try {
       const small = await loadImage(image.dataUrl, 1600);
       const read = await post("/api/plan", {image:small.dataUrl});
@@ -80,7 +80,9 @@ export async function readPlan(image: {dataUrl: string, w: number, h: number}, o
       else {
         text = {rooms:Array.isArray(read.data.rooms) ? read.data.rooms : []};
         const names = [...new Set(text.rooms.map((r: any) => r.name))];
-        if (names.length && info.candidates > 0){           // no rooms to name: don't spend the allowance
+        // nothing to name and no written size to fit: don't spend the allowance
+        const useful = info.candidates > 0 || (info.fittable && text.rooms.some((r: any) => r.size));
+        if (names.length && useful){
           const pt = await post("/api/point", {image:small.dataUrl, w:small.w, h:small.h, names});
           if (pt.ok) for (const [name, list] of Object.entries(pt.data.points || {}))
             points[name] = (list as [number, number][]).map(([x, y]) => [x * image.w, y * image.h]);
