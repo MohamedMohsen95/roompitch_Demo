@@ -76,7 +76,8 @@ export default function PlanImport(props: Props){
       });
       const next = {...r.flat, spaces, image:f.image, H:f.H};
       setFlat(next); setSel(null); setTool("select");
-      const found = next.spaces.length ? t("planRead", {s:next.spaces.length, o:next.openings.length}) + " " + (next.scale ? t("planCheck") : t("planNeedScale")) : "";
+      const sure = next.spaces.filter(x => !x.suggested).length, sug = next.spaces.length - sure;
+      const found = next.spaces.length ? [t("planRead", {s:sure, o:next.openings.length}), sug ? t("planSuggested", {n:sug}) : "", next.scale ? t("planCheck") : t("planNeedScale")].filter(Boolean).join(" ") : "";
       say([r.notice, found || (r.walls.ok ? t("planNone") : "")].filter(Boolean).join(" "), Boolean(r.notice) || !next.spaces.length);
     } catch { say(t("planImageErr"), true); }
     finally { setBusy(false); }
@@ -185,7 +186,9 @@ export default function PlanImport(props: Props){
     if (p) bad[s.id] = t("outline_" + p);
     else if (flagged.includes(s.id)) bad[s.id] = t("sizeDisagrees");
   }
+  const sugCount = flat.spaces.filter(s => s.suggested).length;
   const blockers = !flat.spaces.length ? t("needSpace") : !flat.scale ? t("needScale")
+    : sugCount ? t("needConfirm", {n:sugCount})
     : flat.spaces.some(s => outlineProblem(s.outline)) ? t("needFixOutline") : "";
   const stray = strayOpenings(flat);
   const selSpace = sel?.kind === "space" ? flat.spaces.find(s => s.id === sel.id) || null : null;
@@ -243,6 +246,12 @@ export default function PlanImport(props: Props){
             <section className="sblock">
               <h2>{t("spacesTitle")}</h2>
               {!flat.spaces.length && <p className="dnote">{t("noSpaces")}</p>}
+              {sugCount > 0 && (
+                <div className="acts2">
+                  <p className="dnote">{t("planSuggested", {n:sugCount})}</p>
+                  <button className="btn small" type="button" onClick={() => change({...flat, spaces:flat.spaces.map(x => ({...x, suggested:false}))})}>{t("confirmAll")}</button>
+                </div>
+              )}
               {flat.spaces.map((s, idx) => {
                 const on = selSpace?.id === s.id;
                 const area = flat.scale && !outlineProblem(s.outline) ? polyArea(s.outline) * flat.scale * flat.scale : null;
@@ -251,7 +260,9 @@ export default function PlanImport(props: Props){
                     <div className="ohead">
                       <input className="sname" value={s.name} placeholder={t("spaceN", {n:idx + 1})} aria-label={t("spaceName")}
                         onChange={e => setSpace(s.id, {name:e.target.value, unnamed:!e.target.value.trim()})}/>
-                      {s.unnamed ? <span className="aitag">{t("foundNoName")}</span> : s.fromAI && <span className="aitag">{t("foundByAI")}</span>}
+                      {s.suggested ? <span className="aitag sugtag">{t("suggestedTag")}</span>
+                        : s.unnamed ? <span className="aitag">{t("foundNoName")}</span> : s.fromAI && <span className="aitag">{t("foundByAI")}</span>}
+                      {s.suggested && <button className="btn small primary" type="button" onClick={e => { e.stopPropagation(); setSpace(s.id, {suggested:false}); }}>{t("confirm")}</button>}
                       {area != null && <bdi dir="ltr" className="sarea">{area.toFixed(1)} {t("m2")}</bdi>}
                       <button className="btn small" type="button" onClick={e => {
                         e.stopPropagation();

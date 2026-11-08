@@ -258,7 +258,7 @@ export default function PlanEditor({flat, imageUrl, onChange, sel, onSelect, too
       {flat.spaces.map(s => {
         const on = sel?.kind === "space" && sel.id === s.id, c = centre(s.outline);
         return (
-          <g key={s.id} className={"psp" + (on ? " on" : "") + (bad[s.id] ? " bad" : "") + (s.fromAI ? " ai" : "")}>
+          <g key={s.id} className={"psp" + (on ? " on" : "") + (bad[s.id] ? " bad" : "") + (s.fromAI ? " ai" : "") + (s.suggested ? " sug" : "")}>
             <polygon points={pts(s.outline)} vectorEffect="non-scaling-stroke"
               onPointerDown={e => { if (tool === "select"){ e.stopPropagation(); onSelect({kind:"space", id:s.id}); } }}
               onDoubleClick={e => {

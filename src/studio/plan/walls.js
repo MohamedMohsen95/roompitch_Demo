@@ -149,6 +149,8 @@ export function readWalls(source){
   // Hatched and hollow (two-line) walls are not filled in: filling also turns bold room names, sofas and
   // counters drawn with double lines into walls. Plans drawn that way read with fewer rooms.
   const solid = openSquare(dark, Math.max(1, Math.round(0.6 * thick)));
+  // every long straight line, thin ones included (hollow walls, partitions): what written sizes are fitted to
+  const hLines = openLine(dark, L, "h"), vLines = openLine(dark, L, "v");
   let walls = maskOr(openLine(solid, L, "h"), openLine(solid, L, "v"));
   const cores = openSquare(walls, Math.ceil(2.5 * outerThick) + 1);
   const comp = components(walls), hasCore = new Uint8Array(comp.count + 1);
@@ -224,5 +226,5 @@ export function readWalls(source){
     if (fa < 0.35 * (x1 - x0 + 1) * (y1 - y0 + 1)){ quality.ok = false; quality.reason = "noEnclosure"; }
   }
 
-  return {angle, size:{w:img.w, h:img.h}, src, thick, outerThick, walls, closed, foot, bridges, quality};
+  return {angle, size:{w:img.w, h:img.h}, src, thick, outerThick, walls, closed, foot, bridges, quality, hLines, vLines};
 }

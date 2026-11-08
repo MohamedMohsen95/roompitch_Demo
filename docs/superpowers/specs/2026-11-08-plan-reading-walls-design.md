@@ -212,3 +212,26 @@ Also:
 - Doors between drawn rooms appear across their gaps.
 - The page stays responsive while a 2,500-px plan is read.
 - Moondream's pointing is checked on all four plans with Mohamed's keys before the AI step is wired into the flow.
+
+## Addendum (2026-11-08, after Mohamed's first test): suggestions and written sizes
+
+On plans whose walls are mostly drawn as two thin lines (the black-and-white plan), the walls merge into one
+area and nothing was drawn. Mohamed's verdict was that empty is not acceptable. Two changes, approved by
+him in chat:
+
+1. **Rooms from their written sizes.** When a name has a written size ("11'-0" X 12'-6"") and a point,
+   the program looks for a rectangle of that size around the point whose four edges run along lines in
+   the image. The lines may be thin, hollow or solid. Without a scale, it tries a range of scales and
+   keeps the one that fits the most rooms best, and that scale becomes the flat's scale when at least two
+   rooms fit well.
+2. **Suggestions instead of empty.**
+   - Rooms the program is not sure of are shown as suggested spaces: dashed, in another colour, with
+     "Confirm" and "Remove". This covers size-fitted rectangles, and named wall areas that failed only
+     the soft checks (shape, size agreement, a border that isn't a wall or a neck).
+   - "Start designing" waits until every suggestion is confirmed or removed.
+   - Rooms the program is sure of are drawn as before.
+   - Clearly wrong areas are never suggested: two private rooms merged, an area reaching outside, or
+     most of the flat.
+
+The anti-goal stands: nothing unconfirmed and wrong becomes part of the design. A suggestion is visibly
+not final until the designer confirms it.

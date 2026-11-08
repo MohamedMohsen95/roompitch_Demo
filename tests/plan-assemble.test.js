@@ -156,3 +156,20 @@ test("outlines map back to the full image when it was read smaller", () => {
   }
   assert.ok(Math.abs(big.scale - same.scale / 2) / same.scale < 1e-6);
 });
+
+test("ex4: rooms with written sizes come back as suggestions where the walls can't be read", () => {
+  const img = readPng(file("ex4")), read = readWalls(img), cands = roomCandidates(read), ex = E.ex4;
+  const points = {}, rooms = [];
+  for (const l of ex.labels){ (points[l.name] ||= []).push([l.x, l.y]); rooms.push({name:l.name, size:ex.sizes[l.name] ?? null, area:null}); }
+  const flat = assembleFlat(read, cands, {rooms}, points, {w:img.w, h:img.h});
+  assert.ok(flat.scale && Math.abs(flat.scale - 0.0145) / 0.0145 < 0.06, `scale ${flat.scale}`);
+  for (const name of ["M BEDROOM", "BEDROOM 2", "WIC"]){
+    const s = flat.spaces.find(x => x.name === name), ref = ex.rooms.find(r => r.name === name).ref;
+    assert.ok(s, `${name} missing; spaces ${flat.spaces.map(x => x.name)}`);
+    assert.equal(s.suggested, true);
+    assert.ok(polyIoU(s.outline, ref) >= 0.8, `${name}: IoU ${polyIoU(s.outline, ref).toFixed(3)}`);
+  }
+  // suggestions don't overlap each other much
+  for (const a of flat.spaces) for (const b of flat.spaces) if (a !== b) assert.ok(polyIoU(a.outline, b.outline) < 0.2, `${a.name} over ${b.name}`);
+  console.log(`# ex4 suggestions: ${flat.spaces.map(s => s.name).join(", ")}; unplaced: ${flat.unplaced.map(u => u.name).join(", ")}`);
+});

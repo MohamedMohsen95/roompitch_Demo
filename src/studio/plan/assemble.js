@@ -6,6 +6,7 @@ import { newFlat, scaleFromSizes, outlineProblem } from "./flat.js";
 import { parseRoomSize, parseArea } from "./units.js";
 import { toSource } from "./walls.js";
 import { labelAt } from "./rooms.js";
+import { fitRooms } from "./sizefit.js";
 
 // Rooms that can't be part of an open area with another name (two of them in one area = rooms merged
 // through an open door). Living, dining, kitchen, hall, entry and the like can.
@@ -42,10 +43,6 @@ export function assembleFlat(read, cands, text, points, image){
   const k = read.src.w / image.w;                    // reading px per image px
   const up = (p) => [Math.round(p[0] / k * 10) / 10, Math.round(p[1] / k * 10) / 10];
   const flat = newFlat({w:image.w, h:image.h, ...(image.dataUrl ? {dataUrl:image.dataUrl} : {}), ...(image.path ? {path:image.path} : {})});
-  if (!read.quality.ok){
-    flat.unplaced = (text.rooms || []).map(r => ({name:r.name, sizeText:r.size ?? null, areaText:r.area ?? null}));
-    return flat;
-  }
   const byLabel = new Map(cands.map(c => [c.label, c]));
   const thick = Math.max(1, read.thick);
   const footArea = read.foot.m.reduce((a, v) => a + v, 0);
@@ -60,9 +57,9 @@ export function assembleFlat(read, cands, text, points, image){
     const pts = [...(points[name] || [])].sort((a, b) => a[1] - b[1] || a[0] - b[0]);
     list.forEach((t, i) => {
       const p = pts[i];
-      const entry = {name, size:t.size ?? null, area:t.area ?? null};
-      if (!p){ unplaced.push(entry); return; }
-      const sp = [p[0] * k, p[1] * k];
+      const entry = {name, size:t.size ?? null, area:t.area ?? null, p:p ? [p[0] * k, p[1] * k] : null};
+      if (!p || !read.quality.ok){ unplaced.push(entry); return; }
+      const sp = entry.p;
       const label = labelAt(read, sp, Math.ceil(2 * thick));
       if (!label || !byLabel.has(label)){ unplaced.push(entry); return; }
       (named.get(label) || named.set(label, []).get(label)).push(entry);
@@ -88,13 +85,15 @@ export function assembleFlat(read, cands, text, points, image){
   const {scale} = scaleFromSizes(forScale);
   flat.scale = scale; flat.scaleFrom = scale ? "sizes" : null;
 
-  // 4. checks
-  const drawn = [], outsideIds = new Set(read.bridges.filter(b => b.outside).map(b => b.id));
+  // 4. checks. A named area that fails only a soft check (its shape, or its size against the written one)
+  //    is kept as a suggestion.
+  const drawn = [], suggested = [], outsideIds = new Set(read.bridges.filter(b => b.outside).map(b => b.id));
   for (const {c, names} of pending){
     const outline = outlineImg(c), aPx = polyArea(outline), m2 = scale ? aPx * scale * scale : null;
     const share = c.areaPx / (footArea || 1);
-    let ok = !c.touchesOutside && !c.unsure && c.hullRatio >= 0.6 && !outlineProblem(outline);
-    if (ok && share > 0.7 && cands.length > 1) ok = false;
+    // (unsure: its edge with a neighbour is where growth stopped, so its shape isn't worth suggesting)
+    let hard = c.touchesOutside || c.unsure || (share > 0.7 && cands.length > 1) || outlineProblem(outline);
+    let ok = !hard && c.hullRatio >= 0.6;
     if (ok && scale){
       if (m2 < (names.length ? 1 : 2)) ok = false;
       const n = names.length === 1 ? names[0] : null;
@@ -106,21 +105,54 @@ export function assembleFlat(read, cands, text, points, image){
     }
     // reachable: through a bridged gap or an open neck to another area, or a window or door to the
     // outside. A closed box (a title block, a legend) is none of these. Unnamed ones need another area.
-    if (ok){
+    {
       const toArea = c.meets.length > 0 || c.bridgeIds.some(id => !outsideIds.has(id));
       const toOutside = c.bridgeIds.some(id => outsideIds.has(id));
-      if (!toArea && (!names.length || !toOutside)) ok = false;
+      if (!toArea && (!names.length || !toOutside)){ ok = false; hard = true; }
     }
-    if (!ok){ unplaced.push(...names); continue; }
     const n = names.length === 1 ? names[0] : null;
-    drawn.push({c, s:{
+    const space = {
       id:nid("s"), name:names.map(x => x.name).join(" / "), outline,
       sizeText:n?.size ?? null, areaText:n?.area ?? null, status:"todo", design:null,
       fromAI:names.length > 0, unnamed:names.length === 0
-    }});
+    };
+    if (ok) drawn.push({c, s:space});
+    else if (!hard && names.length && c.hullRatio >= 0.45 && (!m2 || m2 >= 1)) suggested.push({c, names, s:{...space, suggested:true}, score:c.hullRatio});
+    else unplaced.push(...names);
   }
-  flat.spaces = drawn.map(d => d.s);
-  flat.unplaced = unplaced.map(u => ({name:u.name, sizeText:u.size ?? null, areaText:u.area ?? null}));
+
+  // 4b. names still without a room, with a written size and a point: the rectangle of that size along
+  //     the lines around the name, as a suggestion. Without a scale yet, the fit finds one too.
+  const toFit = unplaced.filter(u => u.p && parseRoomSize(u.size));
+  if (toFit.length){
+    // (scales: the flat's are metres per image px, the fit's per reading px)
+    const res = fitRooms(read, toFit.map(u => ({name:u.name, size:parseRoomSize(u.size), p:u.p})), flat.scale ? flat.scale / k : null);
+    const good = res.fits.filter(f => f.score >= 0.5);
+    if (!flat.scale && good.filter(f => f.score >= 0.6).length >= 2){ flat.scale = res.scale * k; flat.scaleFrom = "sizes"; }
+    if (flat.scale) for (const f of good){
+      const u = toFit.find(x => x.name === f.name && !x.used);
+      if (!u) continue;
+      const [x0, y0, x1, y1] = f.rect;
+      const outline = [[x0, y0], [x1, y0], [x1, y1], [x0, y1]].map(p => up(toSource(read, p)));
+      suggested.push({s:{id:nid("s"), name:u.name, outline, sizeText:u.size, areaText:u.area ?? null, status:"todo", design:null,
+        fromAI:true, unnamed:false, suggested:true}, score:f.score, fit:u});
+    }
+  }
+  // a suggestion that mostly covers a drawn room or a better suggestion is dropped
+  const bboxOf = (o) => [Math.min(...o.map(p => p[0])), Math.min(...o.map(p => p[1])), Math.max(...o.map(p => p[0])), Math.max(...o.map(p => p[1]))];
+  const overlap = (a, b) => {
+    const A = bboxOf(a), B = bboxOf(b);
+    const w = Math.min(A[2], B[2]) - Math.max(A[0], B[0]), h = Math.min(A[3], B[3]) - Math.max(A[1], B[1]);
+    return w > 0 && h > 0 ? (w * h) / ((A[2] - A[0]) * (A[3] - A[1]) || 1) : 0;
+  };
+  const kept = drawn.map(d => d.s);
+  for (const sg of suggested.sort((a, b) => b.score - a.score)){
+    if (kept.some(o => overlap(sg.s.outline, o.outline) > 0.3)){ if (sg.names) unplaced.push(...sg.names); continue; }
+    kept.push(sg.s);
+    if (sg.fit) sg.fit.used = true;
+  }
+  flat.spaces = kept;
+  flat.unplaced = unplaced.filter(u => !u.used).map(u => ({name:u.name, sizeText:u.size ?? null, areaText:u.area ?? null}));
 
   // 5. doors and windows from the bridges next to drawn spaces
   const drawnIds = new Set(drawn.flatMap(d => d.c.bridgeIds));
