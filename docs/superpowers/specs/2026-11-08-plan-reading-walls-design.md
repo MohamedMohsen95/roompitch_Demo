@@ -58,6 +58,8 @@ Estimate the wall thickness.
 
 **Hatched walls count as walls.**
 
+**Furniture is never drawn.** Furniture, fixtures and any lines inside rooms never become walls, spaces or openings, and nothing from the image is placed as furniture in the studio. An area enclosed by furniture lines (a bed, a counter, a wardrobe) is not a room candidate.
+
 **Quality gate.** If the image doesn't look like a clean plan, skip automatic rooms and go straight to the tools. Signs of an unclean plan:
 - no consistent wall thickness;
 - no dominant angle;
@@ -96,7 +98,11 @@ Estimate the wall thickness.
 **How a candidate is named:**
 - **Exactly one name:** that name.
 - **Several names:** an open area. It becomes one space with the names joined ("Living / Dining / Kitchen"), as decided in the first design. This happens only if the candidate also passes the checks below. Otherwise it is left out, because two rooms merged through an unclosed door look the same.
-- **No name:** not drawn.
+- **No name:** drawn too (Mohamed: plans often have no labels, and leaving those rooms out would be a flaw), under the same checks plus two more:
+  - it is room-sized, not a closet, shaft or the gap between two walls (larger than about 2 m² once the scale is known, or the same share of the flat before);
+  - it has at least one bridge (door or opening) to another candidate.
+
+  It gets a temporary name ("Space 1"), is marked "found without a name", and the designer names it: type a name or pick one from `unplaced`. Enclosed areas that fail these checks are not drawn, but click-to-fill adds them on request.
 
 **A candidate is drawn only if all of these hold:**
 - it doesn't reach the outside;
@@ -170,6 +176,8 @@ These work whatever the AI did, and with the AI off.
 - The AI no longer outlines spaces. Outlines come only from walls plus names, or from the designer.
 - Uncertain rooms are left empty, never shown as guesses.
 - An enclosed area holding several names is one space with joined names, if it passes the checks.
+- An enclosed area with no name is drawn too, if it passes the stricter checks, with a temporary name the designer can change.
+- Nothing in the image is ever drawn as furniture or as walls made from furniture.
 - Moondream 3.1 for pointing; it is on the free allocation.
 - Reading sizes keeps `units.js` and `scaleFromSizes`, extended with areas and the two-room rule.
 
@@ -192,6 +200,8 @@ The fixtures in `tests/fixtures/plans/` are:
 Required on every fixture: **no wrong outline is drawn.** Every drawn space is on its walls and covers one room or one open area. Pure-module tests check this against hand-marked reference outlines (within a few px).
 
 Targets (missing ones are acceptable but counted):
+- Unnamed rooms on a copy of each plan with its labels erased come out as on the original, with temporary names.
+- No space's outline follows furniture.
 - **Arcmax plan:** 3 bedrooms, 2 toilets and the study drawn. Living/dining/kitchen either drawn as one open area or left empty.
 - **RoomSketcher-style plan:** bathroom, bedroom, living room and hall drawn. Terrace left empty. Scale found from the written areas.
 - **Black-and-white plan:** bedrooms, baths, walk-in closet and living/kitchen drawn.
