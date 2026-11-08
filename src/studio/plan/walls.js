@@ -5,7 +5,7 @@
 // Everything in the result is in the straightened frame (the image rotated by −angle, same size);
 // toStraight() / toSource() convert points.
 import {
-  paperColor, paperCoverage, contrastMask, openLine, openSquare, maskOr, maskNot, dilate,
+  paperColor, paperCoverage, contrastMask, openLine, openSquare, maskOr, maskNot, dilate, distance,
   components, floodFromEdges, dominantAngle, angleContrast, rotateImg, rotatePoint
 } from "./raster.js";
 
@@ -72,9 +72,9 @@ function wallThickness(dark, L, cap, long){
 
 // Bridge gaps along dir: from the end of a wall run that is long along dir (dirMask) to the next wall pixel
 // on the same line, when the gap is shorter than maxLen. Returns the mask of new pixels.
-// Gaps up to bothLen are also bridged when long wall runs sit on BOTH sides and the gap is drawn across
-// with a thin line (glass: a window or a sliding door in a straight wall): at least 60 % of the gap's
-// pixels on that line are dark in `dark`. An empty wide opening between rooms stays open.
+// Gaps up to bothLen are also bridged when long wall runs sit on BOTH sides and, if `dark` is given, the
+// gap is drawn across with a thin line (glass: a window or a sliding door in a straight wall): at least
+// 60 % of the gap's pixels on that line are dark. An empty wide opening between rooms stays open.
 function bridgeAlong(walls, dirMask, maxLen, dir, bothLen = 0, dark = null){
   const {w, h} = walls, out = {w, h, m:new Uint8Array(w * h)};
   const lines = dir === "h" ? h : w, len = dir === "h" ? w : h;
@@ -88,9 +88,9 @@ function bridgeAlong(walls, dirMask, maxLen, dir, bothLen = 0, dark = null){
       const thisDir = dirMask.m[i] === 1;
       // a bridge needs a long wall run on at least one side of the gap
       let glass = false;
-      if (dark && lastWall >= 0 && gap >= maxLen && gap < bothLen && lastWallDir && thisDir){
-        let d = 0; for (let k = lastWall + 1; k < b; k++) d += dark.m[idx(a, k)];
-        glass = d >= 0.6 * gap;
+      if (lastWall >= 0 && gap >= maxLen && gap < bothLen && lastWallDir && thisDir){
+        if (!dark) glass = true;
+        else { let d = 0; for (let k = lastWall + 1; k < b; k++) d += dark.m[idx(a, k)]; glass = d >= 0.6 * gap; }
       }
       if (lastWall >= 0 && gap > 0 && ((gap < maxLen && (lastWallDir || thisDir)) || glass)){
         for (let k = lastWall + 1; k < b; k++) out.m[idx(a, k)] = 1;
@@ -189,8 +189,17 @@ export function readWalls(source){
   const bridges = bridgeList(hNew, vNew, thick);
 
   // 5. footprint: long glass runs bridged too, then everything not reachable from outside
+  // Only gaps with straight walls on both sides are bridged here, and only the largest connected wall
+  // network counts: a title block or legend box drawn beside the plan is not part of the flat.
   const bigLen = Math.round(0.4 * long);
-  const outer = maskOr(walls, bridgeAlong(walls, hMask, bigLen, "h"), bridgeAlong(walls, vMask, bigLen, "v"));
+  const outer = maskOr(walls, bridgeAlong(walls, hMask, 1, "h", bigLen), bridgeAlong(walls, vMask, 1, "v", bigLen));
+  {
+    const oc = components(outer);
+    if (oc.count > 1){
+      let big = 0; oc.stats.forEach((s, k) => { if (s.area > oc.stats[big].area) big = k; });
+      for (let i = 0; i < outer.m.length; i++) if (outer.m[i] && oc.labels[i] !== big + 1) outer.m[i] = 0;
+    }
+  }
   const outside = floodFromEdges(maskNot(outer));
   const foot = maskNot(outside);
   const W = img.w;

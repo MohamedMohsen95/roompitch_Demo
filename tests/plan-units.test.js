@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { parseLength, parseRoomSize } from "../src/studio/plan/units.js";
+import { parseLength, parseRoomSize, parseArea } from "../src/studio/plan/units.js";
 
 test("feet and inches in the usual plan forms", () => {
   assert.equal(parseLength("12'-0\""), 366);
@@ -32,4 +32,15 @@ test("room sizes", () => {
   assert.deepEqual(parseRoomSize("350x400cm"), [350, 400]);
   assert.equal(parseRoomSize("LIVING / DINING"), null);
   assert.equal(parseRoomSize(null), null);
+});
+
+test("written areas", () => {
+  assert.equal(parseArea("64 sq ft"), 5.95);
+  assert.equal(parseArea("64 sqft"), 5.95);
+  assert.equal(parseArea("64 ft²"), 5.95);
+  assert.equal(parseArea("12 m²"), 12);
+  assert.equal(parseArea("12 m2"), 12);
+  assert.equal(parseArea("12 sq m"), 12);
+  assert.equal(parseArea("LIVING"), null);
+  assert.equal(parseArea("64"), null);
 });

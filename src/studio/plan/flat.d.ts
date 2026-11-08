@@ -1,12 +1,12 @@
 // Types for flat.js (used by the TypeScript interface). Outlines and openings are in plan pixels.
 import type { Point, Opening } from "../types";
 
-export type Space = {id: string, name: string, outline: Point[], sizeText: string | null, status: "todo" | "doing" | "done", design: any | null, fromAI: boolean};
+export type Space = {id: string, name: string, outline: Point[], sizeText: string | null, areaText?: string | null, status: "todo" | "doing" | "done", design: any | null, fromAI: boolean, unnamed?: boolean};
 export type PlanOpening = {id: string, type: "door" | "window", a: Point, b: Point, heightCm: number, sillCm: number, fromAI: boolean};
 export type Flat = {
   v: 1, image: {w: number, h: number, path?: string, dataUrl?: string},
   scale: number | null, scaleFrom: "sizes" | "wall" | null, H: number,
-  spaces: Space[], openings: PlanOpening[]
+  spaces: Space[], openings: PlanOpening[], unplaced?: {name: string, sizeText: string | null, areaText?: string | null}[]
 };
 export type PlanForm = {shape: "plan", lengthCm: number, widthCm: number, heightCm: number};
 export type SpaceRoom = {form: PlanForm, poly: Point[], openings: Opening[], H: number, origin: Point};

@@ -1,11 +1,11 @@
 // A flat read from a floor plan: spaces drawn as outlines in image pixels, openings as segments,
 // and one scale (metres per pixel) found from the written sizes or from one wall the designer typed.
-import { parseRoomSize } from "./units.js";
+import { parseRoomSize, parseArea } from "./units.js";
 
 export const DEFAULT_H = 2.8;
 
 export function newFlat(image){
-  return {v:1, image:{...image}, scale:null, scaleFrom:null, H:DEFAULT_H, spaces:[], openings:[]};
+  return {v:1, image:{...image}, scale:null, scaleFrom:null, H:DEFAULT_H, spaces:[], openings:[], unplaced:[]};
 }
 
 // Twice the signed area; positive means clockwise on screen (y down).
@@ -60,25 +60,32 @@ function bboxPx(o){
 }
 const median = (a) => { const s = [...a].sort((x, y) => x - y), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
 
-// Scale (m/px) from the sizes written in the spaces. A space whose size is more than 10% off the
-// others is flagged and left out. {scale: null} when no size can be read.
+// Scale (m/px) from what is written in the spaces: a room size ("12' x 14'") from the outline's bounding
+// box, or else an area ("64 sq ft") from the outline's area. Taken only from at least two rooms that
+// agree within 10 %; a room more than 10 % off the median is flagged and left out. {scale: null} otherwise.
+const pxArea = (o) => { let a = 0; o.forEach((p, i) => { const q = o[(i + 1) % o.length]; a += p[0] * q[1] - q[0] * p[1]; }); return Math.abs(a) / 2; };
 export function scaleFromSizes(flat){
   const ratios = [];
   for (const s of flat.spaces){
+    if (!s.outline || s.outline.length < 3) continue;
     const size = parseRoomSize(s.sizeText);
-    if (!size || !s.outline || s.outline.length < 3) continue;
-    const [w, h] = bboxPx(s.outline);
-    if (!(w > 0 && h > 0)) continue;
-    const [longCm, shortCm] = [Math.max(...size), Math.min(...size)];
-    const [longPx, shortPx] = [Math.max(w, h), Math.min(w, h)];
-    ratios.push({id:s.id, r:(longCm / longPx + shortCm / shortPx) / 2 / 100});
+    if (size){
+      const [w, h] = bboxPx(s.outline);
+      if (!(w > 0 && h > 0)) continue;
+      const [longCm, shortCm] = [Math.max(...size), Math.min(...size)];
+      const [longPx, shortPx] = [Math.max(w, h), Math.min(w, h)];
+      ratios.push({id:s.id, r:(longCm / longPx + shortCm / shortPx) / 2 / 100});
+      continue;
+    }
+    const m2 = parseArea(s.areaText), a = pxArea(s.outline);
+    if (m2 && a > 0) ratios.push({id:s.id, r:Math.sqrt(m2 / a)});
   }
   if (!ratios.length) return {scale:null, flagged:[]};
   const m = median(ratios.map(x => x.r));
   const flagged = ratios.filter(x => Math.abs(x.r - m) / m > 0.1).map(x => x.id);
   const kept = ratios.filter(x => !flagged.includes(x.id));
-  // Nothing agrees (e.g. two sizes that differ): ask for a wall instead of averaging a wrong size in.
-  return {scale:kept.length ? median(kept.map(x => x.r)) : null, flagged};
+  // Fewer than two that agree (one room, or two that differ): ask for a wall instead of trusting one.
+  return {scale:kept.length >= 2 ? median(kept.map(x => x.r)) : null, flagged};
 }
 
 // Scale (m/px) from one wall: its length on the image and in cm.

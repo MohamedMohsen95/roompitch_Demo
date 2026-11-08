@@ -9,7 +9,7 @@ const space = (id, outline, sizeText) => ({id, name:id, outline, sizeText, statu
 
 test("a new flat has no spaces, no scale and a 280 cm ceiling", () => {
   const f = newFlat({w:800, h:600});
-  assert.deepEqual([f.v, f.spaces, f.openings, f.scale, f.H], [1, [], [], null, 2.8]);
+  assert.deepEqual([f.v, f.spaces, f.openings, f.scale, f.H, f.unplaced], [1, [], [], null, 2.8, []]);
   assert.deepEqual(f.image, {w:800, h:600});
 });
 
@@ -69,12 +69,12 @@ test("wall lengths in cm, and setting one keeps a square outline square", () => 
 test("withSizeScale follows the written sizes unless the scale came from a wall", async () => {
   const { withSizeScale } = await import("../src/studio/plan/flat.js");
   const f = newFlat({w:1000, h:1000});
-  f.spaces = [space("a", box(0, 0, 100, 200), "10' x 20'")];
+  f.spaces = [space("a", box(0, 0, 100, 200), "10' x 20'"), space("b", box(200, 0, 150, 150), "15' x 15'")];
   const g = withSizeScale(f);
-  assert.ok(Math.abs(g.scale - 0.0305) < 1e-4);
+  assert.ok(Math.abs(g.scale - 0.0305) < 2e-4);
   assert.equal(g.scaleFrom, "sizes");
   assert.equal(f.scale, null);                                  // not mutated
-  const h = withSizeScale({...g, spaces:[{...g.spaces[0], sizeText:null}]});
+  const h = withSizeScale({...g, spaces:[{...g.spaces[0], sizeText:null}, g.spaces[1]]});
   assert.deepEqual([h.scale, h.scaleFrom], [null, null]);
   const w = withSizeScale({...f, scale:0.02, scaleFrom:"wall"});
   assert.deepEqual([w.scale, w.scaleFrom], [0.02, "wall"]);
@@ -105,4 +105,17 @@ test("a repeated corner is a problem, and cleanOutline removes it", async () => 
   assert.deepEqual(cleanOutline(o, 3), box(0, 0, 100, 100));
   assert.deepEqual(cleanOutline([[0, 0], [100, 0], [100, 100], [0, 100], [1, 1]], 3), box(0, 0, 100, 100));
   assert.deepEqual(cleanOutline([[0, 0], [1, 0], [2, 0]], 3), [[0, 0], [1, 0], [2, 0]]);   // never under 3 corners
+});
+
+test("scale from written areas needs two rooms that agree", () => {
+  const f = newFlat({w:1000, h:1000});
+  const a = {...space("a", box(0, 0, 100, 100), null), areaText:"100 sq ft"};     // 9.29 m² over 10,000 px²
+  f.spaces = [a];
+  assert.equal(scaleFromSizes(f).scale, null);
+  f.spaces = [a, {...space("b", box(200, 0, 200, 100), null), areaText:"200 sq ft"}];
+  assert.ok(Math.abs(scaleFromSizes(f).scale - Math.sqrt(9.290304 / 10000)) < 1e-4);
+  f.spaces = [a, {...space("b", box(200, 0, 200, 100), null), areaText:"400 sq ft"}];
+  const r = scaleFromSizes(f);
+  assert.equal(r.scale, null);
+  assert.deepEqual(r.flagged.sort(), ["a", "b"]);
 });

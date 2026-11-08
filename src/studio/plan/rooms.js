@@ -82,7 +82,27 @@ function regions(read){
     const s = stats[l - 1], x = i % w, y = (i - x) / w;
     s.area++; if (x < s.x0) s.x0 = x; if (x > s.x1) s.x1 = x; if (y < s.y0) s.y0 = y; if (y > s.y1) s.y1 = y;
   }
-  c = {free, comp:{labels, count, stats}, cands:new Map()};
+  // which areas meet: directly (split at a neck) or through free pixels that belong to no area (a trimmed
+  // doorway), so rooms joined through an unbridged door still count as reachable from each other
+  const meet = Array.from({length:count + 1}, () => new Set());
+  for (let i = 0; i < n; i++){
+    const l = labels[i]; if (!l) continue;
+    const x = i % w;
+    for (const j of [x < w - 1 ? i + 1 : -1, i + w < n ? i + w : -1]){
+      if (j < 0) continue;
+      const m = labels[j];
+      if (m && m !== l){ meet[l].add(m); meet[m].add(l); }
+    }
+  }
+  const loose = components({w, h, m:free.m.map((v, i) => v && !labels[i] ? 1 : 0)});
+  const touch = Array.from({length:loose.count + 1}, () => new Set());
+  for (let i = 0; i < n; i++){
+    const g = loose.labels[i]; if (!g) continue;
+    const x = i % w;
+    for (const j of [x > 0 ? i - 1 : -1, x < w - 1 ? i + 1 : -1, i - w, i + w]) if (j >= 0 && j < n && labels[j]) touch[g].add(labels[j]);
+  }
+  for (const set of touch) for (const a of set) for (const b of set) if (a !== b) meet[a].add(b);
+  c = {free, comp:{labels, count, stats}, cands:new Map(), meet};
   cacheOf.set(read, c);
   return c;
 }
@@ -249,7 +269,7 @@ function candidate(read, reg, id){
     id:"c" + id, label:id,
     outline:orientCW(straight.map(p => toSource(read, p)).map(p => [Math.round(p[0] * 10) / 10, Math.round(p[1] * 10) / 10])),
     areaPx:st.area, hullRatio:area(straight) / (area(hull(straight)) || 1),
-    touchesOutside:edge > 0 && open / edge > 0.25, bridgeIds
+    touchesOutside:edge > 0 && open / edge > 0.25, bridgeIds, meets:[...reg.meet[id]]
   };
   reg.cands.set(id, c);
   return c;
