@@ -1,7 +1,7 @@
 // "I have a floor plan": upload an image or PDF; the rooms are read from the walls (readPlan.ts) and the AI
 // reads their names and written sizes; correct it on top of the plan, set the scale and ceiling height,
 // then start designing.
-import { useRef, useState } from "react";
+import { useEffect, useReducer, useRef, useState } from "react";
 import { t } from "../../i18n.js";
 import { setCode } from "../../render-ai.js";
 import { newFlat, outlineProblem, scaleFromSizes, scaleFromWall, stretchWall, strayOpenings, wallLengthsCm, withSizeScale } from "../../plan/flat.js";
@@ -43,6 +43,13 @@ export default function PlanImport(props: Props){
   const [armRead, setArmRead] = useState(false);       // "Read again" over designed spaces waits for a second click
   const codeRef = useRef<HTMLInputElement>(null);
   const walls = useRef<WallHandle | null>(null);      // for click-to-fill and doors on gaps; not saved
+  const [, redraw] = useReducer((n: number) => n + 1, 0);
+  // Editing a saved flat: read its walls again (no AI, nothing replaced) so the fill tool and gap doors work.
+  useEffect(() => {
+    const f = props.initialFlat, src = f?.image.dataUrl || props.imageUrl;
+    if (!f || !src) return;
+    readFromWalls({dataUrl:src, w:f.image.w, h:f.image.h}, {ai:false, t}).then(r => { walls.current = r.walls; redraw(); }).catch(() => {});
+  }, [props.imageUrl]);
   const say = (text: string, err = false) => setStatus({text, err});
   const change = (f: Flat) => setFlat(withSizeScale(f));
 
@@ -325,7 +332,8 @@ export default function PlanImport(props: Props){
             </section>
           </div>
           <div className="panel col-preview">
-            <PlanEditor flat={flat} imageUrl={imageUrl} onChange={change} sel={sel} onSelect={setSel} tool={tool} onTool={setTool} bad={bad}/>
+            <PlanEditor flat={flat} imageUrl={imageUrl} onChange={change} sel={sel} onSelect={setSel} tool={tool} onTool={setTool} bad={bad}
+              walls={walls.current} onNotice={text => say(text, true)}/>
           </div>
         </div>
         <div className="setup-actions">
