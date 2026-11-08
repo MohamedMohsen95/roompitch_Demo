@@ -64,6 +64,13 @@
       "when": 1792932172918,
       "tag": "20261025124252_admins_read_catalog_files",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1794133860000,
+      "tag": "20261108103100_projects_kind_flat",
+      "breakpoints": true
     }
   ]
 }
