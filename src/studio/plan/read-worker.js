@@ -1,23 +1,23 @@
 // The plan reading in a Web Worker, so the page doesn't freeze: walls and room candidates on the first
 // message; then naming and checking (assemble), click-to-fill and gap lookups against the same reading.
-// Messages: {id, type:"read", rgba, w, h} | {id, type:"assemble", text, points, image} |
-//           {id, type:"fill", p} | {id, type:"gap", p, tol}. Points are in the plan image's pixels.
+// Messages (each with the plan's generation `gen`): {type:"read", rgba, w, h} | {type:"assemble", text, points,
+// image} | {type:"fill", p} | {type:"gap", p, tol}. Points are in the plan image's pixels.
 import { readWalls, toSource, toStraight } from "./walls.js";
 import { roomCandidates, fillAt } from "./rooms.js";
 import { assembleFlat, readScale } from "./assemble.js";
 import { orientCW } from "./flat.js";
 
-let read = null, cands = [], k = 1;
+let read = null, cands = [], k = 1, gen = 0;
 
 function handle(msg){
   if (msg.type === "read"){
     const scaled = readScale({w:msg.w, h:msg.h, data:new Uint8ClampedArray(msg.rgba)});
-    k = scaled.k;
+    k = scaled.k; gen = msg.gen;
     read = readWalls(scaled.img);
     cands = read.quality.ok ? roomCandidates(read) : [];
     return {quality:read.quality, thick:read.thick / k, candidates:cands.length};
   }
-  if (!read) return null;
+  if (!read || msg.gen !== gen) return null;          // a request about an earlier plan
   if (msg.type === "assemble") return assembleFlat(read, cands, msg.text, msg.points, msg.image);
   if (msg.type === "fill"){
     if (!read.quality.ok) return null;

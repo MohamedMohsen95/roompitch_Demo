@@ -52,6 +52,18 @@ test("one point call per distinct name, mapped back to the names", async () => {
   assert.equal(bodies.length, 2);
   assert.ok(bodies.every(b => b.task === "point" && b.image === IMG));
   assert.deepEqual(r.body.points, {BEDROOM:[[.2, .3], [.7, .3]], KITCHEN:[[.4, .2]]});
+  assert.deepEqual(r.body.failed, []);
+});
+
+test("one name failing keeps the others", async () => {
+  withKeys();
+  globalThis.fetch = async (url, opts) => JSON.parse(opts.body).target.includes("BAD")
+    ? new Response(JSON.stringify({success:false, errors:[{message:"boom"}]}), {status:500})
+    : new Response(JSON.stringify({success:true, result:{points:[{x:.1, y:.1}]}}), {status:200});
+  const r = await call("POST", {image:IMG, names:["GOOD", "BAD"]});
+  assert.equal(r.status, 200);
+  assert.deepEqual(r.body.points, {GOOD:[[.1, .1]]});
+  assert.deepEqual(r.body.failed, ["BAD"]);
 });
 
 test("allowance used up maps to 502", async () => {

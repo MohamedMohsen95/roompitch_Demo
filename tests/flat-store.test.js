@@ -42,6 +42,8 @@ test("a missing or broken flat is not loaded", () => {
   const f = twoRooms(); f.spaces[0].outline = [[0, 0], [1, 1]];
   mem.set("rp_flat", JSON.stringify(f)); assert.equal(loadFlat(), null);
   assert.equal(validFlat(null), false);
+  assert.equal(validFlat({...twoRooms(), unplaced:[null]}), false);
+  assert.equal(validFlat({...twoRooms(), unplaced:[{name:"DEN", sizeText:null}]}), true);
 });
 
 test("the current space is remembered", () => {

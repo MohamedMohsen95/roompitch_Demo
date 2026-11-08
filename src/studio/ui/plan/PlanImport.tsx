@@ -43,6 +43,8 @@ export default function PlanImport(props: Props){
   const [armRead, setArmRead] = useState(false);       // "Read again" over designed spaces waits for a second click
   const codeRef = useRef<HTMLInputElement>(null);
   const walls = useRef<WallHandle | null>(null);      // for click-to-fill and doors on gaps; not saved
+  const current = useRef<Flat["image"] | null>(null); // the image being read
+  current.current = flat?.image ?? null;
   const [, redraw] = useReducer((n: number) => n + 1, 0);
   // Editing a saved flat: read its walls again (no AI, nothing replaced) so the fill tool and gap doors work.
   useEffect(() => {
@@ -62,6 +64,7 @@ export default function PlanImport(props: Props){
     try {
       const src = f.image.dataUrl || props.imageUrl || "";
       const r = await readFromWalls({dataUrl:src, w:f.image.w, h:f.image.h}, {ai:true, t});
+      if (current.current && current.current !== f.image) return;     // another plan was picked meanwhile
       walls.current = r.walls;
       if (r.needCode){ setNeedCode(true); setTimeout(() => codeRef.current?.focus()); }
       const byName = new Map(f.spaces.filter(s => s.design && s.name.trim()).map(s => [s.name.trim().toLowerCase(), s]));
@@ -81,6 +84,7 @@ export default function PlanImport(props: Props){
 
   async function useImage(img: {dataUrl: string, w: number, h: number}){
     const f = newFlat(img);
+    walls.current = null;                               // the old plan's walls must not be used on this one
     setFlat(f); setPdf(null); setSel(null); setIsNew(true); setArmRead(false);
     await readPlan(f);
   }

@@ -49,7 +49,8 @@ export function parseRoomSize(text){
 // A written area -> m², or null: "64 sq ft", "64 sqft", "64 ft²", "64 SF", "12 m²", "12 m2", "12 sq m", "12 sqm".
 const SQFT = 0.09290304;
 export function parseArea(text){
-  const t = String(text ?? "").trim().toLowerCase().replace(/,/g, ".");
+  // "1,200" is a thousands separator; "12,5" a decimal comma
+  const t = String(text ?? "").trim().toLowerCase().replace(/(\d),(\d{3})(?!\d)/g, "$1$2").replace(/,/g, ".");
   const m = t.match(/^(\d+(?:\.\d+)?)\s*(sq\.?\s*ft|sqft|ft²|ft2|sf|sq\.?\s*m|sqm|m²|m2)\.?$/);
   if (!m) return null;
   const v = parseFloat(m[1]);

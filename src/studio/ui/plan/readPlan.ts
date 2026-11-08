@@ -14,19 +14,32 @@ export type WallHandle = {
 };
 export type ReadResult = {flat: Flat, walls: WallHandle, notice: string | null, needCode: boolean, aiOff: boolean};
 
-let worker: Worker | null = null, seq = 0;
-const waiting = new Map<number, {resolve: (v: any) => void, reject: (e: any) => void}>();
+let worker: Worker | null = null, seq = 0, generation = 0;
+const waiting = new Map<number, {resolve: (v: any) => void, reject: (e: any) => void, timer: ReturnType<typeof setTimeout>}>();
+const TIMEOUT = 60_000;
+function failAll(why: string){
+  for (const w of waiting.values()){ clearTimeout(w.timer); w.reject(new Error(why)); }
+  waiting.clear();
+  worker?.terminate(); worker = null;
+}
 function ask(msg: any, transfer: Transferable[] = []): Promise<any>{
   if (!worker){
     worker = new Worker(new URL("../../plan/read-worker.js", import.meta.url), {type:"module"});
     worker.onmessage = (e) => {
       const w = waiting.get(e.data.id); if (!w) return;
-      waiting.delete(e.data.id);
+      waiting.delete(e.data.id); clearTimeout(w.timer);
       if (e.data.ok) w.resolve(e.data.value); else w.reject(new Error(e.data.error));
     };
+    // a worker that can't load or runs out of memory must not leave the screen waiting forever
+    worker.onerror = (e) => { e.preventDefault?.(); failAll("worker error"); };
+    worker.onmessageerror = () => failAll("worker message error");
   }
   const id = ++seq;
-  return new Promise((resolve, reject) => { waiting.set(id, {resolve, reject}); worker!.postMessage({id, ...msg}, transfer); });
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => { waiting.delete(id); reject(new Error("timeout")); }, TIMEOUT);
+    waiting.set(id, {resolve, reject, timer});
+    worker!.postMessage({id, ...msg}, transfer);
+  });
 }
 
 // RGBA pixels of an image (data URL or link), at its own size.
@@ -52,7 +65,8 @@ async function post(url: string, body: object){
 
 export async function readPlan(image: {dataUrl: string, w: number, h: number}, opts: {ai: boolean, t: (k: string, v?: any) => string}): Promise<ReadResult>{
   const {t} = opts;
-  const info = await ask({type:"read", rgba:await pixels(image.dataUrl, image.w, image.h), w:image.w, h:image.h});
+  const gen = ++generation, rgba = await pixels(image.dataUrl, image.w, image.h);
+  const info = await ask({type:"read", gen, rgba, w:image.w, h:image.h}, [rgba]);
   let notice: string | null = info.quality.ok ? null : t("qualityLow");
   let needCode = false, aiOff = false;
   let text = {rooms:[] as any[]}, points: Record<string, [number, number][]> = {};
@@ -66,7 +80,7 @@ export async function readPlan(image: {dataUrl: string, w: number, h: number}, o
       else {
         text = {rooms:Array.isArray(read.data.rooms) ? read.data.rooms : []};
         const names = [...new Set(text.rooms.map((r: any) => r.name))];
-        if (names.length){
+        if (names.length && info.candidates > 0){           // no rooms to name: don't spend the allowance
           const pt = await post("/api/point", {image:small.dataUrl, w:small.w, h:small.h, names});
           if (pt.ok) for (const [name, list] of Object.entries(pt.data.points || {}))
             points[name] = (list as [number, number][]).map(([x, y]) => [x * image.w, y * image.h]);
@@ -75,12 +89,12 @@ export async function readPlan(image: {dataUrl: string, w: number, h: number}, o
       }
     } catch { notice = t("noServer"); }
   }
-  const flat: Flat = await ask({type:"assemble", text, points, image:{w:image.w, h:image.h}});
+  const flat: Flat = await ask({type:"assemble", gen, text, points, image:{w:image.w, h:image.h}});
   flat.image = {...flat.image, dataUrl:image.dataUrl};
   const walls: WallHandle = {
     ok:info.quality.ok, thick:info.thick,
-    fillAt:(p) => ask({type:"fill", p}),
-    gapAt:(p, tolPx) => ask({type:"gap", p, tol:tolPx})
+    fillAt:(p) => ask({type:"fill", gen, p}).catch(() => null),
+    gapAt:(p, tolPx) => ask({type:"gap", gen, p, tol:tolPx}).catch(() => null)
   };
   return {flat, walls, notice, needCode, aiOff};
 }

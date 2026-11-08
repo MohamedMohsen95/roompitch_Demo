@@ -93,7 +93,7 @@ export function assembleFlat(read, cands, text, points, image){
   for (const {c, names} of pending){
     const outline = outlineImg(c), aPx = polyArea(outline), m2 = scale ? aPx * scale * scale : null;
     const share = c.areaPx / (footArea || 1);
-    let ok = !c.touchesOutside && c.hullRatio >= 0.6 && !outlineProblem(outline);
+    let ok = !c.touchesOutside && !c.unsure && c.hullRatio >= 0.6 && !outlineProblem(outline);
     if (ok && share > 0.7 && cands.length > 1) ok = false;
     if (ok && scale){
       if (m2 < (names.length ? 1 : 2)) ok = false;

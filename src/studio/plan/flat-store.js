@@ -13,7 +13,7 @@ export function validFlat(f){
   if (!f || f.v !== 1 || !f.image || !(f.image.w > 0 && f.image.h > 0) || !(f.H > 0)) return false;
   if (f.scale != null && !(f.scale > 0)) return false;
   if (!Array.isArray(f.spaces) || !Array.isArray(f.openings)) return false;
-  if (f.unplaced != null && !Array.isArray(f.unplaced)) return false;
+  if (f.unplaced != null && !(Array.isArray(f.unplaced) && f.unplaced.every(u => u && typeof u.name === "string"))) return false;
   if (!f.spaces.every(s => s && typeof s.id === "string" && Array.isArray(s.outline) && s.outline.length >= 3 && s.outline.every(okPoint))) return false;
   return f.openings.every(o => o && typeof o.id === "string" && okPoint(o.a) && okPoint(o.b));
 }

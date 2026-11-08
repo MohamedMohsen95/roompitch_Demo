@@ -63,13 +63,19 @@ function regions(read){
   // grow the cores over the free pixels, one ring at a time, but only as far as a room reaches from its
   // core (2r plus two wall thicknesses, in city-block steps): a long narrow strip beyond that (a balcony strip, a corridor)
   // stays its own area instead of being swallowed by the nearest room
+  // It also never climbs back up after passing a narrow place: growth carries the narrowest clearance it
+  // came through (low) and stops where the clearance widens again by more than 1.5 wall thicknesses, which
+  // is a door into a smaller room that has no core of its own (a closet): that room stays whole and separate.
   const ring = new Int32Array(n), maxRing = Math.ceil(2 * r + 2 * Math.max(1, read.thick));   // rings are city-block steps
+  const low = new Float32Array(n), climb = 1.5 * Math.max(1, read.thick);
+  for (let k = 0; k < tail; k++) low[q[k]] = d[q[k]];
   for (let head = 0; head < tail; head++){
     const i = q[head], x = i % w, l = labels[i];
     if (ring[i] >= maxRing) continue;
     for (const j of [x > 0 ? i - 1 : -1, x < w - 1 ? i + 1 : -1, i - w, i + w]){
       if (j < 0 || j >= n || !free.m[j] || labels[j]) continue;
-      labels[j] = l; ring[j] = ring[i] + 1; q[tail++] = j;
+      if (d[j] > low[i] + climb) continue;
+      labels[j] = l; ring[j] = ring[i] + 1; low[j] = Math.min(low[i], d[j]); q[tail++] = j;
     }
   }
   // free areas without a core (closets, corridors narrower than a door, small leftovers) keep their own label
@@ -85,13 +91,19 @@ function regions(read){
   // which areas meet: directly (split at a neck) or through free pixels that belong to no area (a trimmed
   // doorway), so rooms joined through an unbridged door still count as reachable from each other
   const meet = Array.from({length:count + 1}, () => new Set());
+  // An area without a core that touches a grown area directly lost part of itself to it: the line between
+  // them is where the growth stopped, not a wall or a neck. Both outlines are then unreliable.
+  const unsure = new Uint8Array(count + 1);
   for (let i = 0; i < n; i++){
     const l = labels[i]; if (!l) continue;
     const x = i % w;
     for (const j of [x < w - 1 ? i + 1 : -1, i + w < n ? i + w : -1]){
       if (j < 0) continue;
       const m = labels[j];
-      if (m && m !== l){ meet[l].add(m); meet[m].add(l); }
+      if (m && m !== l){
+        meet[l].add(m); meet[m].add(l);
+        if ((l > next) !== (m > next)){ unsure[l] = 1; unsure[m] = 1; }
+      }
     }
   }
   const loose = components({w, h, m:free.m.map((v, i) => v && !labels[i] ? 1 : 0)});
@@ -101,8 +113,11 @@ function regions(read){
     const x = i % w;
     for (const j of [x > 0 ? i - 1 : -1, x < w - 1 ? i + 1 : -1, i - w, i + w]) if (j >= 0 && j < n && labels[j]) touch[g].add(labels[j]);
   }
-  for (const set of touch) for (const a of set) for (const b of set) if (a !== b) meet[a].add(b);
-  c = {free, comp:{labels, count, stats}, cands:new Map(), meet};
+  for (const set of touch) for (const a of set) for (const b of set) if (a !== b){
+    meet[a].add(b);
+    if ((a > next) !== (b > next)){ unsure[a] = 1; unsure[b] = 1; }     // (through a trimmed strip, likewise)
+  }
+  c = {free, comp:{labels, count, stats}, cands:new Map(), meet, unsure};
   cacheOf.set(read, c);
   return c;
 }
@@ -269,7 +284,7 @@ function candidate(read, reg, id){
     id:"c" + id, label:id,
     outline:orientCW(straight.map(p => toSource(read, p)).map(p => [Math.round(p[0] * 10) / 10, Math.round(p[1] * 10) / 10])),
     areaPx:st.area, hullRatio:area(straight) / (area(hull(straight)) || 1),
-    touchesOutside:edge > 0 && open / edge > 0.25, bridgeIds, meets:[...reg.meet[id]]
+    touchesOutside:edge > 0 && open / edge > 0.25, bridgeIds, meets:[...reg.meet[id]], unsure:reg.unsure[id] === 1
   };
   reg.cands.set(id, c);
   return c;
@@ -307,5 +322,5 @@ export function fillAt(read, p){
   const reg = regions(read), st = reg.comp.stats[label - 1];
   if (st.area < 0.002 * read.size.w * read.size.h) return null;
   const c = candidate(read, reg, label);
-  return c.touchesOutside || c.hullRatio < 0.6 ? null : c;
+  return c.touchesOutside || c.unsure || c.hullRatio < 0.6 ? null : c;
 }

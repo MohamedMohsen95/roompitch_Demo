@@ -139,3 +139,20 @@ test("readScale shrinks big images and leaves small ones", () => {
   assert.equal(readScale(small).img, small);
   assert.equal(readScale(small).k, 1);
 });
+
+test("outlines map back to the full image when it was read smaller", () => {
+  const {read} = run("etsy");
+  const img = readPng(file("etsy")), cands = roomCandidates(read);
+  const ai = aiFrom("etsy");
+  const same = assembleFlat(read, cands, ai.text, ai.points, {w:img.w, h:img.h});
+  // the same reading, as if the image had been twice as big (read at half size)
+  const pts2 = Object.fromEntries(Object.entries(ai.points).map(([k, v]) => [k, v.map(([x, y]) => [x * 2, y * 2])]));
+  const big = assembleFlat(read, cands, ai.text, pts2, {w:img.w * 2, h:img.h * 2});
+  assert.equal(big.spaces.length, same.spaces.length);
+  for (const s of same.spaces){
+    const b = big.spaces.find(x => x.name === s.name);
+    assert.ok(b, s.name);
+    s.outline.forEach((p, i) => assert.ok(Math.hypot(b.outline[i][0] - 2 * p[0], b.outline[i][1] - 2 * p[1]) < 0.5));
+  }
+  assert.ok(Math.abs(big.scale - same.scale / 2) / same.scale < 1e-6);
+});

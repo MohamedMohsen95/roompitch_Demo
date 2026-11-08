@@ -28,9 +28,11 @@ function otsu(img){
 }
 
 // Dark pixels: far from the paper colour and below 0.85 × the Otsu threshold.
+// (Otsu's threshold is the top of the dark class: on a crisp black-and-white image it is 0 itself, so
+// pixels at the threshold count as dark.)
 function darkMask(img, paper){
   const c = contrastMask(img, paper, 60), t = otsu(img) * 0.85, {data} = img;
-  for (let i = 0; i < c.m.length; i++) if (c.m[i] && lum(data, i * 4) >= t) c.m[i] = 0;
+  for (let i = 0; i < c.m.length; i++) if (c.m[i] && lum(data, i * 4) > t) c.m[i] = 0;
   return c;
 }
 
@@ -204,7 +206,7 @@ export function readWalls(source){
   const foot = maskNot(outside);
   const W = img.w;
   for (const b of bridges){
-    const mx = Math.round((b.a[0] + b.b[0]) / 2), my = Math.round((b.a[1] + b.b[1]) / 2), off = Math.ceil(thick);
+    const mx = Math.round((b.a[0] + b.b[0]) / 2), my = Math.round((b.a[1] + b.b[1]) / 2), off = Math.ceil(Math.max(thick, outerThick));   // past the thickest wall
     const probe = b.dir === "h" ? [[mx, my - off], [mx, my + off]] : [[mx - off, my], [mx + off, my]];
     b.outside = probe.some(([x, y]) => x < 0 || y < 0 || x >= W || y >= img.h || outside.m[y * W + x] === 1);
   }

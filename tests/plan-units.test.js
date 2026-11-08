@@ -43,4 +43,6 @@ test("written areas", () => {
   assert.equal(parseArea("12 sq m"), 12);
   assert.equal(parseArea("LIVING"), null);
   assert.equal(parseArea("64"), null);
+  assert.equal(parseArea("1,200 sq ft"), 111.48);
+  assert.equal(parseArea("12,5 m²"), 12.5);
 });

@@ -131,12 +131,17 @@ export default function PlanEditor({flat, imageUrl, onChange, sel, onSelect, too
   }
 
   // "Fill room": the closed area under the click becomes a space (unnamed), or the space already there is selected.
+  const filling = useRef(false);
   async function fill(p: Point){
-    if (!walls?.ok) return;
+    if (!walls?.ok || filling.current) return;          // one fill at a time (a double-click is two clicks)
     const there = flatRef.current.spaces.find(s => inside(s.outline, p));
     if (there){ onSelect({kind:"space", id:there.id}); return; }
-    const r = await walls.fillAt(p);
+    filling.current = true;
+    let r;
+    try { r = await walls.fillAt(p); } finally { filling.current = false; }
     if (!r){ onNotice(t("fillNone")); return; }
+    const again = flatRef.current.spaces.find(s => inside(s.outline, p));
+    if (again){ onSelect({kind:"space", id:again.id}); return; }
     const id = newId("s");
     onChange({...flatRef.current, spaces:[...flatRef.current.spaces,
       {id, name:"", outline:r.outline, sizeText:null, areaText:null, status:"todo", design:null, fromAI:false, unnamed:true}]});

@@ -119,3 +119,9 @@ test("scale from written areas needs two rooms that agree", () => {
   assert.equal(r.scale, null);
   assert.deepEqual(r.flagged.sort(), ["a", "b"]);
 });
+
+test("two rooms 20 % apart don't agree", () => {
+  const f = newFlat({w:1000, h:1000});
+  f.spaces = [{...space("a", box(0, 0, 100, 100), null), areaText:"100 sq ft"}, {...space("b", box(200, 0, 100, 100), null), areaText:"144 sq ft"}];
+  assert.equal(scaleFromSizes(f).scale, null);
+});

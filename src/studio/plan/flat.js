@@ -85,7 +85,10 @@ export function scaleFromSizes(flat){
   const flagged = ratios.filter(x => Math.abs(x.r - m) / m > 0.1).map(x => x.id);
   const kept = ratios.filter(x => !flagged.includes(x.id));
   // Fewer than two that agree (one room, or two that differ): ask for a wall instead of trusting one.
-  return {scale:kept.length >= 2 ? median(kept.map(x => x.r)) : null, flagged};
+  // "Agree" means the kept ones are all within 10 % of each other, not just of their median.
+  const rs = kept.map(x => x.r);
+  if (kept.length < 2 || Math.max(...rs) / Math.min(...rs) - 1 > 0.1) return {scale:null, flagged:kept.length < 2 ? flagged : ratios.map(x => x.id)};
+  return {scale:median(rs), flagged};
 }
 
 // Scale (m/px) from one wall: its length on the image and in cm.
