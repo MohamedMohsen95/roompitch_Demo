@@ -140,7 +140,7 @@ These work whatever the AI did, and with the AI off.
 
 **Existing tools stay:** tracing a space, dragging corners, adding and removing corners, typing wall lengths, and editing names and sizes.
 
-**With the AI off or out of allowance:** no rooms are drawn automatically. The walls, the gaps and the tools all still work.
+**With the AI off or out of allowance:** rooms are still drawn from the walls, all unnamed (with temporary names), and the walls, the gaps and the tools all work.
 
 ## Non-goals
 
