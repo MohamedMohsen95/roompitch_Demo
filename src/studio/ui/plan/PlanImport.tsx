@@ -1,10 +1,10 @@
-// "I have a floor plan": upload an image or PDF, let the AI read the spaces, doors, windows and written
-// sizes, correct it on top of the plan, set the scale and ceiling height, then start designing.
+// "I have a floor plan": upload an image or PDF; the rooms are read from the walls (readPlan.ts) and the AI
+// reads their names and written sizes; correct it on top of the plan, set the scale and ceiling height,
+// then start designing.
 import { useRef, useState } from "react";
 import { t } from "../../i18n.js";
-import { getCode, setCode } from "../../render-ai.js";
+import { setCode } from "../../render-ai.js";
 import { newFlat, outlineProblem, scaleFromSizes, scaleFromWall, stretchWall, strayOpenings, wallLengthsCm, withSizeScale } from "../../plan/flat.js";
-import { flatFromReply } from "../../plan/plan-vision.js";
 import { polyArea } from "../../geometry.js";
 import type { Flat } from "../../plan/flat";
 import NumField from "../NumField";
@@ -12,8 +12,9 @@ import PlanEditor, { type PlanSel, type Tool } from "./PlanEditor";
 import { AccountButton } from "../AccountDialog";
 import { useLang } from "../hooks";
 import { loadImage } from "./image";
+import { readPlan as readFromWalls, type WallHandle } from "./readPlan";
 
-const MAX_EDIT = 2400, MAX_AI = 1600;
+const MAX_EDIT = 2400;
 
 const isPdf = (f: File) => f.type === "application/pdf" || /\.pdf$/i.test(f.name);
 const isCad = (f: File) => /\.(dwg|dxf)$/i.test(f.name);
@@ -41,6 +42,7 @@ export default function PlanImport(props: Props){
   const [isNew, setIsNew] = useState(!props.initialFlat);
   const [armRead, setArmRead] = useState(false);       // "Read again" over designed spaces waits for a second click
   const codeRef = useRef<HTMLInputElement>(null);
+  const walls = useRef<WallHandle | null>(null);      // for click-to-fill and doors on gaps; not saved
   const say = (text: string, err = false) => setStatus({text, err});
   const change = (f: Flat) => setFlat(withSizeScale(f));
 
@@ -49,29 +51,23 @@ export default function PlanImport(props: Props){
     if (f.spaces.some(s => s.design) && !armRead){ setArmRead(true); say(t("rereadSure"), true); return; }
     setArmRead(false);
     setBusy(true); setNeedCode(false);
-    say(t("planReading"));
+    say(t("readingWalls"));
     try {
-      const small = await loadImage(f.image.dataUrl || props.imageUrl || "", MAX_AI);
-      let r: Response;
-      try {
-        r = await fetch("/api/plan", {method:"POST", headers:{"Content-Type":"application/json", "x-access-code":getCode()}, body:JSON.stringify({image:small.dataUrl})});
-      } catch { say(t("noServer"), true); return; }
-      if (r.status === 401){ setNeedCode(true); say(t("enterCode"), true); setTimeout(() => codeRef.current?.focus()); return; }
-      const data = await r.json().catch(() => ({}));
-      if (r.status === 503){ say(t("planOff"), true); return; }
-      if (!r.ok){ say(data.error || t("wentWrong", {s:r.status}), true); return; }
-      const read = flatFromReply({spaces:data.spaces || [], openings:data.openings || []}, f.image);
+      const src = f.image.dataUrl || props.imageUrl || "";
+      const r = await readFromWalls({dataUrl:src, w:f.image.w, h:f.image.h}, {ai:true, t});
+      walls.current = r.walls;
+      if (r.needCode){ setNeedCode(true); setTimeout(() => codeRef.current?.focus()); }
       const byName = new Map(f.spaces.filter(s => s.design && s.name.trim()).map(s => [s.name.trim().toLowerCase(), s]));
-      const spaces = read.spaces.map(s => {
+      const spaces = r.flat.spaces.map(s => {
         const old = byName.get(s.name.trim().toLowerCase());
-        if (!old) return s;
+        if (!old || !s.name.trim()) return s;
         byName.delete(s.name.trim().toLowerCase());
         return {...s, id:old.id, design:old.design, status:old.status};
       });
-      const next = {...read, spaces, image:f.image, H:f.H};
+      const next = {...r.flat, spaces, image:f.image, H:f.H};
       setFlat(next); setSel(null); setTool("select");
-      if (!next.spaces.length) say(t("planNone"), true);
-      else say(t("planFound", {s:next.spaces.length, o:next.openings.length}) + " " + (next.scale ? t("planCheck") : t("planNeedScale")));
+      const found = next.spaces.length ? t("planRead", {s:next.spaces.length, o:next.openings.length}) + " " + (next.scale ? t("planCheck") : t("planNeedScale")) : "";
+      say([r.notice, found || (r.walls.ok ? t("planNone") : "")].filter(Boolean).join(" "), Boolean(r.notice) || !next.spaces.length);
     } catch { say(t("planImageErr"), true); }
     finally { setBusy(false); }
   }
@@ -209,6 +205,7 @@ export default function PlanImport(props: Props){
             <section className="sblock">
               <h2>{t("planTitle2")}</h2>
               {statusLine}{codeRow}
+              {(flat.unplaced || []).length > 0 && <p className="dnote">{t("unplacedN", {n:(flat.unplaced || []).length})}: {(flat.unplaced || []).map(u => u.name).join(", ")}</p>}
               <div className="acts2">
                 <button className={"btn" + (armRead ? " danger" : "")} type="button" disabled={busy} onClick={() => readPlan(flat)}>{t(armRead ? "rereadConfirm" : "planReread")}</button>
                 {fileButton(t("planOther"))}
@@ -235,14 +232,15 @@ export default function PlanImport(props: Props){
             <section className="sblock">
               <h2>{t("spacesTitle")}</h2>
               {!flat.spaces.length && <p className="dnote">{t("noSpaces")}</p>}
-              {flat.spaces.map(s => {
+              {flat.spaces.map((s, idx) => {
                 const on = selSpace?.id === s.id;
                 const area = flat.scale && !outlineProblem(s.outline) ? polyArea(s.outline) * flat.scale * flat.scale : null;
                 return (
                   <div key={s.id} className={"orow" + (on ? " on" : "") + (s.fromAI ? " ai" : "") + (bad[s.id] ? " bad" : "")} onClick={() => { if (!on) setSel({kind:"space", id:s.id}); }}>
                     <div className="ohead">
-                      <input className="sname" value={s.name} aria-label={t("spaceName")} onChange={e => setSpace(s.id, {name:e.target.value})}/>
-                      {s.fromAI && <span className="aitag">{t("foundByAI")}</span>}
+                      <input className="sname" value={s.name} placeholder={t("spaceN", {n:idx + 1})} aria-label={t("spaceName")}
+                        onChange={e => setSpace(s.id, {name:e.target.value, unnamed:!e.target.value.trim()})}/>
+                      {s.unnamed ? <span className="aitag">{t("foundNoName")}</span> : s.fromAI && <span className="aitag">{t("foundByAI")}</span>}
                       {area != null && <bdi dir="ltr" className="sarea">{area.toFixed(1)} {t("m2")}</bdi>}
                       <button className="btn small" type="button" onClick={e => {
                         e.stopPropagation();
@@ -251,6 +249,17 @@ export default function PlanImport(props: Props){
                     </div>
                     {on && (
                       <div className="sdetail">
+                        {(flat.unplaced || []).length > 0 && (
+                          <label className="ssize"><span>{t("pickName")}</span>
+                            <select value="" onChange={e => {
+                              const u = (flat.unplaced || [])[Number(e.target.value)]; if (!u) return;
+                              change({...flat, unplaced:(flat.unplaced || []).filter(x => x !== u),
+                                spaces:flat.spaces.map(x => x.id === s.id ? {...x, name:u.name, sizeText:u.sizeText ?? x.sizeText, areaText:u.areaText ?? x.areaText ?? null, unnamed:false} : x)});
+                            }}>
+                              <option value="">…</option>
+                              {(flat.unplaced || []).map((u, i) => <option key={i} value={i}>{u.name}</option>)}
+                            </select></label>
+                        )}
                         <label className="ssize"><span>{t("sizeText")}</span>
                           <input value={s.sizeText || ""} placeholder="12'-0&quot; x 14'-6&quot;" dir="ltr"
                             onChange={e => setSpace(s.id, {sizeText:e.target.value || null})}/></label>
@@ -322,7 +331,7 @@ export default function PlanImport(props: Props){
         <div className="setup-actions">
           <button className="btn" type="button" onClick={props.onCancel}>{t("backChoice")}</button>
           <span className="dnote">{blockers}</span>
-          <button className="btn primary" type="button" disabled={Boolean(blockers) || busy} onClick={() => props.onDone(flat, isNew)}>
+          <button className="btn primary" type="button" disabled={Boolean(blockers) || busy} onClick={() => props.onDone({...flat, spaces:flat.spaces.map((x, i) => x.name.trim() ? x : {...x, name:t("spaceN", {n:i + 1})})}, isNew)}>
             {flat.spaces.length > 1 ? t("planNextFlat") : t("startDesign")}
           </button>
         </div>
