@@ -43,10 +43,10 @@ test("wrong access code returns 401", async () => {
   assert.equal((await call("POST", {image:IMG}, {"x-access-code":"nope"})).status, 401);
 });
 
-test("a fenced reply is parsed into spaces and openings", async () => {
+test("a fenced reply is parsed into room names and sizes", async () => {
   withKeys();
   let sent = null;
-  const reply = {spaces:[{name:"DEN", outline:[[0, 0], [0.5, 0], [0.5, 0.5]], size:"9' x 9'"}], openings:[]};
+  const reply = {rooms:[{name:"DEN", size:"9' x 9'", area:null}]};
   globalThis.fetch = async (url, opts) => {
     sent = {url, body:JSON.parse(opts.body)};
     return new Response(JSON.stringify({success:true, result:{response:"```json " + JSON.stringify(reply) + "```"}}), {status:200});
@@ -54,8 +54,8 @@ test("a fenced reply is parsed into spaces and openings", async () => {
   const r = await call("POST", {image:IMG});
   assert.equal(r.status, 200);
   assert.deepEqual(r.body, reply);
-  assert.equal(sent.body.max_tokens, 4000);
   assert.equal(sent.body.messages[0].content[1].image_url.url, IMG);
+  assert.match(sent.body.messages[0].content[0].text, /room name/);
 });
 
 test("allowance used up maps to 502", async () => {

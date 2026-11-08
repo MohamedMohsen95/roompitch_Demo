@@ -1,5 +1,3 @@
-import type { Flat } from "./flat";
-export type PlanReply = {spaces: {name: string, outline: [number, number][], size: string | null}[], openings: {type: "door" | "window", x1: number, y1: number, x2: number, y2: number}[]};
-export const PLAN_PROMPT: string;
-export function parsePlanReply(text: string | null | undefined): PlanReply;
-export function flatFromReply(reply: PlanReply, image: {w: number, h: number}): Flat;
+export const TEXT_PROMPT: string;
+export function parseTextReply(text: string | null | undefined): {rooms: {name: string, size: string | null, area: string | null}[]};
+export function parsePointReply(json: any, size: {w: number, h: number}): [number, number][];
