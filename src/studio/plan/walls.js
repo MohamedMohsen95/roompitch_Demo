@@ -48,24 +48,34 @@ function runLengths(mask, dir, cap, out){
   }
 }
 
-// Wall thickness: the mode of the widths of long lines, weighted by width² so thick walls outweigh
-// thin furniture lines. {thick, share}: share is how much of the weight sits at the mode (±1).
-function wallThickness(dark, L, cap){
+// Wall thickness from the widths of long lines (each width weighted by itself). Plans often draw outer
+// walls thicker than inner ones, so the histogram has several peaks: `thick` is the thinnest peak that
+// carries at least 20 % of the strongest (inner walls), `outer` the strongest. Peaks thinner than
+// 0.3 % of the image are furniture and fixture lines. `share`: weight of those peaks in the whole histogram.
+function wallThickness(dark, L, cap, long){
   const v = openLine(dark, L, "v"), h = openLine(dark, L, "h"), runs = [];
   runLengths(v, "h", cap, runs);    // vertical lines measured across
   runLengths(h, "v", cap, runs);
-  if (!runs.length) return {thick:0, share:0};
-  const hist = new Float64Array(cap + 2);
-  for (const r of runs) hist[r] += r * r;
-  let best = 1, total = 0;
-  for (let i = 1; i <= cap; i++){ total += hist[i]; if (hist[i] > hist[best]) best = i; }
-  const share = (hist[best - 1] + hist[best] + hist[best + 1]) / total;
-  return {thick:best, share};
+  if (!runs.length) return {thick:0, outer:0, share:0};
+  const hist = new Float64Array(cap + 3);
+  for (const r of runs) hist[r] += r;
+  const total = hist.reduce((a, b) => a + b, 0), minT = Math.max(3, Math.round(0.003 * long));
+  const near = (i) => hist[i - 1] + hist[i] + hist[i + 1] + (hist[i - 2] || 0) + (hist[i + 2] || 0);
+  const peaks = [];
+  for (let i = minT; i <= cap; i++) if (hist[i] > 0 && hist[i] >= hist[i - 1] && hist[i] >= hist[i + 1]) peaks.push({i, w:near(i)});
+  if (!peaks.length) return {thick:0, outer:0, share:0};
+  const outer = peaks.reduce((a, b) => b.w > a.w ? b : a);
+  const thin = peaks.find(p => p.w >= 0.2 * outer.w);
+  const share = (outer.w + (thin.i === outer.i ? 0 : thin.w)) / total;
+  return {thick:thin.i, outer:outer.i, share};
 }
 
 // Bridge gaps along dir: from the end of a wall run that is long along dir (dirMask) to the next wall pixel
 // on the same line, when the gap is shorter than maxLen. Returns the mask of new pixels.
-function bridgeAlong(walls, dirMask, maxLen, dir){
+// Gaps up to bothLen are also bridged when long wall runs sit on BOTH sides and the gap is drawn across
+// with a thin line (glass: a window or a sliding door in a straight wall): at least 60 % of the gap's
+// pixels on that line are dark in `dark`. An empty wide opening between rooms stays open.
+function bridgeAlong(walls, dirMask, maxLen, dir, bothLen = 0, dark = null){
   const {w, h} = walls, out = {w, h, m:new Uint8Array(w * h)};
   const lines = dir === "h" ? h : w, len = dir === "h" ? w : h;
   const idx = dir === "h" ? (a, b) => a * w + b : (a, b) => b * w + a;
@@ -77,7 +87,12 @@ function bridgeAlong(walls, dirMask, maxLen, dir){
       const gap = b - lastWall - 1;
       const thisDir = dirMask.m[i] === 1;
       // a bridge needs a long wall run on at least one side of the gap
-      if (lastWall >= 0 && gap > 0 && gap < maxLen && (lastWallDir || thisDir)){
+      let glass = false;
+      if (dark && lastWall >= 0 && gap >= maxLen && gap < bothLen && lastWallDir && thisDir){
+        let d = 0; for (let k = lastWall + 1; k < b; k++) d += dark.m[idx(a, k)];
+        glass = d >= 0.6 * gap;
+      }
+      if (lastWall >= 0 && gap > 0 && ((gap < maxLen && (lastWallDir || thisDir)) || glass)){
         for (let k = lastWall + 1; k < b; k++) out.m[idx(a, k)] = 1;
       }
       lastWall = b; lastWallDir = thisDir;
@@ -124,15 +139,16 @@ export function readWalls(source){
 
   // 2. thickness
   const L = Math.max(9, Math.round(0.025 * long)), cap = Math.max(4, Math.round(0.03 * long));
-  const {thick, share} = wallThickness(dark, L, cap);
+  const {thick, outer:outerThick, share} = wallThickness(dark, L, cap, long);
   if (!thick || thick < 2) return empty("noThickness", {angle});
 
   // 3. walls: hatching closed, thin lines (furniture, text, dimensions) opened away, long lines kept,
   //    filled blobs (rugs, bedspreads) and short bits (text) dropped
-  // (Hatched walls are not closed into solid ones: closing also turns bold room names into wall-like bars.)
+  // Hatched and hollow (two-line) walls are not filled in: filling also turns bold room names, sofas and
+  // counters drawn with double lines into walls. Plans drawn that way read with fewer rooms.
   const solid = openSquare(dark, Math.max(1, Math.round(0.6 * thick)));
   let walls = maskOr(openLine(solid, L, "h"), openLine(solid, L, "v"));
-  const cores = openSquare(walls, Math.ceil(2.5 * thick) + 1);
+  const cores = openSquare(walls, Math.ceil(2.5 * outerThick) + 1);
   const comp = components(walls), hasCore = new Uint8Array(comp.count + 1);
   for (let i = 0; i < cores.m.length; i++) if (cores.m[i]) hasCore[comp.labels[i]] = 1;
   const keep = new Uint8Array(comp.count + 1);
@@ -158,7 +174,7 @@ export function readWalls(source){
   if (wallCount < 0.005 * img.w * img.h) { quality.ok = false; quality.reason = "noWalls"; }
   // walls thinner than 0.6 % of the image (hairline drawings, small or faint images) can't be told from
   // furniture and fixture lines reliably
-  else if (share < 0.15 || thick < 0.006 * long) { quality.ok = false; quality.reason = "noThickness"; }
+  else if (share < 0.15 || outerThick < 0.006 * long) { quality.ok = false; quality.reason = "noThickness"; }
   else {
     const ac = angleContrast(walls, 10, 1);
     if (ac.best < 1.2 * ac.worst) { quality.ok = false; quality.reason = "noAngle"; }
@@ -167,7 +183,8 @@ export function readWalls(source){
   // 4. door and window gaps, bridged along each wall's own line
   const hl = Math.max(9, Math.ceil(1.5 * thick));
   const hMask = openLine(walls, hl, "h"), vMask = openLine(walls, hl, "v");
-  const hNew = bridgeAlong(walls, hMask, doorLen, "h"), vNew = bridgeAlong(walls, vMask, doorLen, "v");
+  const wideLen = Math.round(0.2 * long);
+  const hNew = bridgeAlong(walls, hMask, doorLen, "h", wideLen, dark), vNew = bridgeAlong(walls, vMask, doorLen, "v", wideLen, dark);
   const closed = maskOr(walls, hNew, vNew);
   const bridges = bridgeList(hNew, vNew, thick);
 
@@ -196,5 +213,5 @@ export function readWalls(source){
     if (fa < 0.35 * (x1 - x0 + 1) * (y1 - y0 + 1)){ quality.ok = false; quality.reason = "noEnclosure"; }
   }
 
-  return {angle, size:{w:img.w, h:img.h}, src, thick, walls, closed, foot, bridges, quality};
+  return {angle, size:{w:img.w, h:img.h}, src, thick, outerThick, walls, closed, foot, bridges, quality};
 }

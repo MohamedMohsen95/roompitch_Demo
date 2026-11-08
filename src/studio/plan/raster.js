@@ -122,6 +122,23 @@ export function dilate(mask, r){
   return filter1D(filter1D(mask, 2 * r + 1, "h", false), 2 * r + 1, "v", false);
 }
 
+// Chamfer (3-4) distance of each set pixel to the nearest unset pixel or the image edge, in pixels.
+export function distance(mask){
+  const {w, h, m} = mask, d = new Float32Array(w * h), INF = 1e9;
+  for (let i = 0; i < w * h; i++) d[i] = m[i] ? INF : 0;
+  const at = (x, y) => (x < 0 || y < 0 || x >= w || y >= h) ? 0 : d[y * w + x];
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++){
+    const i = y * w + x; if (!d[i]) continue;
+    d[i] = Math.min(d[i], at(x - 1, y) + 3, at(x, y - 1) + 3, at(x - 1, y - 1) + 4, at(x + 1, y - 1) + 4);
+  }
+  for (let y = h - 1; y >= 0; y--) for (let x = w - 1; x >= 0; x--){
+    const i = y * w + x; if (!d[i]) continue;
+    d[i] = Math.min(d[i], at(x + 1, y) + 3, at(x, y + 1) + 3, at(x + 1, y + 1) + 4, at(x - 1, y + 1) + 4);
+  }
+  for (let i = 0; i < w * h; i++) d[i] /= 3;
+  return d;
+}
+
 export const maskOr = (...ms) => { const out = newMask(ms[0].w, ms[0].h); for (const mk of ms) for (let i = 0; i < out.m.length; i++) out.m[i] |= mk.m[i]; return out; };
 export const maskNot = (mk) => ({w:mk.w, h:mk.h, m:mk.m.map(v => 1 - v)});
 

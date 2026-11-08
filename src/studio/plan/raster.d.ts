@@ -16,3 +16,4 @@ export function angleContrast(mask: Mask, range?: number, step?: number): {angle
 export function rotateImg(img: Img, deg: number, fill?: number[], expand?: boolean): Img;
 export function rotatePoint(p: [number, number], deg: number, from: {w: number, h: number}, to: {w: number, h: number}): [number, number];
 export function dilate(mask: Mask, r: number): Mask;
+export function distance(mask: Mask): Float32Array;

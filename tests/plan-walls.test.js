@@ -14,14 +14,14 @@ for (const name of ["arcmax", "etsy", "ex4"]){
   test(`${name}: walls found, thickness close to the generator's`, () => {
     const r = read(name);
     assert.equal(r.quality.ok, true, String(r.quality.reason));
-    assert.ok(r.thick >= E[name].thick * 0.6 && r.thick <= E[name].thick * 1.4, `thick ${r.thick} vs ${E[name].thick}`);
+    assert.ok(r.outerThick >= E[name].thick * 0.6 && r.outerThick <= E[name].thick * 1.4, `outer thick ${r.outerThick} vs ${E[name].thick}`);
     assert.ok(Math.abs(r.angle) < 0.3);
     for (const room of E[name].rooms) assert.equal(at(r.foot, toStraight(r, [room.x, room.y])), 1, `${room.name} inside the footprint`);
   });
   test(`${name}_scan: still readable`, () => {
     const r = read(name + "_scan");
     assert.equal(r.quality.ok, true, String(r.quality.reason));
-    assert.ok(r.thick >= E[name].thick * 0.5 && r.thick <= E[name].thick * 1.6, `thick ${r.thick}`);
+    assert.ok(r.outerThick >= E[name].thick * 0.5 && r.outerThick <= E[name].thick * 1.6, `outer thick ${r.outerThick}`);
   });
   test(`${name}_rot3: straightened`, () => {
     const r = read(name + "_rot3");
