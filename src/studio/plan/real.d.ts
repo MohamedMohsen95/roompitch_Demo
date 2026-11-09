@@ -5,3 +5,8 @@ export type RealFlat = {spaces: {id: string, poly: Point[]}[], openings: {id: st
 export function realOf(flat: Flat): RealFlat;
 export function materialize(flat: Flat): Flat;
 export function realSpace(flat: Flat, id: string): {id: string, poly: Point[]} | null;
+export function rescale(flat: Flat, factor: number): Flat;
+export function syncTracing(prev: Flat, next: Flat): Flat;
+export function realDiff(flat: Flat): Set<string>;
+export function realOverlaps(flat: Flat): [string, string][];
+export function resetReal(flat: Flat): Flat;
