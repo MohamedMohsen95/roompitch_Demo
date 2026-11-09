@@ -125,3 +125,22 @@ test("two rooms 20 % apart don't agree", () => {
   f.spaces = [{...space("a", box(0, 0, 100, 100), null), areaText:"100 sq ft"}, {...space("b", box(200, 0, 100, 100), null), areaText:"144 sq ft"}];
   assert.equal(scaleFromSizes(f).scale, null);
 });
+
+test("readyFlat: goes on with what is there — suggestions kept as rooms, a guessed scale when none", async () => {
+  const { readyFlat, withSizeScale } = await import("../src/studio/plan/flat.js");
+  const sq = (x, s) => [[x, 0], [x + s, 0], [x + s, s], [x, s]];
+  const f = {...newFlat({w:1000, h:500}), spaces:[
+    {id:"a", name:"", outline:sq(0, 100), sizeText:null, status:"todo", design:null, fromAI:true, suggested:true},
+    {id:"b", name:"Hall", outline:sq(100, 100), sizeText:null, status:"todo", design:null, fromAI:true}]};
+  const r = readyFlat(f, (i) => "Space " + (i + 1));
+  assert.equal(r.spaces.every(s => !s.suggested), true);
+  assert.deepEqual(r.spaces.map(s => s.name), ["Space 1", "Hall"]);
+  assert.equal(r.scaleFrom, "guess");
+  assert.ok(Math.abs(r.scale - 0.035) < 1e-9);          // a typical room is 3.5 m across
+  const set = {...f, scale:0.02, scaleFrom:"wall"};
+  assert.equal(readyFlat(set, () => "").scale, 0.02);
+  assert.equal(readyFlat(set, () => "").scaleFrom, "wall");
+  // a guessed scale stays while nothing better is known
+  assert.equal(withSizeScale(r).scaleFrom, "guess");
+  assert.equal(withSizeScale(r).scale, r.scale);
+});

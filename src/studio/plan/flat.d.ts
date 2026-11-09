@@ -6,7 +6,7 @@ export type Space = {id: string, name: string, outline: Point[], sizeText: strin
 export type PlanOpening = {id: string, type: "door" | "window", a: Point, b: Point, heightCm: number, sillCm: number, fromAI: boolean};
 export type Flat = {
   v: 1 | 2, image: {w: number, h: number, path?: string, dataUrl?: string},
-  scale: number | null, scaleFrom: "sizes" | "wall" | null, H: number,
+  scale: number | null, scaleFrom: "sizes" | "wall" | "guess" | null, H: number,
   scaleAsked?: boolean,               // the "whole plan or only this?" question was answered
   real?: RealFlat | null,             // the real flat in metres; null = the tracing × scale
   spaces: Space[], openings: PlanOpening[], unplaced?: {name: string, sizeText: string | null, areaText?: string | null}[]
@@ -27,6 +27,7 @@ export function spaceRoom(flat: Flat, spaceId: string): SpaceRoom;
 export function writeBackOpenings(flat: Flat, spaceId: string, openings: Opening[]): Flat;
 export function neighbours(flat: Flat, spaceId: string, withinM?: number): Point[][];
 export function withSizeScale(flat: Flat): Flat;
+export function readyFlat(flat: Flat, nameFor: (i: number) => string): Flat;
 export function newId(prefix: string): string;
 export function nearestPlanWall(flat: Flat, p: Point, tolPx: number, onlySpaceId?: string | null): {spaceId: string, i: number, a: Point, b: Point, len: number, t: number, d: number} | null;
 export const WALL_TOL_M: number;

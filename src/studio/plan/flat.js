@@ -253,10 +253,20 @@ export function neighbours(flat, spaceId, withinM = 4){
   }).map(o => orientCW(o.poly).map(p => toLocal(p, origin, 1)));
 }
 
+// Going on to the flat with what is there: suggested rooms are kept as rooms, unnamed ones get a name, and
+// with no scale yet one is guessed (a typical room 3.5 m across: the median room's √area) and marked so.
+export function readyFlat(flat, nameFor){
+  const spaces = flat.spaces.map((s, i) => ({...s, suggested:false, name:s.name.trim() ? s.name : nameFor(i)}));
+  if (flat.scale > 0 || !spaces.length) return {...flat, spaces};
+  const side = median(spaces.filter(s => s.outline.length >= 3).map(s => Math.sqrt(pxArea(s.outline))));
+  return side > 0 ? {...flat, spaces, scale:3.5 / side, scaleFrom:"guess"} : {...flat, spaces};
+}
+
 // After spaces or sizes change: the scale follows the written sizes, unless the designer set it from a wall.
 export function withSizeScale(flat){
   if (flat.scaleFrom === "wall" && flat.scale) return flat;
   const {scale} = scaleFromSizes(flat);
+  if (!scale && flat.scaleFrom === "guess" && flat.scale) return flat;     // a guess stays until sizes give a scale
   return {...flat, scale, scaleFrom:scale ? "sizes" : null};
 }
 

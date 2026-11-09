@@ -41,6 +41,7 @@ export default function FlatScreen({flat, onOpenSpace, onEditPlan, onMarkDone, o
       </header>
       <div className="setup-form">
         <p className="dnote">{t("flatSub")}</p>
+        {flat.scaleFrom === "guess" && <p className="dnote err">{t("scaleGuessed")} <button className="btn small" type="button" onClick={onEditPlan}>{t("editPlan")}</button></p>}
         <div className="flat-grid">
           <div className="panel col-preview">
             <p className="dnote">{t("flatClickRoom")}</p>

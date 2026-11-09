@@ -4,7 +4,7 @@
 import { useEffect, useReducer, useRef, useState } from "react";
 import { t } from "../../i18n.js";
 import { setCode } from "../../render-ai.js";
-import { newFlat, orientCW, outlineProblem, scaleFromSizes, scaleFromWall, strayOpenings, withSizeScale } from "../../plan/flat.js";
+import { newFlat, orientCW, outlineProblem, readyFlat, scaleFromSizes, scaleFromWall, strayOpenings, withSizeScale } from "../../plan/flat.js";
 import { realSpace, realOverlaps, rescale, resetReal, syncTracing, planLayout } from "../../plan/real.js";
 import { roomBox, planCorrection, applyCorrection, type Correction, type CorrectionPlan } from "../../plan/correct.js";
 import RealFlatView from "./RealFlatView";
@@ -196,9 +196,10 @@ export default function PlanImport(props: Props){
     else if (flagged.includes(s.id)) bad[s.id] = t("sizeDisagrees");
   }
   const sugCount = flat.spaces.filter(s => s.suggested).length;
-  const blockers = !flat.spaces.length ? t("needSpace") : !flat.scale ? t("needScale")
-    : sugCount ? t("needConfirm", {n:sugCount})
-    : flat.spaces.some(s => outlineProblem(s.outline)) ? t("needFixOutline") : "";
+  // Only "no room at all" stops going on; the rest is said and can be fixed later.
+  const blockers = !flat.spaces.length ? t("needSpace") : "";
+  const gaps = [!flat.scale ? t("gapScale") : "", sugCount ? t("gapSuggested", {n:sugCount}) : "",
+    flat.spaces.some(s => outlineProblem(s.outline)) ? t("needFixOutline") : ""].filter(Boolean);
   const stray = strayOpenings(flat);
   const selSpace = sel?.kind === "space" ? flat.spaces.find(s => s.id === sel.id) || null : null;
   const selOpen = sel?.kind === "opening" ? flat.openings.find(o => o.id === sel.id) || null : null;
@@ -271,7 +272,7 @@ export default function PlanImport(props: Props){
             <section className="sblock">
               <h2>{t("scaleTitle")}</h2>
               <p className={"dnote" + (flat.scale ? "" : " err")}>
-                {flat.scaleFrom === "sizes" ? t("scaleSizes") : flat.scaleFrom === "wall" ? t("scaleWall") : t("scaleNone")}
+                {flat.scaleFrom === "sizes" ? t("scaleSizes") : flat.scaleFrom === "wall" ? t("scaleWall") : flat.scaleFrom === "guess" ? t("scaleGuessed") : t("scaleNone")}
               </p>
               {flat.scale && (
                 <button className={"btn small" + (armRescale ? " primary" : "")} type="button" aria-pressed={armRescale} onClick={() => setArmRescale(v => !v)}>
@@ -435,8 +436,8 @@ export default function PlanImport(props: Props){
         )}
         <div className="setup-actions">
           <button className="btn" type="button" onClick={props.onCancel}>{t("backChoice")}</button>
-          <span className="dnote">{blockers}</span>
-          <button className="btn primary" type="button" disabled={Boolean(blockers) || busy} onClick={() => props.onDone({...flat, spaces:flat.spaces.map((x, i) => x.name.trim() ? x : {...x, name:t("spaceN", {n:i + 1})})}, isNew)}>
+          <span className="dnote">{blockers || (gaps.length ? gaps.join(" ") + " " + t("gapsLater") : "")}</span>
+          <button className="btn primary" type="button" disabled={Boolean(blockers) || busy} onClick={() => props.onDone(readyFlat(flat, i => t("spaceN", {n:i + 1})), isNew)}>
             {flat.spaces.length > 1 ? t("planNextFlat") : t("startDesign")}
           </button>
         </div>
