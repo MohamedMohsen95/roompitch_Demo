@@ -35,7 +35,7 @@ test("a flat space becomes a studio room in local metres", () => {
 
 test("a door on a shared wall belongs to both spaces", () => {
   const r = spaceRoom(twoRooms(), "right");
-  assert.deepEqual(r.origin, [200, 0]);
+  assert.deepEqual(r.origin, [4, 0]);                 // metres in the real flat
   const door = r.openings.find(o => o.id === "d1");
   assert.equal(door.wall, 3);                 // the left wall runs upwards, from (0,2) to (0,0)
   assert.ok(near(door.offset, 0.5) && near(door.width, 0.9));
@@ -94,6 +94,7 @@ test("a door in a real wall belongs to both rooms and stays in the wall when mov
   assert.ok(spaceRoom(f, "right").openings.some(o => o.id === "d1"));
   const f2 = writeBackOpenings(f, "left", spaceRoom(f, "left").openings.map(o => o.id === "d1" ? {...o, offset:1.0} : o));
   assert.ok(Math.abs(f2.openings.find(o => o.id === "d1").a[0] - 203.75) < 1e-6);
+  assert.ok(Math.abs(f2.real.openings.find(o => o.id === "d1").a[0] - 4.075) < 1e-6);   // still on the wall centre
   const right = spaceRoom(f2, "right").openings.find(o => o.id === "d1");
   assert.ok(right && near(right.offset, 0.1));
 });
@@ -115,4 +116,27 @@ test("typing a wall length carries the openings past its end", async () => {
   assert.deepEqual(g.openings.find(o => o.id === "w1").a, [50, 0]);  // on wall 0 but before its end
   assert.deepEqual(strayOpenings(g), []);
   assert.deepEqual(strayOpenings({...f, openings:[...f.openings, {id:"x", type:"door", a:[100, 50], b:[120, 50], heightCm:210, sillCm:0, fromAI:false}]}), ["x"]);
+});
+
+test("spaceRoom follows a corrected real flat", async () => {
+  const { applyCorrection } = await import("../src/studio/plan/correct.js");
+  const f = twoRooms();                          // left 4 × 2 m, right 4 × 2 m, door d1 on the shared wall
+  const g = applyCorrection(f, {kind:"room", spaceId:"left", axis:"width", cm:440}, {whole:true});
+  const r = spaceRoom(g, "left");
+  assert.equal(r.form.lengthCm, 440);
+  const door = r.openings.find(o => o.id === "d1");
+  assert.ok(door && door.wall === 1 && near(door.width, 0.9));
+  assert.equal(spaceRoom(g, "right").form.lengthCm, 360);
+});
+
+test("writeBackOpenings writes the real flat and leaves the tracing alone", () => {
+  const f = twoRooms();
+  const room = spaceRoom(f, "left");
+  const f2 = writeBackOpenings(f, "left", room.openings.map(o => o.id === "d1" ? {...o, offset:1.0} : o));
+  assert.deepEqual(f2.openings.find(o => o.id === "d1").a, [200, 30]);
+  const d = f2.real.openings.find(o => o.id === "d1");
+  assert.ok(near(d.a[1], 1.0) && near(d.a[0], 4));
+  const n = writeBackOpenings(f, "left", [...room.openings, {id:"n1", type:"window", wall:2, offset:1, width:1, height:1.2, sill:0.9}]);
+  const t = n.openings.find(o => o.id === "n1");
+  assert.ok(t && near(t.a[1], 100, 0.6));        // the new window also on the tracing, real ÷ scale
 });
