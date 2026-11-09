@@ -57,8 +57,10 @@ drawn wall always counts — diagonal or short — and an erase always removes. 
 - `wall`: the line, `thick` wide, is OR-ed into `walls`, `closed` and the footprint's outer mask; a gap between
   either end of it and the nearest wall straight ahead (along the line) of up to 1.5 m (or `doorLen` px with no
   scale) is closed in `closed` and recorded as a bridge marked `drawn: true`.
-- `erase`: a band 1.6 × `thick` wide is cleared from `walls` (so no wall is drawn there). What it does to the
-  room boundary (`closed`) is in the open question below.
+- `erase`: a band 1.6 × `thick` wide is cleared from `walls` (so no wall is drawn there), but the room
+  boundary stays: the erased stretch's centre line, `thick` wide, is kept in `closed` (Mohamed's decision: the two
+  sides stay two spaces, each designed on its own; the erased part is an `open` between them, so on the drawing
+  and in 3D they look open to each other). An erase therefore never merges rooms.
 - Then the room candidates are computed again. New worker message `{type: "edit", gen, edits}` re-applies all
   edits to the stored first reading and recomputes the candidates; it returns `{quality, thick, candidates}` like
   `read`. Called after each edit (on mouse-up). `readPlan` takes the edits too, so "Read again" and "Edit plan"
