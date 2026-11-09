@@ -107,6 +107,12 @@ width moves one vertical side, changing length one horizontal side:
   if both are exterior (the room spans the flat), move the right / bottom side and say the outside changed.
 - moving a side moves, in the real flat, every corner of this room on that side **and** the facing corners of
   each neighbour across it (same displacement), so the shared wall moves as one and the neighbour resizes;
+- **when the wall line runs on past this room** (a neighbour's facing edge is longer than this room's side, so
+  other rooms also sit on that line), the user is asked **every time** (Mohamed's decision): "Move the whole
+  wall" — every corner on that line moves, so every room along it changes (each listed in the dialog) — or
+  "Only this room's part" — the neighbour gets two new corners at this room's ends, forming a step, and the
+  rooms past it stay. Cancel = no change. The confirmed-neighbour warning goes in the same dialog, not a second
+  one;
 - openings on the moved wall move with it; openings on walls that stretch keep their distance from the fixed end.
 - if a neighbour that would change is in `confirmed`, warn ("Living / Dining is 400 × 520, confirmed — it will
   become 360 × 520") with Apply / Cancel.
