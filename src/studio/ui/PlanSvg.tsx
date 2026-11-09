@@ -71,7 +71,9 @@ export default function PlanSvg({lang, sel = null, gridId = "g"}: {lang: string,
       return (
         <g key={o.id} data-opening={o.id} style={{cursor:"move"}}>
           <line x1={f2(p0[0])} y1={f2(p0[1])} x2={f2(p1[0])} y2={f2(p1[1])} stroke="var(--stage)" strokeWidth={T + .02}/>
-          {o.type === "door"
+          {o.type === "open"
+            ? <line x1={f2(p0[0])} y1={f2(p0[1])} x2={f2(p1[0])} y2={f2(p1[1])} stroke={ink} strokeWidth={sw * .7} strokeDasharray=".1 .08"/>
+            : o.type === "door"
             ? <path d={`M${pt(p0)} L${pt(tip)} A${o.width} ${o.width} 0 0 ${sweep} ${pt(p1)}`} fill={on ? "var(--accent-soft)" : "none"} stroke={ink} strokeWidth={sw}/>
             : <>
                 {[-.035, .035].map(k => <line key={k} {...off(k)} stroke={ink} strokeWidth={sw}/>)}

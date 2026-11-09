@@ -140,3 +140,13 @@ test("writeBackOpenings writes the real flat and leaves the tracing alone", () =
   const t = n.openings.find(o => o.id === "n1");
   assert.ok(t && near(t.a[1], 100, 0.6));        // the new window also on the tracing, real ÷ scale
 });
+
+test("an open part opens the full height, floor to ceiling", () => {
+  const f = twoRooms();
+  f.openings.push({id:"op", type:"open", a:[0, 20], b:[0, 80], heightCm:210, sillCm:30, fromAI:false, fromEdit:true});
+  const o = spaceRoom(f, "left").openings.find(x => x.id === "op");
+  assert.ok(o);
+  assert.equal(o.type, "open");
+  assert.equal(o.height, f.H);
+  assert.equal(o.sill, 0);
+});

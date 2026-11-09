@@ -113,6 +113,7 @@ function buildOpening(o, w, selected){
   const c = alongWall(w, o.offset + o.width / 2), [x, z] = toWorld(c[0] - normal[0] * T / 2, c[1] - normal[1] * T / 2);
   const g = new THREE.Group();
   g.position.set(x, 0, z); g.rotation.y = Math.atan2(normal[0], normal[1]);
+  if (o.type === "open") return g;      // an open part: the wall is cut, nothing fills it
   const accent = selected ? new THREE.Color(cssVar("--accent")) : null;
   const glow = (m, k) => { if (accent){ m.emissive = accent; m.emissiveIntensity = k; } return m; };
   const add = (mesh, mx, my, mz, shadow = true) => { mesh.position.set(mx, my, mz); mesh.castShadow = shadow; mesh.receiveShadow = true; g.add(mesh); return mesh; };

@@ -134,7 +134,7 @@ export function validateOpenings(poly, H, openings){
     const w = walls[o.wall];
     if (o.width < 0.3 - EPS || o.height < 0.3 - EPS) err[o.id] = "tooSmall";
     else if (!w || o.offset < -EPS || o.offset + o.width > w.len + EPS) err[o.id] = "beyondWall";
-    else if ((o.type === "door" ? 0 : o.sill) + o.height > H + EPS || o.sill < -EPS) err[o.id] = "tooTall";
+    else if ((o.type === "door" || o.type === "open" ? 0 : o.sill) + o.height > H + EPS || (o.type !== "open" && o.sill < -EPS)) err[o.id] = "tooTall";
   }
   for (let i = 0; i < openings.length; i++) for (let j = i + 1; j < openings.length; j++){
     const a = openings[i], b = openings[j];

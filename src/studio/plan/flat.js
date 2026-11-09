@@ -185,7 +185,8 @@ export function spaceRoom(flat, spaceId){
     openings.push({
       id:o.id, type:p.type, wall:w.wall,
       offset:r6(w.t0), width:r6(w.t1 - w.t0),
-      height:(p.heightCm || 0) / 100, sill:p.type === "window" ? (p.sillCm || 0) / 100 : 0
+      // an open part (no wall) is open floor to ceiling
+      height:p.type === "open" ? flat.H : (p.heightCm || 0) / 100, sill:p.type === "window" ? (p.sillCm || 0) / 100 : 0
     });
   }
   const [w, h] = bboxPx(outline);
