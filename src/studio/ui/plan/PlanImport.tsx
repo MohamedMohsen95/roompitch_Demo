@@ -4,7 +4,11 @@
 import { useEffect, useReducer, useRef, useState } from "react";
 import { t } from "../../i18n.js";
 import { setCode } from "../../render-ai.js";
-import { newFlat, outlineProblem, scaleFromSizes, scaleFromWall, stretchWall, strayOpenings, wallLengthsCm, withSizeScale } from "../../plan/flat.js";
+import { newFlat, orientCW, outlineProblem, scaleFromSizes, scaleFromWall, strayOpenings, withSizeScale } from "../../plan/flat.js";
+import { realSpace, realOverlaps, rescale, resetReal, syncTracing, planLayout } from "../../plan/real.js";
+import { roomBox, planCorrection, applyCorrection, type Correction, type CorrectionPlan } from "../../plan/correct.js";
+import RealFlatView from "./RealFlatView";
+import CorrectDialog from "./CorrectDialog";
 import { polyArea } from "../../geometry.js";
 import type { Flat } from "../../plan/flat";
 import NumField from "../NumField";
@@ -38,7 +42,10 @@ export default function PlanImport(props: Props){
   const [busy, setBusy] = useState(false);
   const [needCode, setNeedCode] = useState(false);
   const [code, setCodeText] = useState("");
-  const [lengthSets, setLengthSets] = useState<"stretch" | "scale">("stretch");
+  const [armRescale, setArmRescale] = useState(false);   // the next number rescales the whole plan
+  const [ask, setAsk] = useState<{kind: "scale" | "line", f: Flat, c: Correction, plan?: CorrectionPlan, side?: number} | null>(null);
+  const [last, setLast] = useState<{before: Flat, c: Correction, otherSide: number} | null>(null);   // "move the other side"
+  const [layout, setLayout] = useState<"stacked" | "side" | null>(() => { try { return (localStorage.getItem("rp_plan_layout") as any) || null; } catch { return null; } });
   const [isNew, setIsNew] = useState(!props.initialFlat);
   const [armRead, setArmRead] = useState(false);       // "Read again" over designed spaces waits for a second click
   const codeRef = useRef<HTMLInputElement>(null);
@@ -53,7 +60,8 @@ export default function PlanImport(props: Props){
     readFromWalls({dataUrl:src, w:f.image.w, h:f.image.h}, {ai:false, t}).then(r => { walls.current = r.walls; redraw(); }).catch(() => {});
   }, [props.imageUrl]);
   const say = (text: string, err = false) => setStatus({text, err});
-  const change = (f: Flat) => setFlat(withSizeScale(f));
+  // A tracing edit: the scale follows the written sizes, and a real flat that differs follows the edit.
+  const change = (f: Flat) => setFlat(prev => prev ? syncTracing(prev, withSizeScale(f)) : withSizeScale(f));
 
   async function readPlan(f: Flat){
     // Reading again replaces the spaces: designs carry over only to spaces with the same name.
@@ -193,22 +201,54 @@ export default function PlanImport(props: Props){
   const stray = strayOpenings(flat);
   const selSpace = sel?.kind === "space" ? flat.spaces.find(s => s.id === sel.id) || null : null;
   const selOpen = sel?.kind === "opening" ? flat.openings.find(o => o.id === sel.id) || null : null;
-  const lens = selSpace && flat.scale ? wallLengthsCm(selSpace.outline, flat.scale) : null;
+  const selReal = selSpace && flat.scale ? realSpace(flat, selSpace.id) : null;
+  const lens = selReal ? selReal.poly.map((p, i) => { const q = selReal.poly[(i + 1) % selReal.poly.length]; return Math.round(Math.hypot(q[0] - p[0], q[1] - p[1]) * 1000) / 10; }) : null;
+  const box = selSpace && flat.scale ? roomBox(flat, selSpace.id) : null;
+  const overlaps = flat.scale ? realOverlaps(flat) : [];
+  const shownLayout = layout || planLayout(flat.image);
   const setSpace = (id: string, patch: object) => change({...flat, spaces:flat.spaces.map(s => s.id === id ? {...s, ...patch} : s)});
   const setOpen = (id: string, patch: object) => change({...flat, openings:flat.openings.map(o => o.id === id ? {...o, ...patch, fromAI:false} : o)});
 
-  function typeWall(i: number, cm: number){
-    if (!selSpace || !(cm > 0)) return;
-    const o = selSpace.outline, a = o[i], b = o[(i + 1) % o.length];
-    if (!flat!.scale || lengthSets === "scale"){
-      const scale = scaleFromWall(Math.hypot(b[0] - a[0], b[1] - a[1]), cm);
-      if (scale) setFlat({...flat!, scale, scaleFrom:"wall"});
-      setLengthSets("stretch");
+  // A typed size. No scale yet: it sets the scale. The first time: ask whether the whole plan is off (rescale,
+  // nothing moves) or only this room or wall (a correction of the real flat).
+  const shownCm = (c: Correction) => c.kind === "room" ? (c.axis === "width" ? box!.width : box!.length) : lens![c.i];
+  function onNumber(c: Correction){
+    const f = flat!;
+    if (!(c.cm > 0) || !selSpace) return;
+    if (!f.scale){
+      const o = orientCW(selSpace.outline), i = c.kind === "room" ? (c.axis === "width" ? 0 : 1) : c.i, a = o[i % o.length], b = o[(i + 1) % o.length];
+      const scale = scaleFromWall(Math.hypot(b[0] - a[0], b[1] - a[1]), c.cm);
+      if (scale) setFlat({...f, scale, scaleFrom:"wall", scaleAsked:true});
       return;
     }
-    // A typed length is the truth: the scale stops following the written sizes from here on.
-    setFlat({...stretchWall(flat!, selSpace.id, i, cm), scaleFrom:"wall"});
+    if (armRescale){ setArmRescale(false); whole(f, c); return; }
+    if (!f.scaleAsked){ setAsk({kind:"scale", f, c}); return; }
+    correct(f, c);
   }
+  function whole(f: Flat, c: Correction){
+    const shown = shownCm(c);
+    if (shown > 0) setFlat({...rescale(f, c.cm / shown), scaleAsked:true, scaleFrom:"wall"});
+  }
+  function correct(f: Flat, c: Correction, side?: number){
+    const plan = planCorrection(f, c, {side});
+    if (!plan.ok){ if (plan.reason !== "noChange") say(t(plan.reason === "noScale" ? "needScale" : plan.reason), true); return; }
+    if (plan.runsPast || plan.affected.slice(1).some(a => a.confirmed)){ setAsk({kind:"line", f, c, plan, side}); return; }
+    finish(f, c, plan, true, side);
+  }
+  function finish(f: Flat, c: Correction, plan: CorrectionPlan, isWhole: boolean, side?: number){
+    if (!plan.ok) return;
+    setFlat(applyCorrection(f, c, {whole:isWhole, side:side ?? plan.side}));
+    setLast(plan.otherSide != null ? {before:f, c, otherSide:plan.otherSide} : null);
+    say(plan.outsideMoved ? t("outsideMoved") : "");
+  }
+  // the last correction again from before it, on the room's other side
+  function otherSide(){
+    if (!last) return;
+    const {before, c, otherSide: side} = last;
+    setLast(null);
+    correct(before, c, side);
+  }
+  const pickLayout = (v: "stacked" | "side") => { setLayout(v); try { localStorage.setItem("rp_plan_layout", v); } catch { /* private window */ } };
 
   return (
     <section className="setup wrap">
@@ -232,8 +272,8 @@ export default function PlanImport(props: Props){
                 {flat.scaleFrom === "sizes" ? t("scaleSizes") : flat.scaleFrom === "wall" ? t("scaleWall") : t("scaleNone")}
               </p>
               {flat.scale && (
-                <label className="chk"><input type="checkbox" checked={lengthSets === "scale"} onChange={e => setLengthSets(e.target.checked ? "scale" : "stretch")}/>
-                  <span>{t("scaleNext")}</span></label>
+                <button className={"btn small" + (armRescale ? " primary" : "")} type="button" aria-pressed={armRescale} onClick={() => setArmRescale(v => !v)}>
+                  {t(armRescale ? "rescaleArmed" : "rescaleWhole")}</button>
               )}
               <div className="fgrid">
                 <label><span>{t("heightCm")}</span>
@@ -285,15 +325,28 @@ export default function PlanImport(props: Props){
                         <label className="ssize"><span>{t("sizeText")}</span>
                           <input value={s.sizeText || ""} placeholder="12'-0&quot; x 14'-6&quot;" dir="ltr"
                             onChange={e => setSpace(s.id, {sizeText:e.target.value || null})}/></label>
-                        <h3>{t("wallsTitle")}</h3>
-                        <div className="ofields walls">
-                          {s.outline.map((_, i) => (
-                            <label key={i}><span>{t("wallN", {n:i + 1})}</span>
-                              <NumField min="1" step="1" inputMode="numeric" value={lens ? lens[i] : ""} placeholder={t("cm")}
-                                onCommit={v => typeWall(i, Math.round(Number(v)))}/>
+                        {box?.rect && (
+                          <div className="ofields roombox">
+                            <label><span>{t("roomWidth")}</span>
+                              <NumField min="30" step="1" inputMode="numeric" value={Math.round(box.width)} onCommit={v => onNumber({kind:"room", spaceId:s.id, axis:"width", cm:Math.round(Number(v))})}/>
                               <small>{t("cm")}</small></label>
-                          ))}
-                        </div>
+                            <label><span>{t("roomLength")}</span>
+                              <NumField min="30" step="1" inputMode="numeric" value={Math.round(box.length)} onCommit={v => onNumber({kind:"room", spaceId:s.id, axis:"length", cm:Math.round(Number(v))})}/>
+                              <small>{t("cm")}</small></label>
+                          </div>
+                        )}
+                        {last && last.c.spaceId === s.id && <button className="btn small" type="button" onClick={otherSide}>{t("otherSide")}</button>}
+                        <details className="wallsone" open={!box?.rect || !flat.scale}>
+                          <summary>{t("wallsOneByOne", {n:(selReal?.poly.length ?? s.outline.length)})}</summary>
+                          <div className="ofields walls">
+                            {(selReal ? selReal.poly : s.outline).map((_, i) => (
+                              <label key={i}><span>{t("wallN", {n:i + 1})}</span>
+                                <NumField min="1" step="1" inputMode="numeric" value={lens ? lens[i] : ""} placeholder={t("cm")}
+                                  onCommit={v => onNumber({kind:"wall", spaceId:s.id, i, cm:Math.round(Number(v))})}/>
+                                <small>{t("cm")}</small></label>
+                            ))}
+                          </div>
+                        </details>
                         <button className="btn small" type="button" onClick={() => {
                           // A corner in the middle of the wall after the selected corner (wall 1 when none is selected), to drag into place.
                           const i = sel?.kind === "space" && sel.corner != null ? sel.corner : 0, o = s.outline, q = o[(i + 1) % o.length];
@@ -346,11 +399,38 @@ export default function PlanImport(props: Props){
               )}
             </section>
           </div>
-          <div className="panel col-preview">
-            <PlanEditor flat={flat} imageUrl={imageUrl} onChange={change} sel={sel} onSelect={setSel} tool={tool} onTool={setTool} bad={bad}
-              walls={walls.current} onNotice={text => say(text, true)}/>
+          <div className={"panel col-preview " + shownLayout}>
+            <div className="pv">
+              <div className="pvhead"><strong>{t("tracing")}</strong><span className="dnote">{t("tracingSub")}</span>
+                <button className="btn small" type="button" onClick={() => pickLayout(shownLayout === "stacked" ? "side" : "stacked")}>{t(shownLayout === "stacked" ? "layoutSide" : "layoutStacked")}</button></div>
+              <PlanEditor flat={flat} imageUrl={imageUrl} onChange={change} sel={sel} onSelect={setSel} tool={tool} onTool={setTool} bad={bad}
+                walls={walls.current} onNotice={text => say(text, true)}/>
+            </div>
+            {flat.scale && (
+              <div className="pv">
+                <div className="pvhead"><strong>{t("realFlat")}</strong><span className="dnote">{t("realFlatSub")}</span></div>
+                {overlaps.length > 0 && (
+                  <p className="oerr">{t("overlapNotice")} <button className="btn small" type="button" onClick={() => setFlat(resetReal(flat))}>{t("resetReal")}</button></p>
+                )}
+                <RealFlatView flat={flat} diff highlight={selSpace?.id ?? null} onPick={id => setSel({kind:"space", id})}/>
+              </div>
+            )}
           </div>
         </div>
+        {ask && (
+          <CorrectDialog kind={ask.kind} plan={ask.plan}
+            onCancel={() => setAsk(null)}
+            onWhole={() => {
+              const a = ask; setAsk(null);
+              if (a.kind === "scale") whole(a.f, a.c);
+              else if (a.plan) finish(a.f, a.c, a.plan, true, a.side);
+            }}
+            onPart={() => {
+              const a = ask; setAsk(null);
+              if (a.kind === "scale") correct({...a.f, scaleAsked:true, scaleFrom:"wall"}, a.c);
+              else if (a.plan) finish(a.f, a.c, a.plan, false, a.side);
+            }}/>
+        )}
         <div className="setup-actions">
           <button className="btn" type="button" onClick={props.onCancel}>{t("backChoice")}</button>
           <span className="dnote">{blockers}</span>

@@ -441,3 +441,28 @@ details p{margin:6px 0 0; font-family:var(--font-data); font-size:11.5px; line-h
   .pair{grid-template-columns:1fr}
 }
 @media (prefers-reduced-motion: reduce){*{transition:none!important}}
+/* Tracing and real flat */
+.col-preview.side{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:10px; align-items:start}
+.pv{display:flex; flex-direction:column; gap:6px; min-width:0}
+.pvhead{display:flex; align-items:baseline; gap:8px; flex-wrap:wrap}
+.pvhead .dnote{margin:0; flex:1}
+.realplan{width:100%; height:auto; max-height:60vh; display:block; background:#fff; border:1px solid var(--line); border-radius:8px}
+.realplan.compact{max-height:200px}
+.realplan .rroom polygon{fill:var(--sunk); stroke:var(--ink); stroke-linejoin:miter}
+.realplan .rroom[role=button]{cursor:pointer}
+.realplan .rroom[role=button]:hover polygon, .realplan .rroom:focus-visible polygon{fill:var(--accent-soft)}
+.realplan .rroom.on polygon{fill:var(--accent-soft); stroke:var(--accent)}
+.realplan .rroom.changed polygon{fill:rgba(214,137,16,.14); stroke:#d68910}
+.realplan .rroom.over polygon{fill:var(--danger-soft); stroke:var(--danger)}
+.realplan .rroom.st-doing polygon{fill:var(--accent-soft)}
+.realplan .rroom.st-done polygon{fill:#e8f6ee}
+.realplan .rtrace{fill:none; stroke:#8c9692; stroke-dasharray:.12 .08; pointer-events:none}
+.realplan .ropen{stroke:#fff; stroke-linecap:butt}
+.realplan .ropen.window{stroke:#6fa8dc}
+.realplan text{fill:var(--ink); font-family:var(--font-body); font-weight:600; pointer-events:none}
+.realplan .rsize{font-family:var(--font-data); font-weight:400; fill:var(--muted)}
+.roombox{grid-template-columns:repeat(2,minmax(0,1fr))}
+.wallsone summary{cursor:pointer; font-weight:600; margin:6px 0}
+.affected{margin:0; padding-inline-start:18px; display:flex; flex-direction:column; gap:4px}
+@media (max-width:900px){ .col-preview.side{grid-template-columns:1fr} }
+.col-preview.stacked, .col-preview.side{position:static}

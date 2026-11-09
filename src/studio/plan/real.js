@@ -116,3 +116,6 @@ export function realOverlaps(flat){
 }
 
 export const resetReal = (flat) => ({...flat, real:null});
+
+// Tracing above the real flat for wide or square plans; side by side for tall ones.
+export const planLayout = (image) => image.w >= image.h ? "stacked" : "side";

@@ -10,3 +10,4 @@ export function syncTracing(prev: Flat, next: Flat): Flat;
 export function realDiff(flat: Flat): Set<string>;
 export function realOverlaps(flat: Flat): [string, string][];
 export function resetReal(flat: Flat): Flat;
+export function planLayout(image: {w: number, h: number}): "stacked" | "side";

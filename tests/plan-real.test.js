@@ -87,3 +87,10 @@ test("resetReal drops real and keeps scaleAsked", () => {
   assert.equal(r.real, null);
   assert.equal(r.scaleAsked, true);
 });
+
+test("planLayout: stacked for wide or square plans, side by side for tall ones", async () => {
+  const { planLayout } = await import("../src/studio/plan/real.js");
+  assert.equal(planLayout({w:1200, h:800}), "stacked");
+  assert.equal(planLayout({w:785, h:768}), "stacked");
+  assert.equal(planLayout({w:700, h:900}), "side");
+});
