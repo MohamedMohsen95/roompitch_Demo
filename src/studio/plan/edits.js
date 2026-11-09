@@ -55,7 +55,7 @@ export function applyEdits(read, edits, k, scale = null){
         if (p[0] < 0 || p[1] < 0 || p[0] >= closed.w || p[1] >= closed.h) break;
         if (!on(p[0], p[1])) continue;
         paint(closed, end, p, thick, 1); paint(outer, end, p, thick, 1);
-        bridges.push({id:"d" + n++, a:[end[0], end[1]], b:p, width:s, dir:"d", outside:false, drawn:true});
+        bridges.push({id:"d" + n++, a:[end[0], end[1]], b:p, width:s, dir:Math.abs(u[0]) >= Math.abs(u[1]) ? "h" : "v", outside:false, drawn:true});
         break;
       }
     }

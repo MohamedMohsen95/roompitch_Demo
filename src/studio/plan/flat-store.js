@@ -17,8 +17,10 @@ const okReal = (r) => r == null || (Array.isArray(r.spaces) && Array.isArray(r.o
 // A v1 flat (before the real flat) as v2.
 export const upgradeFlat = (f) => f.v === 2 ? f : {...f, v:2, scaleAsked:false, real:null};
 
+const okEdits = (e) => e == null || (Array.isArray(e) && e.every(x => x && typeof x.id === "string" && (x.kind === "wall" || x.kind === "erase") && okPoint(x.a) && okPoint(x.b)));
+
 export function validFlat(f){
-  if (!f || (f.v !== 1 && f.v !== 2) || !okReal(f.real) || !f.image || !(f.image.w > 0 && f.image.h > 0) || !(f.H > 0)) return false;
+  if (!f || (f.v !== 1 && f.v !== 2) || !okReal(f.real) || !okEdits(f.edits) || !f.image || !(f.image.w > 0 && f.image.h > 0) || !(f.H > 0)) return false;
   if (f.scale != null && !(f.scale > 0)) return false;
   if (!Array.isArray(f.spaces) || !Array.isArray(f.openings)) return false;
   if (f.unplaced != null && !(Array.isArray(f.unplaced) && f.unplaced.every(u => u && typeof u.name === "string"))) return false;

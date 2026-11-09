@@ -4,6 +4,8 @@
 // gap-snapped doors (kept in memory, not saved).
 import { getCode } from "../../render-ai.js";
 import type { Flat } from "../../plan/flat";
+import type { Edit } from "../../plan/edits";
+import { deriveOpens } from "../../plan/opens.js";
 import { loadImage } from "./image";
 
 export type WallHandle = {
@@ -11,6 +13,9 @@ export type WallHandle = {
   thick: number;                                 // wall thickness in plan px
   fillAt: (p: [number, number]) => Promise<{outline: [number, number][], areaPx: number} | null>;
   gapAt: (p: [number, number], tolPx: number) => Promise<{a: [number, number], b: [number, number], width: number, outside: boolean} | null>;
+  gaps: {a: [number, number], b: [number, number]}[];             // gaps closed at drawn walls' ends (plan px)
+  // the designer's drawn walls and erases applied again (scale: m per plan px, for the 1.5 m gap limit)
+  edit: (edits: Edit[], scale: number | null) => Promise<{thick: number, gaps: {a: [number, number], b: [number, number]}[]} | null>;
 };
 export type ReadResult = {flat: Flat, walls: WallHandle, notice: string | null, needCode: boolean, aiOff: boolean};
 
@@ -63,10 +68,11 @@ async function post(url: string, body: object){
   return {status:r.status, ok:r.ok, data};
 }
 
-export async function readPlan(image: {dataUrl: string, w: number, h: number}, opts: {ai: boolean, t: (k: string, v?: any) => string}): Promise<ReadResult>{
+export async function readPlan(image: {dataUrl: string, w: number, h: number}, opts: {ai: boolean, t: (k: string, v?: any) => string, edits?: Edit[]}): Promise<ReadResult>{
   const {t} = opts;
   const gen = ++generation, rgba = await pixels(image.dataUrl, image.w, image.h);
-  const info = await ask({type:"read", gen, rgba, w:image.w, h:image.h}, [rgba]);
+  const edits = opts.edits || [];
+  const info = await ask({type:"read", gen, rgba, w:image.w, h:image.h, edits}, [rgba]);
   let notice: string | null = info.quality.ok ? null : t("qualityLow");
   let needCode = false, aiOff = false;
   let text = {rooms:[] as any[]}, points: Record<string, [number, number][]> = {};
@@ -99,12 +105,18 @@ export async function readPlan(image: {dataUrl: string, w: number, h: number}, o
       }
     } catch { notice = t("noServer"); }
   }
-  const flat: Flat = await ask({type:"assemble", gen, text, points, image:{w:image.w, h:image.h}});
-  flat.image = {...flat.image, dataUrl:image.dataUrl};
+  const read: Flat = await ask({type:"assemble", gen, text, points, image:{w:image.w, h:image.h}});
+  const flat = deriveOpens({...read, image:{...read.image, dataUrl:image.dataUrl}, edits}, info.gaps || [], 1.5 * (info.thick || 4));
   const walls: WallHandle = {
-    ok:info.quality.ok, thick:info.thick,
+    ok:info.quality.ok, thick:info.thick, gaps:info.gaps || [],
     fillAt:(p) => ask({type:"fill", gen, p}).catch(() => null),
-    gapAt:(p, tolPx) => ask({type:"gap", gen, p, tol:tolPx}).catch(() => null)
+    gapAt:(p, tolPx) => ask({type:"gap", gen, p, tol:tolPx}).catch(() => null),
+    edit:async (list, scale) => {
+      const r = await ask({type:"edit", gen, edits:list, scale}).catch(() => null);
+      if (!r) return null;
+      walls.ok = r.quality.ok; walls.thick = r.thick; walls.gaps = r.gaps || [];
+      return {thick:r.thick, gaps:walls.gaps};
+    }
   };
   return {flat, walls, notice, needCode, aiOff};
 }

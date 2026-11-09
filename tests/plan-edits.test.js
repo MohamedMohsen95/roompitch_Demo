@@ -71,3 +71,13 @@ test("no edits: the same reading", () => {
   const read = readWalls(halfWall());
   assert.equal(applyEdits(read, [], 1), read);
 });
+
+test("assemble doesn't turn a drawn gap or an erased gap into a door", async () => {
+  const { assembleFlat } = await import("../src/studio/plan/assemble.js");
+  const read = applyEdits(readWalls(halfWall()), [{id:"w", kind:"wall", a:[250, 204], b:[400, 204]}], 1, 0.03);
+  const cands = roomCandidates(read);
+  assert.ok(cands.some(c => c.bridgeIds.some(id => read.bridges.find(b => b.id === id)?.drawn)), "the drawn gap is one of the rooms' bridges");
+  const flat = assembleFlat(read, cands, {rooms:[]}, {}, {w:500, h:500});
+  assert.ok(flat.spaces.length >= 1);
+  assert.ok(!flat.openings.some(o => Math.hypot((o.a[0] + o.b[0]) / 2 - 421, (o.a[1] + o.b[1]) / 2 - 204) < 6), JSON.stringify(flat.openings));
+});

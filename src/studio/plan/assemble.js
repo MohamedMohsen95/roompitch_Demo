@@ -175,7 +175,8 @@ export function assembleFlat(read, cands, text, points, image){
   const drawnIds = new Set(drawn.flatMap(d => d.c.bridgeIds));
   const sides = new Map();                           // bridge id -> number of candidates using it
   for (const c of cands) for (const id of c.bridgeIds) sides.set(id, (sides.get(id) || 0) + 1);
-  flat.openings = read.bridges.filter(b => drawnIds.has(b.id)).map(b => {
+  // (gaps the designer left at a drawn wall, or erased, are open parts, not doors: opens.js)
+  flat.openings = read.bridges.filter(b => drawnIds.has(b.id) && !b.drawn && !b.erased).map(b => {
     const door = !b.outside && (sides.get(b.id) || 0) >= 1;
     return {id:nid("o"), type:door ? "door" : "window", a:up(toSource(read, b.a)), b:up(toSource(read, b.b)),
       heightCm:door ? 210 : 120, sillCm:door ? 0 : 90, fromAI:true};

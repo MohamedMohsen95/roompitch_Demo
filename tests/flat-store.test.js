@@ -108,3 +108,11 @@ test("v1 flats load as v2 with no real flat", async () => {
   assert.equal(validFlat({...u, real:{spaces:[{id:"a", poly:[[0, 0], [1, 0], [1, 1]]}], openings:[], confirmed:["a"]}}), true);
   saveFlat(v1); assert.equal(loadFlat().v, 2);
 });
+
+test("edits on a flat are checked", () => {
+  const f = {...twoRooms(), v:2, real:null, scaleAsked:false};
+  assert.equal(validFlat(f), true);
+  assert.equal(validFlat({...f, edits:[{id:"e", kind:"erase", a:[0, 0], b:[5, 5]}]}), true);
+  assert.equal(validFlat({...f, edits:[{id:"e", kind:"cut", a:[0, 0], b:[5, 5]}]}), false);
+  assert.equal(validFlat({...f, edits:[{id:"e", kind:"wall", a:[0, NaN], b:[5, 5]}]}), false);
+});
