@@ -226,5 +226,5 @@ export function readWalls(source){
     if (fa < 0.35 * (x1 - x0 + 1) * (y1 - y0 + 1)){ quality.ok = false; quality.reason = "noEnclosure"; }
   }
 
-  return {angle, size:{w:img.w, h:img.h}, src, thick, outerThick, walls, closed, foot, bridges, quality, hLines, vLines};
+  return {angle, size:{w:img.w, h:img.h}, src, thick, outerThick, walls, closed, outer, foot, bridges, quality, hLines, vLines};
 }
