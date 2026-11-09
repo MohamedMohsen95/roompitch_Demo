@@ -1,4 +1,6 @@
 // RoomPitch — where each room name is written on a floor plan (Cloudflare Workers AI, Moondream "point").
+// Note (2026-11-09): on Workers AI REST, Moondream answers success with an empty result for every task, so the
+// app falls back to the x, y the plan model gives with each name (readPlan.ts).
 // The browser fills each room from these points.
 //
 // GET  /api/point  -> { enabled, model }

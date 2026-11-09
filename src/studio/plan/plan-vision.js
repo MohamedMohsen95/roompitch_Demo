@@ -6,8 +6,9 @@ export const TEXT_PROMPT = [
   "This image is an architectural floor plan seen from above. It may show one room or a whole flat.",
   "List every room name written on the plan (for example BEDROOM, LIVING / DINING, KITCHEN, BATH 2, BALCONY), each time it is written: a name written three times is listed three times.",
   "For each, copy exactly the room size written with that name (for example 12'-0\" X 14'-6\" or 3.5 x 4 m), or null, and the area written with it (for example 64 sq ft or 12 m²), or null.",
+  "Also give where the name is written: x and y, the centre of the name as fractions of the image width and height (0 to 1, from the top left).",
   "Do not list furniture, fixtures, dimension chains along the outside, door or window tags, or text from the title block, legend or company details.",
-  'Reply with JSON only, no other text, in this form: {"rooms":[{"name":"BEDROOM","size":"11\'-0\\" X 12\'-6\\"","area":null}]}. If there are no room names, reply {"rooms":[]}.'
+  'Reply with JSON only, no other text, in this form: {"rooms":[{"name":"BEDROOM","size":"11\'-0\\" X 12\'-6\\"","area":null,"x":0.24,"y":0.33}]}. If there are no room names, reply {"rooms":[]}.'
 ].join(" ");
 
 // First {...} in the text that parses as JSON and has the given array field.
@@ -30,12 +31,18 @@ function firstJson(text, field){
 
 const str = (v) => typeof v === "string" && v.trim() ? v.trim() : null;
 
-// -> {rooms:[{name, size, area}]}, usable entries only.
+// -> {rooms:[{name, size, area, at?}]}, usable entries only. at: [x, y] fractions of the image, where the name
+// is written, when the reply gave a usable one (rough: used only when Moondream gives no point).
+const frac = (v) => typeof v === "number" && isFinite(v) && v >= 0 && v <= 1;
 export function parseTextReply(text){
   if (typeof text !== "string" || !text) return {rooms:[]};
   const o = firstJson(text, "rooms");
   if (!o) return {rooms:[]};
-  return {rooms:o.rooms.filter(r => r && str(r.name)).slice(0, 60).map(r => ({name:str(r.name), size:str(r.size), area:str(r.area)}))};
+  return {rooms:o.rooms.filter(r => r && str(r.name)).slice(0, 60).map(r => {
+    const out = {name:str(r.name), size:str(r.size), area:str(r.area)};
+    if (frac(r.x) && frac(r.y)) out.at = [r.x, r.y];
+    return out;
+  })};
 }
 
 // Moondream's point reply -> [[x, y]] as fractions of the image. Accepts {x, y} or [x, y] items, as

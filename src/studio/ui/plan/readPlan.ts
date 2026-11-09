@@ -83,10 +83,18 @@ export async function readPlan(image: {dataUrl: string, w: number, h: number}, o
         // nothing to name and no written size to fit: don't spend the allowance
         const useful = info.candidates > 0 || (info.fittable && text.rooms.some((r: any) => r.size));
         if (names.length && useful){
-          const pt = await post("/api/point", {image:small.dataUrl, w:small.w, h:small.h, names});
-          if (pt.ok) for (const [name, list] of Object.entries(pt.data.points || {}))
-            points[name] = (list as [number, number][]).map(([x, y]) => [x * image.w, y * image.h]);
-          else notice = pt.data.error || t("wentWrong", {s:pt.status});
+          const pt = await post("/api/point", {image:small.dataUrl, w:small.w, h:small.h, names}).catch(() => null);
+          if (pt?.ok) for (const [name, list] of Object.entries(pt.data.points || {}))
+            if ((list as any[]).length) points[name] = (list as [number, number][]).map(([x, y]) => [x * image.w, y * image.h]);
+          // Moondream gave nothing for a name (or failed): where the plan model says it is written. Rougher, so
+          // the walls and the written sizes do the checking.
+          let fromText = 0;
+          for (const name of names){
+            if (points[name]) continue;
+            const at = text.rooms.filter((r: any) => r.name === name && r.at).map((r: any) => [r.at[0] * image.w, r.at[1] * image.h] as [number, number]);
+            if (at.length){ points[name] = at; fromText++; }
+          }
+          if (pt && !pt.ok && !fromText) notice = pt.data.error || t("wentWrong", {s:pt.status});
         }
       }
     } catch { notice = t("noServer"); }

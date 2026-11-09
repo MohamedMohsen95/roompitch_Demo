@@ -193,3 +193,16 @@ test("overlap counts a big rectangle over a small room as full", () => {
   assert.equal(boxOverlap(sq(0, 0, 100, 100), sq(200, 0, 100, 100)), 0);
   assert.ok(Math.abs(boxOverlap(sq(0, 0, 100, 100), sq(80, 0, 100, 100)) - 0.2) < 1e-9);
 });
+
+test("ex4: the plan model's rough name positions (no Moondream) give the same suggestions", () => {
+  // positions as llama-4-scout gave them on 2026-11-09, 36–88 px off on this 785 px image
+  const ai = {"M BEDROOM":[.24, .33], "M BATH":[.14, .63], "WIC":[.14, .83], "LIVING/KITCHEN":[.49, .49], "DECK":[.78, .09], "BEDROOM 2":[.73, .43], "BATH 2":[.77, .73]};
+  const img = readPng(file("ex4")), read = readWalls(img), cands = roomCandidates(read), ex = E.ex4, points = {}, rooms = [];
+  for (const [n, a] of Object.entries(ai)){ points[n] = [[a[0] * img.w, a[1] * img.h]]; rooms.push({name:n, size:ex.sizes[n], area:null}); }
+  const flat = assembleFlat(read, cands, {rooms}, points, {w:img.w, h:img.h});
+  assert.equal(flat.spaces.length, 6);
+  for (const name of ["M BEDROOM", "BEDROOM 2", "WIC"]){
+    const s = flat.spaces.find(x => x.name === name);
+    assert.ok(s && polyIoU(s.outline, ex.rooms.find(r => r.name === name).ref) >= 0.8, name);
+  }
+});

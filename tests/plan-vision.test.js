@@ -23,6 +23,12 @@ test("text replies: fenced, wrapped, repeated names, bad values", () => {
   assert.deepEqual(parseTextReply('{"rooms":"none"}'), {rooms:[]});
 });
 
+test("text replies: where each name is written, when usable", () => {
+  const rooms = parseTextReply(JSON.stringify({rooms:[{name:"WIC", size:null, area:null, x:0.14, y:0.83}, {name:"DECK", x:1.4, y:0.1}, {name:"HALL", x:"0.5", y:0.5}]})).rooms;
+  assert.deepEqual(rooms.map(r => r.at), [[0.14, 0.83], undefined, undefined]);
+  assert.match(TEXT_PROMPT, /fractions of the image width and height/);
+});
+
 test("point replies in every shape", () => {
   const size = {w:1000, h:1000};
   assert.deepEqual(parsePointReply({points:[{x:.5, y:.25}]}, size), [[.5, .25]]);
