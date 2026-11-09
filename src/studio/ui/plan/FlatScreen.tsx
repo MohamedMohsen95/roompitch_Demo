@@ -2,13 +2,16 @@
 // "Edit plan" goes back to correcting the plan.
 import { t } from "../../i18n.js";
 import { polyArea } from "../../geometry.js";
+import { realSpace } from "../../plan/real.js";
+import { roomBox } from "../../plan/correct.js";
+import RealFlatView from "./RealFlatView";
 import type { Flat } from "../../plan/flat";
 import { AccountButton } from "../AccountDialog";
 import { useLang } from "../hooks";
 
 type Props = {
   flat: Flat;
-  imageUrl: string;
+  imageUrl: string;                    // kept for callers; the flat is drawn from the real flat now
   onOpenSpace: (id: string) => void;
   onEditPlan: () => void;
   onMarkDone: (id: string, done: boolean) => void;
@@ -17,14 +20,15 @@ type Props = {
   onLang: () => void;
 };
 
-const centre = (o: [number, number][]) => {
-  const xs = o.map(p => p[0]), ys = o.map(p => p[1]);
-  return [(Math.min(...xs) + Math.max(...xs)) / 2, (Math.min(...ys) + Math.max(...ys)) / 2];
-};
 
-export default function FlatScreen({flat, imageUrl, onOpenSpace, onEditPlan, onMarkDone, onBack, onAccount, onLang}: Props){
+export default function FlatScreen({flat, onOpenSpace, onEditPlan, onMarkDone, onBack, onAccount, onLang}: Props){
   useLang();
-  const {w, h} = flat.image, fs = Math.max(w, h) / 55;
+  // a room's size in the real flat: width × length for a rectangle, else its area
+  const sizeOf = (id: string) => {
+    const b = flat.scale ? roomBox(flat, id) : null, r = flat.scale ? realSpace(flat, id) : null;
+    if (!b || !r) return null;
+    return b.rect ? `${(b.width / 100).toFixed(2)} × ${(b.length / 100).toFixed(2)} m` : `${polyArea(r.poly).toFixed(1)} ${t("m2")}`;
+  };
   return (
     <section className="setup wrap">
       <header className="bar">
@@ -39,18 +43,8 @@ export default function FlatScreen({flat, imageUrl, onOpenSpace, onEditPlan, onM
         <p className="dnote">{t("flatSub")}</p>
         <div className="flat-grid">
           <div className="panel col-preview">
-            <svg className="flatplan" viewBox={`0 0 ${w} ${h}`} role="img" aria-label={t("flatTitle")}>
-              <image href={imageUrl} width={w} height={h}/>
-              {flat.spaces.map(s => {
-                const c = centre(s.outline);
-                return (
-                  <g key={s.id} className={"st-" + s.status} onClick={() => onOpenSpace(s.id)}>
-                    <polygon points={s.outline.map(p => p.join(",")).join(" ")} vectorEffect="non-scaling-stroke"/>
-                    <text x={c[0]} y={c[1]} fontSize={fs} textAnchor="middle" dominantBaseline="middle">{s.name || "—"}</text>
-                  </g>
-                );
-              })}
-            </svg>
+            <p className="dnote">{t("flatClickRoom")}</p>
+            <RealFlatView flat={flat} status onPick={onOpenSpace}/>
           </div>
           <div className="panel col-form">
             <section className="sblock">
@@ -61,7 +55,7 @@ export default function FlatScreen({flat, imageUrl, onOpenSpace, onEditPlan, onM
                     <div className="projtext">
                       <b className="projtitle">{s.name || "—"}</b>
                       <span className="projmeta">
-                        {flat.scale && <bdi dir="ltr">{(polyArea(s.outline) * flat.scale * flat.scale).toFixed(1)} {t("m2")}</bdi>}
+                        {sizeOf(s.id) && <bdi dir="ltr">{sizeOf(s.id)}</bdi>}
                         {" "}<span className={"stchip st-" + s.status}>{t("status_" + s.status)}</span>
                       </span>
                     </div>
