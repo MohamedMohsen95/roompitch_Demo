@@ -6,6 +6,8 @@ import { t } from "../i18n.js";
 import { toCm } from "../geometry.js";
 import { useStudio, useKeydown } from "./hooks";
 import ViewBar from "./ViewBar";
+import RealFlatView from "./plan/RealFlatView";
+import type { Flat } from "../plan/flat";
 import Inspector from "./Inspector";
 import Library from "./Library";
 import PlanView from "./PlanView";
@@ -23,9 +25,10 @@ type DialogId = "render" | "settings" | "prices" | "pdf" | "upload" | "account" 
 const EST_KEY = "rp_est_closed";
 const loadEstClosed = () => { try { return localStorage.getItem(EST_KEY) === "1"; } catch { return false; } };
 
-type Props = {onProjects: () => void, onRoomSetup: () => void, onLang: () => void, onFlat?: (() => void) | null};
+type FlatNav = {flat: Flat, spaceId: string, onOpen: (id: string) => void, onFlat: () => void};
+type Props = {onProjects: () => void, onRoomSetup: () => void, onLang: () => void, onFlat?: (() => void) | null, flatNav?: FlatNav | null};
 
-export default function StudioScreen({onProjects, onRoomSetup, onLang, onFlat}: Props){
+export default function StudioScreen({onProjects, onRoomSetup, onLang, onFlat, flatNav = null}: Props){
   useStudio();
   const account = useAccount();
   const [dialog, setDialog] = useState<DialogId>(null);
@@ -53,8 +56,8 @@ export default function StudioScreen({onProjects, onRoomSetup, onLang, onFlat}: 
         <div className="brand"><strong>RoomPitch</strong><span className="tag">{t("tag")}</span></div>
         <div className="dims">
           <span className="roomsize" dir="ltr">{toCm(S.L)} × {toCm(S.W)} × {toCm(S.H)} {t("cm")}</span>
-          {onFlat
-            ? <button className="btn" type="button" onClick={onFlat}>{t("flatBtn")}</button>
+          {flatNav ? <FlatCrumbs nav={flatNav}/>
+            : onFlat ? <button className="btn" type="button" onClick={onFlat}>{t("flatBtn")}</button>
             : <button className="btn" type="button" onClick={onRoomSetup}>{t("roomSetup")}</button>}
         </div>
         <div className="tools">
@@ -71,7 +74,15 @@ export default function StudioScreen({onProjects, onRoomSetup, onLang, onFlat}: 
       <Inspector/>
 
       <main className={"app" + (estClosed ? " est-closed" : "")}>
-        <Library onUpload={openUpload}/>
+        {flatNav ? (
+          <div className="leftcol">
+            <section className="panel flatmap">
+              <h2>{t("whereYouAre")}</h2>
+              <RealFlatView flat={flatNav.flat} highlight={flatNav.spaceId} compact onPick={id => { if (id !== flatNav.spaceId) flatNav.onOpen(id); }}/>
+            </section>
+            <Library onUpload={openUpload}/>
+          </div>
+        ) : <Library onUpload={openUpload}/>}
         <section className="work">
           <PlanView/>
           <ThreeView/>
@@ -86,5 +97,21 @@ export default function StudioScreen({onProjects, onRoomSetup, onLang, onFlat}: 
       <UploadDialog open={dialog === "upload"} onClose={close}/>
       <AccountDialog open={dialog === "account"} why={accountWhy} onClose={close}/>
     </div>
+  );
+}
+
+// In a flat's room: back to the whole flat, where you are, and the previous / next room.
+function FlatCrumbs({nav}: {nav: FlatNav}){
+  const list = nav.flat.spaces, i = list.findIndex(s => s.id === nav.spaceId), n = list.length;
+  const go = (d: number) => nav.onOpen(list[(i + d + n) % n].id);
+  return (
+    <span className="crumbs">
+      <button className="btn" type="button" onClick={nav.onFlat}>{t("wholeFlat")}</button>
+      <b>{list[i]?.name || "—"}</b>
+      {n > 1 && <>
+        <button className="btn small" type="button" aria-label={t("prevRoom")} title={t("prevRoom")} onClick={() => go(-1)}>‹</button>
+        <button className="btn small" type="button" aria-label={t("nextRoom")} title={t("nextRoom")} onClick={() => go(1)}>›</button>
+      </>}
+    </span>
   );
 }

@@ -29,7 +29,6 @@ import { S, applyRoom } from "../state.js";
 import { loadRoom, restoreRoom, setSaving, saveRoom, onSaved, clearRoom, redirectSaves } from "../room-store.js";
 import { cloudReady, pushRoom, pushFlat, pullRoom, openProject, newProject, planImageUrl, flatInCloud } from "../cloud-store.js";
 import { loadFlat, saveFlat, clearFlat, onFlatSaved, setCurrentSpace, currentSpace, openSpace, designSaved } from "../plan/flat-store.js";
-import { neighbours } from "../plan/flat.js";
 import type { Flat } from "../plan/flat";
 import { setContext, cullContext } from "../three/context.js";
 import { roomToDraft } from "../setup/draft.js";
@@ -118,8 +117,8 @@ export default function StudioApp(){
     await openSaved(cloud && (cloud.savedAt || 0) > (local?.savedAt || 0) ? cloud : local);
   }, [openSaved]);
 
-  // A space of the flat in the studio: its saved design (or an empty room), the neighbours in grey,
-  // and every save going back into the flat.
+  // A space of the flat in the studio: its saved design (or an empty room), shown alone, and every save
+  // going back into the flat.
   const openFlatSpace = useCallback(async (id: string) => {
     const flat = loadFlat();
     if (!flat || !flat.spaces.some(s => s.id === id)){ navigate("/studio", {replace:true}); return; }
@@ -127,7 +126,7 @@ export default function StudioApp(){
     saveFlat(r.flat); setCurrentSpace(id);
     await within(catalogReady!, 5000);
     const res = r.saved ? restoreRoom(r.saved) : (applyRoom(r.room as any, {keepDesign:false}), {dropped:0});
-    setContext(neighbours(r.flat, id));
+    setContext([]);
     redirectSaves((data: any) => { const f = loadFlat(); if (f && f.spaces.some(s => s.id === id)) saveFlat(designSaved(f, id, data)); });
     opened = true;
     navigate("/studio/room");
@@ -199,7 +198,7 @@ export default function StudioApp(){
         <FlatRoute onOpenSpace={openFlatSpace} onEditPlan={() => navigate("/studio/plan", {state:{edit:true}})}
           onBack={() => navigate("/studio")} onAccount={() => setAccountOpen(true)} onLang={toggleLang}/>
       }/>
-      <Route path="room" element={<RoomRoute onProjects={() => navigate("/studio")} onRoomSetup={roomSetup} onLang={toggleLang}
+      <Route path="room" element={<RoomRoute key={currentSpace() || "room"} onProjects={() => navigate("/studio")} onRoomSetup={roomSetup} onLang={toggleLang}
         continueLast={continueLast} openFlatSpace={openFlatSpace} onFlat={() => navigate("/studio/flat")}/>}/>
     </Routes>
     <AccountDialog open={accountOpen} onClose={() => setAccountOpen(false)}/>
@@ -227,7 +226,9 @@ function RoomRoute({onProjects, onRoomSetup, onLang, continueLast, openFlatSpace
     return () => { setSaving(false); S.sel = null; S.replacing = null; ui.inspectMsg = null; update(); };
   }, [ready]);
   if (!ready) return null;
-  return <StudioScreen onProjects={onProjects} onRoomSetup={onRoomSetup} onLang={onLang} onFlat={currentSpace() ? onFlat : null}/>;
+  const space = currentSpace(), flat = space ? loadFlat() : null;
+  const flatNav = space && flat?.spaces.some(s => s.id === space) ? {flat, spaceId:space, onOpen:(id: string) => { openFlatSpace(id); }, onFlat} : null;
+  return <StudioScreen onProjects={onProjects} onRoomSetup={onRoomSetup} onLang={onLang} onFlat={space ? onFlat : null} flatNav={flatNav}/>;
 }
 
 // /studio/plan: a new floor plan, or "Edit plan" of the current flat (designs of spaces that are kept stay).
