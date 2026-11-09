@@ -30,6 +30,7 @@ export function applyEdits(read, edits, k, scale = null){
   const toS = (p) => toStraight(read, [p[0] * k, p[1] * k]);
   const on = (x, y) => { x = Math.floor(x); y = Math.floor(y); return x >= 0 && y >= 0 && x < closed.w && y < closed.h && closed.m[y * closed.w + x] === 1; };
   let n = 0;
+  const drawn = [];
   for (const e of edits){
     const a = toS(e.a), b = toS(e.b);
     if (Math.hypot(b[0] - a[0], b[1] - a[1]) < 1) continue;
@@ -45,7 +46,11 @@ export function applyEdits(read, edits, k, scale = null){
       continue;
     }
     paint(walls, a, b, thick, 1); paint(closed, a, b, thick, 1); paint(outer, a, b, thick, 1);
-    // from each end, straight ahead: the next wall within maxGap closes the gap
+    drawn.push([a, b]);
+  }
+  // then, with every edit painted (so the order they were drawn in doesn't matter): from each end of each
+  // drawn wall, straight ahead, the next wall within maxGap closes the gap
+  for (const [a, b] of drawn){
     for (const [end, from] of [[b, a], [a, b]]){
       const len = Math.hypot(end[0] - from[0], end[1] - from[1]), u = [(end[0] - from[0]) / len, (end[1] - from[1]) / len];
       const start = thick / 2 + 1;

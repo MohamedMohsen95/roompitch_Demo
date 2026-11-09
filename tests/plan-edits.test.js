@@ -81,3 +81,12 @@ test("assemble doesn't turn a drawn gap or an erased gap into a door", async () 
   assert.ok(flat.spaces.length >= 1);
   assert.ok(!flat.openings.some(o => Math.hypot((o.a[0] + o.b[0]) / 2 - 421, (o.a[1] + o.b[1]) / 2 - 204) < 6), JSON.stringify(flat.openings));
 });
+
+test("review: a drawn wall's end gap doesn't depend on the drawing order", () => {
+  const img = draw(500, 500, outer), read = readWalls(img);
+  // B: a full wall at y = 250; A: a vertical wall from the top stopping 34 px short of B
+  const A = {id:"a", kind:"wall", a:[200, 54], b:[200, 212]}, B = {id:"b", kind:"wall", a:[54, 250], b:[446, 250]};
+  const g1 = drawnGaps(applyEdits(read, [A, B], 1, 0.03), 1), g2 = drawnGaps(applyEdits(read, [B, A], 1, 0.03), 1);
+  assert.equal(g1.length, 1);
+  assert.equal(g2.length, 1);
+});

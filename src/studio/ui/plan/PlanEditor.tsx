@@ -24,6 +24,7 @@ type Props = {
   walls: WallHandle | null;           // the walls read from the image: click-to-fill and doors on gaps
   onNotice: (text: string) => void;
   onEdits: (edits: Edit[]) => void;   // a wall drawn or a stretch erased (or one removed)
+  onRemoveOpening: (id: string) => void;
 };
 
 type Drag =
@@ -47,7 +48,7 @@ const inside = (poly: Point[], [x, y]: Point) => {
   return c;
 };
 
-export default function PlanEditor({flat, imageUrl, onChange, sel, onSelect, tool, onTool, bad, walls, onNotice, onEdits}: Props){
+export default function PlanEditor({flat, imageUrl, onChange, sel, onSelect, tool, onTool, bad, walls, onNotice, onEdits, onRemoveOpening}: Props){
   const svgRef = useRef<SVGSVGElement>(null);
   const [k, setK] = useState(1);                     // plan pixels per screen pixel
   const [trace, setTrace] = useState<Point[]>([]);
@@ -110,7 +111,7 @@ export default function PlanEditor({flat, imageUrl, onChange, sel, onSelect, too
         onEdits((flat.edits || []).filter(x => x.id !== sel.id)); onSelect(null);
       } else if (sel?.kind === "opening"){
         e.preventDefault();
-        onChange({...flat, openings:flat.openings.filter(o => o.id !== sel.id)}); onSelect(null);
+        onRemoveOpening(sel.id); onSelect(null);
       } else if (sel?.kind === "space" && sel.corner != null){
         const s = flat.spaces.find(x => x.id === sel.id);
         if (s && s.outline.length > 3){
@@ -201,7 +202,14 @@ export default function PlanEditor({flat, imageUrl, onChange, sel, onSelect, too
       const ux = (other[0] - fixed[0]) / len, uy = (other[1] - fixed[1]) / len;
       const s = Math.max(4 * k, (raw[0] - fixed[0]) * ux + (raw[1] - fixed[1]) * uy);
       const p: Point = [fixed[0] + ux * s, fixed[1] + uy * s];
-      setOpening(drag.id, x => ({...x, [drag.end]:p, fromAI:false, ...(x.type === "open" ? {fromEdit:false} : {})}));
+      if (o.type === "open" && o.fromEdit){
+        // resizing an open part made by an edit makes it the designer's own, under a new id
+        const id = newId("o");
+        onChange({...flatRef.current, openings:flatRef.current.openings.map(x => x.id === o.id ? {...x, id, [drag.end]:p, fromEdit:false} : x)});
+        setDrag({...drag, id}); onSelect({kind:"opening", id});
+        return;
+      }
+      setOpening(drag.id, x => ({...x, [drag.end]:p, fromAI:false}));
     } else {
       const t1 = Math.max(0, Math.min(drag.len, (raw[0] - drag.a[0]) * drag.ux + (raw[1] - drag.a[1]) * drag.uy));
       setDrag({...drag, t1});

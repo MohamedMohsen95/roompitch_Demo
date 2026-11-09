@@ -23,7 +23,7 @@ function handle(msg){
     k = scaled.k; gen = msg.gen;
     read0 = readWalls(scaled.img);
     // fittable: there are line masks, so rooms can still come from their written sizes
-    return withEdits(msg.edits, null);
+    return withEdits(msg.edits, msg.scale);
   }
   if (!read || msg.gen !== gen) return null;          // a request about an earlier plan
   if (msg.type === "edit") return withEdits(msg.edits, msg.scale);

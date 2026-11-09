@@ -9,7 +9,7 @@ import { realSpace, realOverlaps, rescale, resetReal, syncTracing, planLayout } 
 import { roomBox, planCorrection, applyCorrection, type Correction, type CorrectionPlan } from "../../plan/correct.js";
 import RealFlatView from "./RealFlatView";
 import CorrectDialog from "./CorrectDialog";
-import { deriveOpens } from "../../plan/opens.js";
+import { deriveOpens, removeOpen, openTol } from "../../plan/opens.js";
 import type { Edit } from "../../plan/edits";
 import { polyArea } from "../../geometry.js";
 import type { Flat } from "../../plan/flat";
@@ -59,13 +59,20 @@ export default function PlanImport(props: Props){
   useEffect(() => {
     const f = props.initialFlat, src = f?.image.dataUrl || props.imageUrl;
     if (!f || !src) return;
-    readFromWalls({dataUrl:src, w:f.image.w, h:f.image.h}, {ai:false, t, edits:f.edits || []}).then(r => { walls.current = r.walls; redraw(); }).catch(() => {});
+    readFromWalls({dataUrl:src, w:f.image.w, h:f.image.h}, {ai:false, t, edits:f.edits || [], scale:f.scale}).then(r => { walls.current = r.walls; catchUp(f.edits || []); redraw(); }).catch(() => {});
   }, [props.imageUrl]);
   const say = (text: string, err = false) => setStatus({text, err});
+  // Edits made while the walls were still being read: send them now.
+  const latest = useRef<Flat | null>(null); latest.current = flat;
+  function catchUp(sent: Edit[]){
+    const now = latest.current, h = walls.current;
+    if (!now || !h || JSON.stringify(now.edits || []) === JSON.stringify(sent)) return;
+    h.edit(now.edits || [], now.scale).then(r => { if (r) setFlat(prev => prev ? syncTracing(prev, opensOf(prev)) : prev); });
+  }
   // A tracing edit: the scale follows the written sizes, and a real flat that differs follows the edit.
   // ("move the other side" no longer applies once anything else changed)
   // Open parts that follow from the drawn walls and erases are worked out again on every change.
-  const opensOf = (f: Flat) => deriveOpens(f, walls.current?.gaps || [], 1.5 * Math.max(3, walls.current?.thick || 4));
+  const opensOf = (f: Flat) => deriveOpens(f, walls.current?.gaps || [], openTol(walls.current?.thick || 0));
   const change = (f: Flat) => { setLast(null); setFlat(prev => { const g = opensOf(withSizeScale(f)); return prev ? syncTracing(prev, g) : g; }); };
   // A wall drawn or a stretch erased (or one removed): saved at once, then the walls are read again with it
   // and the open parts follow.
@@ -73,6 +80,12 @@ export default function PlanImport(props: Props){
     change({...flat!, edits});
     const r = await walls.current?.edit(edits, flat!.scale);
     if (r) setFlat(prev => prev ? syncTracing(prev, opensOf(prev)) : prev);
+  }
+  // Removing an opening: one made by an edit undoes what made it (removeOpen), so the walls are read again.
+  function removeOpening(id: string){
+    const f = removeOpen(flat!, id);
+    if (f.edits !== flat!.edits) onEdits(f.edits || []);
+    else change(f);
   }
 
   async function readPlan(f: Flat){
@@ -83,7 +96,7 @@ export default function PlanImport(props: Props){
     say(t("readingWalls"));
     try {
       const src = f.image.dataUrl || props.imageUrl || "";
-      const r = await readFromWalls({dataUrl:src, w:f.image.w, h:f.image.h}, {ai:true, t, edits:f.edits || []});
+      const r = await readFromWalls({dataUrl:src, w:f.image.w, h:f.image.h}, {ai:true, t, edits:f.edits || [], scale:f.scale});
       if (current.current && current.current !== f.image) return;     // another plan was picked meanwhile
       walls.current = r.walls;
       if (r.needCode){ setNeedCode(true); setTimeout(() => codeRef.current?.focus()); }
@@ -397,7 +410,7 @@ export default function PlanImport(props: Props){
                     <strong>{t(selOpen.type === "open" ? "open1" : selOpen.type === "door" ? "door1" : "window1")}</strong>
                     {selOpen.fromAI && <span className="aitag">{t("foundByAI")}</span>}
                     {flat.scale && <bdi dir="ltr" className="sarea">{Math.round(Math.hypot(selOpen.b[0] - selOpen.a[0], selOpen.b[1] - selOpen.a[1]) * flat.scale * 100)} {t("cm")}</bdi>}
-                    <button className="btn small" type="button" onClick={() => { change({...flat, openings:flat.openings.filter(o => o.id !== selOpen.id)}); setSel(null); }}>{t("remove")}</button>
+                    <button className="btn small" type="button" onClick={() => { removeOpening(selOpen.id); setSel(null); }}>{t("remove")}</button>
                   </div>
                   {selOpen.type !== "open" && <div className="ofields">
                     <label><span>{t("oHeight")}</span>
@@ -418,7 +431,7 @@ export default function PlanImport(props: Props){
               <div className="pvhead"><strong>{t("tracing")}</strong><span className="dnote">{t("tracingSub")}</span>
                 <button className="btn small" type="button" onClick={() => pickLayout(shownLayout === "stacked" ? "side" : "stacked")}>{t(shownLayout === "stacked" ? "layoutSide" : "layoutStacked")}</button></div>
               <PlanEditor flat={flat} imageUrl={imageUrl} onChange={change} sel={sel} onSelect={setSel} tool={tool} onTool={setTool} bad={bad}
-                walls={walls.current} onNotice={text => say(text, true)} onEdits={onEdits}/>
+                walls={walls.current} onNotice={text => say(text, true)} onEdits={onEdits} onRemoveOpening={removeOpening}/>
               {sel?.kind === "edit" && (
                 <p className="dnote">{t((flat.edits || []).find(x => x.id === sel.id)?.kind === "wall" ? "editWall" : "editErase")}{" "}
                   <button className="btn small" type="button" onClick={() => { onEdits((flat.edits || []).filter(x => x.id !== sel.id)); setSel(null); }}>{t("remove")}</button></p>

@@ -5,7 +5,7 @@
 import { getCode } from "../../render-ai.js";
 import type { Flat } from "../../plan/flat";
 import type { Edit } from "../../plan/edits";
-import { deriveOpens } from "../../plan/opens.js";
+import { deriveOpens, openTol } from "../../plan/opens.js";
 import { loadImage } from "./image";
 
 export type WallHandle = {
@@ -68,11 +68,11 @@ async function post(url: string, body: object){
   return {status:r.status, ok:r.ok, data};
 }
 
-export async function readPlan(image: {dataUrl: string, w: number, h: number}, opts: {ai: boolean, t: (k: string, v?: any) => string, edits?: Edit[]}): Promise<ReadResult>{
+export async function readPlan(image: {dataUrl: string, w: number, h: number}, opts: {ai: boolean, t: (k: string, v?: any) => string, edits?: Edit[], scale?: number | null}): Promise<ReadResult>{
   const {t} = opts;
   const gen = ++generation, rgba = await pixels(image.dataUrl, image.w, image.h);
   const edits = opts.edits || [];
-  const info = await ask({type:"read", gen, rgba, w:image.w, h:image.h, edits}, [rgba]);
+  const info = await ask({type:"read", gen, rgba, w:image.w, h:image.h, edits, scale:opts.scale ?? null}, [rgba]);
   let notice: string | null = info.quality.ok ? null : t("qualityLow");
   let needCode = false, aiOff = false;
   let text = {rooms:[] as any[]}, points: Record<string, [number, number][]> = {};
@@ -106,7 +106,7 @@ export async function readPlan(image: {dataUrl: string, w: number, h: number}, o
     } catch { notice = t("noServer"); }
   }
   const read: Flat = await ask({type:"assemble", gen, text, points, image:{w:image.w, h:image.h}});
-  const flat = deriveOpens({...read, image:{...read.image, dataUrl:image.dataUrl}, edits}, info.gaps || [], 1.5 * (info.thick || 4));
+  const flat = deriveOpens({...read, image:{...read.image, dataUrl:image.dataUrl}, edits}, info.gaps || [], openTol(info.thick || 0));
   const walls: WallHandle = {
     ok:info.quality.ok, thick:info.thick, gaps:info.gaps || [],
     fillAt:(p) => ask({type:"fill", gen, p}).catch(() => null),
