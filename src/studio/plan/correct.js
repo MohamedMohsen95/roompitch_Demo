@@ -3,7 +3,7 @@
 // neighbour resizes. When that wall runs on past the room, the caller chooses: the whole wall line moves
 // (every room on it changes) or only this room's part (the neighbour gets a step). The tracing is never touched.
 import { WALL_TOL_M, outlineProblem } from "./flat.js";
-import { realOf, materialize } from "./real.js";
+import { realOf, materialize, realOverlaps } from "./real.js";
 
 const PAR = Math.sin(2 * Math.PI / 180);       // parallel / perpendicular within 2°
 const EPS = 0.03;                              // corners on the same line (m)
@@ -71,8 +71,11 @@ function compute(flat, c, opts = {}){
     const w = edge(poly, c.i), next = edge(poly, c.i + 1);
     delta = c.cm / 100 - w.len;
     const endT = dot(w.b, w.u);
-    mine = poly.map((p, k) => dot(p, w.u) >= endT - 1e-6 ? k : -1).filter(k => k >= 0);
-    if (Math.abs(dot(w.u, next.u)) <= PAR) sides = [next.i];
+    const perp = Math.abs(dot(w.u, next.u)) <= PAR;
+    // corners past the wall's end (a corner up to EPS short of it still counts: tracings are rarely square);
+    // with a perpendicular next wall, that whole wall always moves
+    mine = poly.map((p, k) => dot(p, w.u) >= endT - (perp ? EPS : 1e-6) || (perp && (k === next.i || k === (next.i + 1) % n)) ? k : -1).filter(k => k >= 0);
+    if (perp) sides = [next.i];
     else { sides = [next.i]; alone = true; }
   }
   if (Math.abs(delta) < 0.005) return {plan:{ok:false, reason:"noChange"}};
@@ -175,6 +178,9 @@ function compute(flat, c, opts = {}){
       || b1.width < 30 || b1.length < 30 || area(now.poly) <= 0) return {plan:{ok:false, reason:"tooSmall"}};
     affected.push({id, name:flat.spaces.find(s => s.id === id)?.name || id, before:[b0.width, b0.length], after:[b1.width, b1.length], confirmed:real.confirmed.includes(id)});
   }
+  // no correction may make rooms overlap that didn't
+  const key = (p) => p.join("|"), had = new Set(realOverlaps(flat).map(key));
+  if (realOverlaps(after).some(p => !had.has(key(p)))) return {plan:{ok:false, reason:"overlap"}};
   return {plan:{ok:true, side, otherSide, runsPast, outsideMoved, affected}, real:next};
 }
 const area = (o) => { let a = 0; o.forEach((p, i) => { const q = o[(i + 1) % o.length]; a += p[0] * q[1] - q[0] * p[1]; }); return a / 2; };

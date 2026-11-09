@@ -61,7 +61,8 @@ export default function PlanImport(props: Props){
   }, [props.imageUrl]);
   const say = (text: string, err = false) => setStatus({text, err});
   // A tracing edit: the scale follows the written sizes, and a real flat that differs follows the edit.
-  const change = (f: Flat) => setFlat(prev => prev ? syncTracing(prev, withSizeScale(f)) : withSizeScale(f));
+  // ("move the other side" no longer applies once anything else changed)
+  const change = (f: Flat) => { setLast(null); setFlat(prev => prev ? syncTracing(prev, withSizeScale(f)) : withSizeScale(f)); };
 
   async function readPlan(f: Flat){
     // Reading again replaces the spaces: designs carry over only to spaces with the same name.
@@ -216,7 +217,8 @@ export default function PlanImport(props: Props){
     const f = flat!;
     if (!(c.cm > 0) || !selSpace) return;
     if (!f.scale){
-      const o = orientCW(selSpace.outline), i = c.kind === "room" ? (c.axis === "width" ? 0 : 1) : c.i, a = o[i % o.length], b = o[(i + 1) % o.length];
+      // the fields' order: a room's box from its clockwise outline, a wall from the outline itself
+      const o = c.kind === "room" ? orientCW(selSpace.outline) : selSpace.outline, i = c.kind === "room" ? (c.axis === "width" ? 0 : 1) : c.i, a = o[i % o.length], b = o[(i + 1) % o.length];
       const scale = scaleFromWall(Math.hypot(b[0] - a[0], b[1] - a[1]), c.cm);
       if (scale) setFlat({...f, scale, scaleFrom:"wall", scaleAsked:true});
       return;
@@ -278,7 +280,7 @@ export default function PlanImport(props: Props){
               <div className="fgrid">
                 <label><span>{t("heightCm")}</span>
                   <NumField min="200" step="1" inputMode="numeric" value={Math.round(flat.H * 100)}
-                    onCommit={v => { const cm = Math.round(Number(v)); if (cm >= 200 && cm <= 600) setFlat({...flat, H:cm / 100}); }}/>
+                    onCommit={v => { const cm = Math.round(Number(v)); if (cm >= 200 && cm <= 600){ setLast(null); setFlat({...flat, H:cm / 100}); } }}/>
                   <small>{t("cm")}</small></label>
               </div>
             </section>

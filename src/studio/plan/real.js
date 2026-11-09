@@ -47,8 +47,10 @@ export function rescale(flat, factor){
 // dropped, moved corners moved by the same amount × scale; a space whose corner count changed is rebuilt
 // from the tracing. Openings by the same rules.
 export function syncTracing(prev, next){
-  if (!next.real) return next;
-  let flat = next;
+  // the real flat is always the previous one: an edit built from an older state carries an older real flat
+  const base = prev.real || next.real;
+  if (!base) return next;
+  let flat = {...next, real:base};
   if (prev.scale > 0 && next.scale > 0 && prev.scale !== next.scale) flat = rescale({...next, scale:prev.scale}, next.scale / prev.scale);
   const k = flat.scale, real = flat.real;
   if (!(k > 0)) return flat;
@@ -57,10 +59,14 @@ export function syncTracing(prev, next){
   for (const s of flat.spaces){
     if (!s.outline || s.outline.length < 3) continue;
     const old = before.get(s.id), r = had.get(s.id);
-    if (!r || !old || old.outline.length !== s.outline.length || r.poly.length !== s.outline.length){
+    if (!r || !old || old.outline.length !== s.outline.length){
       spaces.push({id:s.id, poly:orientCW(s.outline).map(p => mul(p, k))});
       continue;
     }
+    // unchanged on the tracing (a rename, a size text): the real room stays as corrected, steps and all
+    if (old.outline === s.outline || old.outline.every((p, i) => p[0] === s.outline[i][0] && p[1] === s.outline[i][1])){ spaces.push(r); continue; }
+    // moved corners of a room whose real shape has other corners (a step): rebuilt from the tracing
+    if (r.poly.length !== s.outline.length){ spaces.push({id:s.id, poly:orientCW(s.outline).map(p => mul(p, k))}); continue; }
     const order = cwOrder(old.outline);
     const poly = r.poly.map((p, j) => { const i = order[j], d = [s.outline[i][0] - old.outline[i][0], s.outline[i][1] - old.outline[i][1]]; return [r6(p[0] + d[0] * k), r6(p[1] + d[1] * k)]; });
     spaces.push({id:s.id, poly:orientCW(poly)});

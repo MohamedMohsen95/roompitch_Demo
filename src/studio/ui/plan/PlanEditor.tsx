@@ -2,7 +2,8 @@
 // (or tracing by hand). Everything is in plan pixels; the logic lives in plan/flat.js.
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { t } from "../../i18n.js";
-import { snapPoint, wallLengthsCm, nearestPlanWall, orientCW, newId, cleanOutline } from "../../plan/flat.js";
+import { snapPoint, nearestPlanWall, orientCW, newId, cleanOutline } from "../../plan/flat.js";
+import { realSpace } from "../../plan/real.js";
 import type { Flat, Space, PlanOpening } from "../../plan/flat";
 import type { Point } from "../../types";
 import type { WallHandle } from "./readPlan";
@@ -234,7 +235,12 @@ export default function PlanEditor({flat, imageUrl, onChange, sel, onSelect, too
   }
 
   const selSpace = sel?.kind === "space" ? flat.spaces.find(s => s.id === sel.id) : null;
-  const lengths = selSpace && flat.scale ? wallLengthsCm(selSpace.outline, flat.scale) : null;
+  // wall labels in the panel's order: with a scale, the real flat's (clockwise from the top-left corner), with
+  // its lengths; without, the outline's own order, numbers only
+  const labelPoly = selSpace ? (flat.scale ? orientCW(selSpace.outline) : selSpace.outline) : [];
+  const selReal = selSpace && flat.scale ? realSpace(flat, selSpace.id) : null;
+  const lengths = selReal && selReal.poly.length === labelPoly.length
+    ? selReal.poly.map((p, i) => { const q = selReal.poly[(i + 1) % selReal.poly.length]; return Math.round(Math.hypot(q[0] - p[0], q[1] - p[1]) * 1000) / 10; }) : null;
   const r = 7 * k, fs = 13 * k;
 
   const tools: [Tool, string][] = [["select", "toolSelect"], ["fill", "toolFill"], ["trace", "toolTrace"], ["door", "toolDoor"], ["window", "toolWindow"]];
@@ -286,8 +292,8 @@ export default function PlanEditor({flat, imageUrl, onChange, sel, onSelect, too
           </g>
         );
       })}
-      {selSpace && tool === "select" && selSpace.outline.map((p, i) => {
-        const q = selSpace.outline[(i + 1) % selSpace.outline.length];
+      {selSpace && tool === "select" && labelPoly.map((p, i) => {
+        const q = labelPoly[(i + 1) % labelPoly.length];
         return lengths ? (
           <text key={"l" + i} className="plen" x={(p[0] + q[0]) / 2} y={(p[1] + q[1]) / 2} fontSize={fs} textAnchor="middle" dominantBaseline="middle">
             {i + 1} · {lengths[i]}

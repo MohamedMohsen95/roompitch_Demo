@@ -105,3 +105,36 @@ test("a corridor running past both ends of the room gets an 8-corner step; doors
   assert.deepEqual(realSpace(g, "C").poly, [[-1, 3.2], [0, 3.2], [0, 3.6], [3, 3.6], [3, 3.2], [6, 3.2], [6, 4.4], [-1, 4.4]]);
   assert.deepEqual(g.real.openings.map(o => o.a), [[1, 3.5], [4, 3.1]]);
 });
+
+test("review: a part step survives a later tracing edit (a rename)", async () => {
+  const { syncTracing, realOverlaps } = await import("../src/studio/plan/real.js");
+  const f = flatOf(rooms3);
+  const g = applyCorrection(f, {kind:"room", spaceId:"A", axis:"length", cm:340}, {whole:false});
+  const h = syncTracing(g, {...g, spaces:g.spaces.map(s => s.id === "B" ? {...s, name:"Bedroom"} : s)});
+  assert.deepEqual(h.real, g.real);
+  assert.deepEqual(realOverlaps(h), []);
+});
+
+test("review: wall one by one on a slightly off-square room moves the whole far wall", () => {
+  const f = flatOf({B:[3.2, 0, 6, 3]}, {polys:{A:[[0, 0], [3, 0], [2.99, 3], [0, 3]]}});
+  const g = applyCorrection(f, {kind:"wall", spaceId:"A", i:0, cm:340}, {whole:true});
+  const a = realSpace(g, "A").poly;
+  assert.ok(Math.abs(a[1][0] - 3.4) < 1e-6 && Math.abs(a[2][0] - 3.39) < 1e-6, JSON.stringify(a));
+  const r = flatOf({A:[0, 0, 3, 3], B:[3.2, 0, 6, 3]}, {deg:45});
+  const k = applyCorrection(r, {kind:"wall", spaceId:"A", i:1, cm:340}, {whole:true});
+  assert.deepEqual(boxes(k).A, [300, 340]);
+});
+
+test("review: a correction that would make rooms overlap is refused", () => {
+  const f = flatOf({A:[0, 0, 3, 3], B:[3.3, 0, 6, 3]});      // a 30 cm wall: not seen as shared
+  assert.deepEqual(planCorrection(f, {kind:"room", spaceId:"A", axis:"width", cm:340}), {ok:false, reason:"overlap"});
+});
+
+test("review: syncTracing works from the previous real flat, not a stale one in the edit", async () => {
+  const { syncTracing, materialize } = await import("../src/studio/plan/real.js");
+  const f0 = materialize(flatOf({A:[0, 0, 3, 3]}));
+  const drag = (f, x) => ({...f, spaces:f.spaces.map(s => ({...s, outline:[[0, 0], [x, 0], [3, 3], [0, 3]]}))});
+  const s1 = syncTracing(f0, drag(f0, 3.1));
+  const s2 = syncTracing(s1, drag(f0, 3.2));             // built from the stale f0 (its real too)
+  assert.ok(Math.abs(realSpace(s2, "A").poly[1][0] - 3.2) < 1e-9);
+});
