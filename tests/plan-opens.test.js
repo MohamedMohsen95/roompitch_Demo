@@ -53,3 +53,9 @@ test("no edits: nothing else changes", () => {
   const f = two([], [door]);
   assert.deepEqual(deriveOpens(f, [], 12).openings, [door]);
 });
+
+test("re-derived opens keep their ids, so the real flat keeps their places", () => {
+  const f = deriveOpens(two([erase(20, 60)]), [], 12);
+  const g = deriveOpens({...f, spaces:f.spaces.map(s => ({...s, name:s.name + "!"}))}, [], 12);
+  assert.deepEqual(g.openings.map(o => o.id), f.openings.map(o => o.id));
+});

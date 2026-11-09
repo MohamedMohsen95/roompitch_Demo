@@ -27,7 +27,7 @@ export function deriveOpens(flat, gaps, tolPx){
   const kept = flat.openings.filter(o => !(o.type === "open" && o.fromEdit));
   // per space edge, the stretches that are open
   const spans = new Map();                       // "spaceId:i" -> {a, b, list:[[t0, t1]]}
-  const addSpan = (s, i, a, b, iv) => { const key = s.id + ":" + i; (spans.get(key) || spans.set(key, {a, b, list:[]}).get(key)).list.push(iv); };
+  const addSpan = (s, i, a, b, iv) => { const key = s.id + ":" + i; (spans.get(key) || spans.set(key, {key, a, b, list:[]}).get(key)).list.push(iv); };
   for (const s of flat.spaces){
     const o = s.outline, n = o.length;
     for (let i = 0; i < n; i++){
@@ -37,11 +37,12 @@ export function deriveOpens(flat, gaps, tolPx){
     }
   }
   const made = [];
-  for (const {a, b, list} of spans.values()){
+  for (const {key, a, b, list} of spans.values()){
     list.sort((p, q) => p[0] - q[0]);
     const merged = [];
     for (const iv of list){ const last = merged[merged.length - 1]; if (last && iv[0] <= last[1] + 0.5) last[1] = Math.max(last[1], iv[1]); else merged.push([...iv]); }
-    for (const [t0, t1] of merged) made.push({id:newId("o"), type:"open", a:at(a, b, t0), b:at(a, b, t1), heightCm:H, sillCm:0, fromAI:false, fromEdit:true});
+    // ids from where they are (space, edge, order), so working them out again keeps the same ids
+    merged.forEach(([t0, t1], j) => made.push({id:"oe:" + key + ":" + j, type:"open", a:at(a, b, t0), b:at(a, b, t1), heightCm:H, sillCm:0, fromAI:false, fromEdit:true}));
   }
   // drawn walls close what they cover
   const walls = edits.filter(e => e.kind === "wall"), out = [];
@@ -53,7 +54,7 @@ export function deriveOpens(flat, gaps, tolPx){
       if (!iv) continue;
       pieces = pieces.flatMap(([p0, p1]) => [[p0, Math.min(p1, iv[0])], [Math.max(p0, iv[1]), p1]]).filter(([p0, p1]) => p1 - p0 >= 1);
     }
-    pieces.forEach(([p0, p1], j) => out.push({...o, id:j ? newId("o") : o.id, a:at(o.a, o.b, p0), b:at(o.a, o.b, p1)}));
+    pieces.forEach(([p0, p1], j) => out.push({...o, id:j ? (o.fromEdit ? o.id + ":" + j : newId("o")) : o.id, a:at(o.a, o.b, p0), b:at(o.a, o.b, p1)}));
   }
   return {...flat, openings:out};
 }

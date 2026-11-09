@@ -470,3 +470,12 @@ details p{margin:6px 0 0; font-family:var(--font-data); font-size:11.5px; line-h
 .flatmap{padding:10px; display:flex; flex-direction:column; gap:6px}
 .flatmap h2{margin:0; font-size:13px}
 .crumbs{display:inline-flex; align-items:center; gap:6px; flex-wrap:wrap}
+/* Drawn walls, erased stretches, open parts */
+.planedit.tool-wall, .planedit.tool-erase{cursor:crosshair}
+.planedit .pedt{stroke-linecap:butt; cursor:pointer}
+.planedit .pedt.wall{stroke:var(--accent); stroke-opacity:.85}
+.planedit .pedt.erase{stroke:#fff; stroke-opacity:.75}
+.planedit .pedt.on{stroke-opacity:1; filter:drop-shadow(0 0 2px var(--accent))}
+.planedit .pedt.live{stroke-dasharray:6 4}
+.pop.open line{stroke:#8e44ad; stroke-dasharray:10 6}
+.realplan .ropen.open{stroke:#fff; stroke-dasharray:.15 .1}

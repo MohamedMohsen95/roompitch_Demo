@@ -7,9 +7,10 @@ import { realSpace } from "../../plan/real.js";
 import type { Flat, Space, PlanOpening } from "../../plan/flat";
 import type { Point } from "../../types";
 import type { WallHandle } from "./readPlan";
+import type { Edit } from "../../plan/edits";
 
-export type Tool = "select" | "trace" | "fill" | "door" | "window";
-export type PlanSel = {kind: "space", id: string, corner?: number} | {kind: "opening", id: string} | null;
+export type Tool = "select" | "trace" | "fill" | "wall" | "erase" | "door" | "window";
+export type PlanSel = {kind: "space", id: string, corner?: number} | {kind: "opening", id: string} | {kind: "edit", id: string} | null;
 
 type Props = {
   flat: Flat;
@@ -22,12 +23,14 @@ type Props = {
   bad: Record<string, string>;        // space id -> reason (outline problem or a size that disagrees)
   walls: WallHandle | null;           // the walls read from the image: click-to-fill and doors on gaps
   onNotice: (text: string) => void;
+  onEdits: (edits: Edit[]) => void;   // a wall drawn or a stretch erased (or one removed)
 };
 
 type Drag =
   | {kind: "corner", id: string, i: number, moved: boolean}
   | {kind: "end", id: string, end: "a" | "b"}
-  | {kind: "new", type: "door" | "window", a: Point, ux: number, uy: number, len: number, t0: number, t1: number};
+  | {kind: "new", type: "door" | "window", a: Point, ux: number, uy: number, len: number, t0: number, t1: number}
+  | {kind: "stroke", type: "wall" | "erase", a: Point, b: Point};
 
 const centre = (o: Point[]): Point => {
   const xs = o.map(p => p[0]), ys = o.map(p => p[1]);
@@ -44,7 +47,7 @@ const inside = (poly: Point[], [x, y]: Point) => {
   return c;
 };
 
-export default function PlanEditor({flat, imageUrl, onChange, sel, onSelect, tool, onTool, bad, walls, onNotice}: Props){
+export default function PlanEditor({flat, imageUrl, onChange, sel, onSelect, tool, onTool, bad, walls, onNotice, onEdits}: Props){
   const svgRef = useRef<SVGSVGElement>(null);
   const [k, setK] = useState(1);                     // plan pixels per screen pixel
   const [trace, setTrace] = useState<Point[]>([]);
@@ -102,7 +105,10 @@ export default function PlanEditor({flat, imageUrl, onChange, sel, onSelect, too
         return;
       }
       if (e.key !== "Delete" && e.key !== "Backspace") return;
-      if (sel?.kind === "opening"){
+      if (sel?.kind === "edit"){
+        e.preventDefault();
+        onEdits((flat.edits || []).filter(x => x.id !== sel.id)); onSelect(null);
+      } else if (sel?.kind === "opening"){
         e.preventDefault();
         onChange({...flat, openings:flat.openings.filter(o => o.id !== sel.id)}); onSelect(null);
       } else if (sel?.kind === "space" && sel.corner != null){
@@ -120,7 +126,11 @@ export default function PlanEditor({flat, imageUrl, onChange, sel, onSelect, too
 
   // ---- pointer ----
   function onBackgroundDown(e: React.PointerEvent){
-    if (tool === "door" || tool === "window"){
+    if (tool === "wall" || tool === "erase"){
+      const p = toPlan(e);
+      svgRef.current!.setPointerCapture(e.pointerId);
+      setDrag({kind:"stroke", type:tool, a:p, b:p});
+    } else if (tool === "door" || tool === "window"){
       const p = toPlan(e), wall = nearestPlanWall(flat, p, tol * 2);
       if (!wall) return;
       const ux = (wall.b[0] - wall.a[0]) / wall.len, uy = (wall.b[1] - wall.a[1]) / wall.len;
@@ -167,6 +177,17 @@ export default function PlanEditor({flat, imageUrl, onChange, sel, onSelect, too
       setHover(e.shiftKey ? raw : snapPoint(raw, prev, [...cornersExcept(null), ...trace], tol));
     }
     if (!drag) return;
+    if (drag.kind === "stroke"){
+      // straight across or straight down when within 8° of it (Shift: as drawn)
+      let b = raw;
+      const dx = raw[0] - drag.a[0], dy = raw[1] - drag.a[1], ang = Math.abs(Math.atan2(dy, dx) * 180 / Math.PI);
+      if (!e.shiftKey){
+        if (ang < 8 || ang > 172) b = [raw[0], drag.a[1]];
+        else if (Math.abs(ang - 90) < 8) b = [drag.a[0], raw[1]];
+      }
+      setDrag({...drag, b});
+      return;
+    }
     if (drag.kind === "corner"){
       const s = flatRef.current.spaces.find(x => x.id === drag.id); if (!s) return;
       const n = s.outline.length, prev = s.outline[(drag.i - 1 + n) % n];
@@ -180,7 +201,7 @@ export default function PlanEditor({flat, imageUrl, onChange, sel, onSelect, too
       const ux = (other[0] - fixed[0]) / len, uy = (other[1] - fixed[1]) / len;
       const s = Math.max(4 * k, (raw[0] - fixed[0]) * ux + (raw[1] - fixed[1]) * uy);
       const p: Point = [fixed[0] + ux * s, fixed[1] + uy * s];
-      setOpening(drag.id, x => ({...x, [drag.end]:p, fromAI:false}));
+      setOpening(drag.id, x => ({...x, [drag.end]:p, fromAI:false, ...(x.type === "open" ? {fromEdit:false} : {})}));
     } else {
       const t1 = Math.max(0, Math.min(drag.len, (raw[0] - drag.a[0]) * drag.ux + (raw[1] - drag.a[1]) * drag.uy));
       setDrag({...drag, t1});
@@ -195,6 +216,12 @@ export default function PlanEditor({flat, imageUrl, onChange, sel, onSelect, too
   }
 
   function onUp(){
+    if (drag?.kind === "stroke"){
+      const d = drag;
+      setDrag(null);
+      if (Math.hypot(d.b[0] - d.a[0], d.b[1] - d.a[1]) >= 4 * k) onEdits([...(flatRef.current.edits || []), {id:newId("e"), kind:d.type, a:d.a, b:d.b}]);
+      return;
+    }
     if (drag?.kind === "new" && Math.abs(drag.t1 - drag.t0) < 6 * k && walls?.ok){
       // A tap next to a gap in the wall: the door or window spans exactly that gap.
       const d = drag, p: Point = [d.a[0] + d.ux * d.t0, d.a[1] + d.uy * d.t0];
@@ -243,7 +270,8 @@ export default function PlanEditor({flat, imageUrl, onChange, sel, onSelect, too
     ? selReal.poly.map((p, i) => { const q = selReal.poly[(i + 1) % selReal.poly.length]; return Math.round(Math.hypot(q[0] - p[0], q[1] - p[1]) * 1000) / 10; }) : null;
   const r = 7 * k, fs = 13 * k;
 
-  const tools: [Tool, string][] = [["select", "toolSelect"], ["fill", "toolFill"], ["trace", "toolTrace"], ["door", "toolDoor"], ["window", "toolWindow"]];
+  const tools: [Tool, string][] = [["select", "toolSelect"], ["fill", "toolFill"], ["trace", "toolTrace"], ["wall", "toolWall"], ["erase", "toolErase"], ["door", "toolDoor"], ["window", "toolWindow"]];
+  const wt = Math.max(3, walls?.thick || 4);      // a drawn wall's width in plan px
   return (
     <div className="pedit">
       <div className="ptools" role="toolbar">
@@ -279,6 +307,17 @@ export default function PlanEditor({flat, imageUrl, onChange, sel, onSelect, too
           </g>
         );
       })}
+      {(flat.edits || []).map(ed => {
+        const on = sel?.kind === "edit" && sel.id === ed.id;
+        return (
+          <line key={ed.id} className={"pedt " + ed.kind + (on ? " on" : "")} x1={ed.a[0]} y1={ed.a[1]} x2={ed.b[0]} y2={ed.b[1]}
+            strokeWidth={ed.kind === "wall" ? wt : 1.6 * wt}
+            onPointerDown={e => { if (tool === "select"){ e.stopPropagation(); onSelect({kind:"edit", id:ed.id}); } }}/>
+        );
+      })}
+      {drag?.kind === "stroke" && (
+        <line className={"pedt " + drag.type + " live"} x1={drag.a[0]} y1={drag.a[1]} x2={drag.b[0]} y2={drag.b[1]} strokeWidth={drag.type === "wall" ? wt : 1.6 * wt}/>
+      )}
       {flat.openings.map(o => {
         const on = sel?.kind === "opening" && sel.id === o.id;
         return (
