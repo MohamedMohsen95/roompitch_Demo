@@ -5,7 +5,7 @@ import { parseRoomSize, parseArea } from "./units.js";
 export const DEFAULT_H = 2.8;
 
 export function newFlat(image){
-  return {v:1, image:{...image}, scale:null, scaleFrom:null, H:DEFAULT_H, spaces:[], openings:[], unplaced:[]};
+  return {v:2, image:{...image}, scale:null, scaleFrom:null, scaleAsked:false, H:DEFAULT_H, spaces:[], openings:[], unplaced:[], real:null};
 }
 
 // Twice the signed area; positive means clockwise on screen (y down).

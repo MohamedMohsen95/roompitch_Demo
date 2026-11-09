@@ -38,7 +38,7 @@ test("save and load a flat", () => {
 test("a missing or broken flat is not loaded", () => {
   assert.equal(loadFlat(), null);
   mem.set("rp_flat", "{nope"); assert.equal(loadFlat(), null);
-  mem.set("rp_flat", JSON.stringify({...twoRooms(), v:2})); assert.equal(loadFlat(), null);
+  mem.set("rp_flat", JSON.stringify({...twoRooms(), v:3})); assert.equal(loadFlat(), null);
   const f = twoRooms(); f.spaces[0].outline = [[0, 0], [1, 1]];
   mem.set("rp_flat", JSON.stringify(f)); assert.equal(loadFlat(), null);
   assert.equal(validFlat(null), false);
@@ -95,4 +95,16 @@ test("while a flat space is open, room saves go to the flat, not to the single-r
   redirectSaves(null);
   saveRoom();
   assert.ok(loadRoom());
+});
+
+test("v1 flats load as v2 with no real flat", async () => {
+  const { upgradeFlat } = await import("../src/studio/plan/flat-store.js");
+  const v1 = {v:1, image:{w:10, h:10}, scale:null, scaleFrom:null, H:2.8, spaces:[], openings:[]};
+  assert.equal(validFlat(v1), true);
+  const u = upgradeFlat(v1);
+  assert.deepEqual([u.v, u.scaleAsked, u.real], [2, false, null]);
+  assert.equal(validFlat({...u, real:{spaces:[{id:"a", poly:[[0, 0]]}], openings:[], confirmed:[]}}), false);
+  assert.equal(validFlat({...u, real:{spaces:[{id:"a", poly:[[0, 0], [1, 0], [1, 1]]}], openings:[], confirmed:"a"}}), false);
+  assert.equal(validFlat({...u, real:{spaces:[{id:"a", poly:[[0, 0], [1, 0], [1, 1]]}], openings:[], confirmed:["a"]}}), true);
+  saveFlat(v1); assert.equal(loadFlat().v, 2);
 });

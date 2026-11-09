@@ -9,7 +9,7 @@ const space = (id, outline, sizeText) => ({id, name:id, outline, sizeText, statu
 
 test("a new flat has no spaces, no scale and a 280 cm ceiling", () => {
   const f = newFlat({w:800, h:600});
-  assert.deepEqual([f.v, f.spaces, f.openings, f.scale, f.H, f.unplaced], [1, [], [], null, 2.8, []]);
+  assert.deepEqual([f.v, f.spaces, f.openings, f.scale, f.H, f.unplaced], [2, [], [], null, 2.8, []]);
   assert.deepEqual(f.image, {w:800, h:600});
 });
 

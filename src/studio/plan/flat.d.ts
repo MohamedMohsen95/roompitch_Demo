@@ -1,11 +1,14 @@
 // Types for flat.js (used by the TypeScript interface). Outlines and openings are in plan pixels.
 import type { Point, Opening } from "../types";
+import type { RealFlat } from "./real";
 
 export type Space = {id: string, name: string, outline: Point[], sizeText: string | null, areaText?: string | null, status: "todo" | "doing" | "done", design: any | null, fromAI: boolean, unnamed?: boolean, suggested?: boolean};
 export type PlanOpening = {id: string, type: "door" | "window", a: Point, b: Point, heightCm: number, sillCm: number, fromAI: boolean};
 export type Flat = {
-  v: 1, image: {w: number, h: number, path?: string, dataUrl?: string},
+  v: 1 | 2, image: {w: number, h: number, path?: string, dataUrl?: string},
   scale: number | null, scaleFrom: "sizes" | "wall" | null, H: number,
+  scaleAsked?: boolean,               // the "whole plan or only this?" question was answered
+  real?: RealFlat | null,             // the real flat in metres; null = the tracing × scale
   spaces: Space[], openings: PlanOpening[], unplaced?: {name: string, sizeText: string | null, areaText?: string | null}[]
 };
 export type PlanForm = {shape: "plan", lengthCm: number, widthCm: number, heightCm: number};

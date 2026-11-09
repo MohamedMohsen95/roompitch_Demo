@@ -1,6 +1,7 @@
 import type { Flat, SpaceRoom } from "./flat";
 export function onFlatSaved(fn: ((f: Flat) => void) | null): void;
 export function validFlat(f: any): boolean;
+export function upgradeFlat(f: Flat): Flat;
 export function saveFlat(flat: Flat): void;
 export function loadFlat(): Flat | null;
 export function clearFlat(): void;
