@@ -270,8 +270,15 @@ export async function deleteProject(id){
   await queue(async () => {
     const sb = await cloudReady();
     if (!sb) return;
+    // A flat's plan image lives in storage beside the row; it goes too.
+    const { data:row } = await sb.from("projects").select("image:data->image->>path").eq("id", id).maybeSingle();
     const { error } = await sb.from("projects").delete().eq("id", id);
     if (error){ warn("delete", error); return; }
+    if (row?.image){
+      const { error:gone } = await sb.storage.from("files").remove([row.image]);
+      if (gone) warn("delete plan image", gone);
+    }
+    uploaded.delete(id);
     const room = id === await getId(sb), flat = id === await getId(sb, "flat");
     if (room) await setId(sb, null);
     if (flat) await setId(sb, null, "flat");
