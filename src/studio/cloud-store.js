@@ -7,7 +7,7 @@
 import { getSupabase } from "./supabase.js";
 import { validRoom, clearRoom } from "./room-store.js";
 import { savePhotos } from "./photo-store.js";
-import { validFlat, clearFlat } from "./plan/flat-store.js";
+import { validFlat, clearFlat, setFlatImagePath } from "./plan/flat-store.js";
 
 const PROJECT_KEY = "rp_project_id";   // which cloud row is the current room, and whose: {user, id}
 const FLAT_KEY = "rp_flat_project_id"; // the same for the current flat
@@ -132,7 +132,7 @@ function flushFlat(){
         const { error } = await sb.storage.from("files").upload(want, await dataUrlBlob(image.dataUrl), {upsert:true, contentType:"image/jpeg"});
         if (error) warn("plan image", error); else { path = want; uploaded.set(id, {path:want, sig}); }
       }
-      if (path){ image.path = path; delete image.dataUrl; }
+      if (path){ setFlatImagePath(path, image.dataUrl); image.path = path; delete image.dataUrl; }
     }
     row.data = {...flat, image};
     const { error } = await sb.from("projects").upsert(row);

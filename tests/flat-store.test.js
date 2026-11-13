@@ -8,7 +8,7 @@ globalThis.localStorage = {
   removeItem: (k) => { mem.delete(k); }
 };
 
-const { saveFlat, loadFlat, validFlat, onFlatSaved, setCurrentSpace, currentSpace, designSaved, openSpace } = await import("../src/studio/plan/flat-store.js");
+const { saveFlat, loadFlat, validFlat, onFlatSaved, setCurrentSpace, currentSpace, designSaved, openSpace, setFlatImagePath, clearFlat } = await import("../src/studio/plan/flat-store.js");
 const { newFlat, spaceRoom } = await import("../src/studio/plan/flat.js");
 const { S, applyRoom } = await import("../src/studio/state.js");
 const { saveRoom, redirectSaves, loadRoom } = await import("../src/studio/room-store.js");
@@ -25,7 +25,7 @@ function twoRooms(){
   return f;
 }
 
-beforeEach(() => { mem.clear(); onFlatSaved(null); redirectSaves(null); });
+beforeEach(() => { clearFlat(); mem.clear(); onFlatSaved(null); redirectSaves(null); });
 
 test("save and load a flat", () => {
   let pushed = null;
@@ -115,4 +115,37 @@ test("edits on a flat are checked", () => {
   assert.equal(validFlat({...f, edits:[{id:"e", kind:"erase", a:[0, 0], b:[5, 5]}]}), true);
   assert.equal(validFlat({...f, edits:[{id:"e", kind:"cut", a:[0, 0], b:[5, 5]}]}), false);
   assert.equal(validFlat({...f, edits:[{id:"e", kind:"wall", a:[0, NaN], b:[5, 5]}]}), false);
+});
+
+test("the plan image is kept apart from the flat, and saved only when it changes", () => {
+  saveFlat(twoRooms());
+  assert.equal(JSON.parse(mem.get("rp_flat")).image.dataUrl, undefined);
+  assert.equal(mem.get("rp_flat_image"), twoRooms().image.dataUrl);
+  assert.equal(loadFlat().image.dataUrl, twoRooms().image.dataUrl);
+  let writes = 0; const set = localStorage.setItem;
+  localStorage.setItem = (k, v) => { if (k === "rp_flat_image") writes++; set(k, v); };
+  try { saveFlat({...twoRooms(), H:3}); } finally { localStorage.setItem = set; }
+  assert.equal(writes, 0);
+});
+
+test("a plan image too big for storage stays for this visit, and a flat saved before keeps its inline image", () => {
+  const set = localStorage.setItem;
+  localStorage.setItem = (k, v) => { if (k === "rp_flat_image") throw new Error("QuotaExceededError"); set(k, v); };
+  try { saveFlat(twoRooms()); } finally { localStorage.setItem = set; }
+  assert.equal(mem.has("rp_flat_image"), false);
+  assert.equal(loadFlat().image.dataUrl, twoRooms().image.dataUrl);
+  clearFlat();
+  mem.set("rp_flat", JSON.stringify(twoRooms()));
+  assert.equal(loadFlat().image.dataUrl, twoRooms().image.dataUrl);
+});
+
+test("the uploaded image's path is remembered only for the plan still in use, without sending the flat again", () => {
+  let pushed = 0;
+  saveFlat(twoRooms());
+  onFlatSaved(() => { pushed++; });
+  setFlatImagePath("u/p/plan.jpg", "data:image/jpeg;base64,OTHER");
+  assert.equal(loadFlat().image.path, undefined);
+  setFlatImagePath("u/p/plan.jpg", twoRooms().image.dataUrl);
+  assert.equal(loadFlat().image.path, "u/p/plan.jpg");
+  assert.equal(pushed, 0);
 });

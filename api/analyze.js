@@ -10,7 +10,9 @@
 import { VISION_PROMPT, parseVisionReply } from "../src/studio/vision.js";
 
 const DEFAULT_MODEL = "@cf/meta/llama-4-scout-17b-16e-instruct";
-const MAX_IMAGE_CHARS = 6_000_000; // ~4.4 MB of base64
+// Vercel refuses request bodies over 4.5 MB before the function runs; staying under it means a too-big image
+// gets this function's own message.
+const MAX_IMAGE_CHARS = 4_300_000; // ~3.2 MB of image as base64
 const isImageDataUri = (s) => typeof s === "string" && /^data:image\/(jpeg|png|webp);base64,/.test(s) && s.length < MAX_IMAGE_CHARS;
 
 const model = () => process.env.CF_VISION_MODEL || DEFAULT_MODEL;

@@ -4,6 +4,7 @@ export function validFlat(f: any): boolean;
 export function upgradeFlat(f: Flat): Flat;
 export function saveFlat(flat: Flat): void;
 export function loadFlat(): Flat | null;
+export function setFlatImagePath(path: string, dataUrl: string): void;
 export function clearFlat(): void;
 export function setCurrentSpace(id: string | null): void;
 export function currentSpace(): string | null;

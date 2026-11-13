@@ -2,7 +2,7 @@
 // of its spaces is open in the studio. Opening a space and saving its design are pure (flat in, flat out).
 import { spaceRoom, writeBackOpenings } from "./flat.js";
 
-const KEY = "rp_flat", SPACE_KEY = "rp_flat_space";
+const KEY = "rp_flat", SPACE_KEY = "rp_flat_space", IMAGE_KEY = "rp_flat_image";
 let afterSave = null;
 
 export const onFlatSaved = (fn) => { afterSave = fn; };
@@ -28,20 +28,55 @@ export function validFlat(f){
   return f.openings.every(o => o && typeof o.id === "string" && okPoint(o.a) && okPoint(o.b));
 }
 
+// The plan image (a JPEG data URL, often 1–2 MB) is kept apart from the flat: written only when it changes,
+// not on every edit of a room, and kept in memory too, so a plan too big for this browser's storage still
+// works until a reload (by then the cloud copy has it: image.path, see setFlatImagePath).
+let image = null;   // the data URL last saved or loaded
+function keepImage(dataUrl){
+  if (dataUrl === image) return;
+  image = dataUrl || null;
+  try {
+    if (image) localStorage.setItem(IMAGE_KEY, image); else localStorage.removeItem(IMAGE_KEY);
+  } catch {
+    try { localStorage.removeItem(IMAGE_KEY); } catch { /* ignore */ }   // too big: an old image mustn't stay behind
+    if (import.meta.env?.DEV) console.warn("[flat] the plan image is too big for this browser's storage; it is kept for this visit and in the cloud");
+  }
+}
+
 export function saveFlat(flat){
-  try { localStorage.setItem(KEY, JSON.stringify(flat)); } catch { /* storage full or blocked: keep working */ }
+  const { dataUrl, ...rest } = flat.image;
+  keepImage(dataUrl);
+  try { localStorage.setItem(KEY, JSON.stringify({...flat, image:rest})); } catch { /* storage full or blocked: keep working */ }
   afterSave?.(flat);
 }
 
 export function loadFlat(){
   try {
     const f = JSON.parse(localStorage.getItem(KEY) || "null");
-    return validFlat(f) ? upgradeFlat(f) : null;
+    if (!validFlat(f)) return null;
+    if (!f.image.dataUrl){   // flats saved before the image was kept apart have it inline
+      image ??= localStorage.getItem(IMAGE_KEY);
+      if (image) f.image = {...f.image, dataUrl:image};
+    }
+    return upgradeFlat(f);
   } catch { return null; }
 }
 
+// The plan image (dataUrl) is in cloud storage at `path`: remember it, so it isn't uploaded again after a reload
+// and can be fetched from there when this browser couldn't keep it. Not a change to the flat, so nothing is sent
+// again. Only while that image is still this browser's plan (an upload can finish after a new plan was picked).
+export function setFlatImagePath(path, dataUrl){
+  if (!dataUrl || dataUrl !== image) return;
+  try {
+    const f = JSON.parse(localStorage.getItem(KEY) || "null");
+    if (!f?.image || f.image.path === path) return;
+    localStorage.setItem(KEY, JSON.stringify({...f, image:{...f.image, path}}));
+  } catch { /* ignore */ }
+}
+
 export function clearFlat(){
-  try { localStorage.removeItem(KEY); localStorage.removeItem(SPACE_KEY); } catch { /* ignore */ }
+  image = null;
+  try { localStorage.removeItem(KEY); localStorage.removeItem(SPACE_KEY); localStorage.removeItem(IMAGE_KEY); } catch { /* ignore */ }
 }
 
 export function setCurrentSpace(id){

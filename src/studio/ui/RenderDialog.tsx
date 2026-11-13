@@ -25,7 +25,7 @@ export default function RenderDialog({open, onClose}: {open: boolean, onClose: (
       const r = await sendJob(job.current);
       if (r.needCode){ setV({...START, spin:t("codeNeeded"), status:t("enterCode"), err:true, needCode:true}); setTimeout(() => codeRef.current?.focus()); return; }
       if (!r.image) return setV({...START, spin:r.error || t("wentWrong", {s:r.status}), status:t("failed"), err:true});
-      setV({...START, image:r.image, status:t("done", {s:r.secs, p:providerName(c.provider)})});
+      setV({...START, image:r.image, status:t("renderDone", {s:r.secs, p:providerName(c.provider)})});
     } catch {
       setV({...START, spin:t("noServer"), status:t("failed"), err:true});
     }

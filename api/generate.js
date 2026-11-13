@@ -25,7 +25,9 @@ const RESTYLE_MODEL = process.env.FAL_RESTYLE_MODEL || "fal-ai/nano-banana/edit"
 const INPAINT_MODEL = process.env.FAL_INPAINT_MODEL || "fal-ai/flux-pro/v1/fill";
 const CF_MODEL = process.env.CF_IMAGE_MODEL || "@cf/black-forest-labs/flux-2-klein-4b";
 const CF_MAX_INPUT_SIDE = 496; // FLUX.2 on Workers AI only accepts input images smaller than 512x512
-const MAX_IMAGE_CHARS = 6_000_000; // ~4.4 MB of base64
+// Vercel refuses request bodies over 4.5 MB before the function runs; staying under it means a too-big image
+// gets this function's own message. An edit's image and mask count together.
+const MAX_IMAGE_CHARS = 4_300_000; // ~3.2 MB of image as base64
 
 const isImageDataUri = (s) => typeof s === "string" && /^data:image\/(jpeg|png|webp);base64,/.test(s) && s.length < MAX_IMAGE_CHARS;
 
@@ -73,6 +75,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "Missing prompt" });
   }
   if (mode === "edit" && !isImageDataUri(mask)) return res.status(400).json({ error: "Missing mask" });
+  if (mode === "edit" && image.length + mask.length >= MAX_IMAGE_CHARS) return res.status(400).json({ error: "Missing or too large image" });
 
   try {
     return provider === "cloudflare"

@@ -1,7 +1,10 @@
 // Shared by api/plan.js and api/point.js: calling a Workers AI model and turning its errors into the
 // messages the app shows. (Files under api/_lib are not routes.)
 export const hasKeys = () => Boolean(process.env.CF_ACCOUNT_ID && process.env.CF_API_TOKEN);
-export const isImageDataUri = (s) => typeof s === "string" && /^data:image\/(jpeg|png|webp);base64,/.test(s) && s.length < 6_000_000;
+export const isImageDataUri = (s) => typeof s === "string" && /^data:image\/(jpeg|png|webp);base64,/.test(s) && s.length < MAX_IMAGE_CHARS;
+// Vercel refuses request bodies over 4.5 MB before the function runs; staying under it means a too-big image
+// gets this function's own message.
+const MAX_IMAGE_CHARS = 4_300_000;   // ~3.2 MB of image as base64
 
 // Text of a chat model's answer, whichever response shape the model uses.
 export function replyText(data){

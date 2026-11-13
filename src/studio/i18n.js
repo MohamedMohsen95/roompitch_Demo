@@ -56,7 +56,7 @@ const STR = {
     noKeys: "No AI keys in .env. Add CF_ACCOUNT_ID and CF_API_TOKEN, then restart the server.",
     renderOff: "Rendering is off", sending: "Sending to {p}…", codeNeeded: "Access code needed",
     enterCode: "Enter the code from your .env file", wentWrong: "Something went wrong ({s})", failed: "Render failed",
-    done: "Done in {s} s · {p}", noServer: "Could not reach the server. Make sure npm run dev is running.",
+    renderDone: "Done in {s} s · {p}", noServer: "Could not reach the server. Make sure npm run dev is running.",
 
     setTitle: "Studio settings", setNote: "Saved on this device and used in every PDF.",
     studioName: "Studio name", designer: "Designer", phone: "Phone", email: "Email", logo: "Logo",
@@ -242,7 +242,7 @@ const STR = {
     noKeys: "لا توجد مفاتيح AI في ملف .env. أضف CF_ACCOUNT_ID و CF_API_TOKEN ثم أعد تشغيل السيرفر.",
     renderOff: "الريندر غير مُفعّل", sending: "جاري الإرسال إلى {p}…", codeNeeded: "مطلوب كود الدخول",
     enterCode: "اكتب الكود الموجود في ملف .env", wentWrong: "حدث خطأ ({s})", failed: "فشل الريندر",
-    done: "تم في {s} ثانية · {p}", noServer: "تعذّر الوصول للسيرفر. تأكد أن npm run dev يعمل.",
+    renderDone: "تم في {s} ثانية · {p}", noServer: "تعذّر الوصول للسيرفر. تأكد أن npm run dev يعمل.",
 
     setTitle: "إعدادات المكتب", setNote: "تُحفظ على هذا الجهاز وتظهر في كل PDF.",
     studioName: "اسم المكتب", designer: "اسم المصمم", phone: "التليفون", email: "الإيميل", logo: "اللوجو",
