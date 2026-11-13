@@ -4,6 +4,8 @@
 //                   whether it's saved, undo and redo
 //   what you make   Export PDF and Photoreal render
 //   you and the app light/dark, and the account menu: studio details, price list, language, account, sign out
+// In a space of a flat (a floor plan) the room's name is the space's: the crumb leads back to the whole flat, with
+// the previous and next room beside it.
 // "Saved" opens the save options (a copy; admins: a template). Narrower windows drop the "Projects /" crumb,
 // the "Saved" text and Export PDF; Export PDF and the save options move into the room menu.
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
@@ -18,12 +20,14 @@ import Menu, { MenuItem } from "./Menu";
 import { SaveCopyDialog, TemplateDialog } from "./SaveDialogs";
 import ThemeButton from "./ThemeButton";
 import type { Account } from "./account";
+import type { Flat } from "../plan/flat";
 import { Mark, IconChevron, IconEdit, IconRoom, IconFile, IconFolder, IconSettings, IconTag, IconUser, IconLogout,
   IconUndo, IconRedo, IconSparkle, IconCloudCheck, IconCloudOff, IconCopy, IconLayout } from "./Icons";
 
 export type BarDialog = "render" | "settings" | "prices" | "pdf";
+export type FlatNav = {flat: Flat, spaceId: string, onOpen: (id: string) => void, onFlat: () => void};
 type Props = {
-  account: Account,
+  account: Account, flatNav?: FlatNav | null,
   onProjects: () => void, onTemplates: () => void, onRoomSetup: () => void, onLang: () => void,
   onDialog: (d: BarDialog) => void, onAccount: () => void
 };
@@ -51,6 +55,21 @@ function SaveItems({done, admin, onSaveAs}: {done: () => void, admin: boolean, o
   return <>
     <MenuItem icon={<IconCopy/>} label={t("saveCopy") + "…"} onClick={() => { done(); onSaveAs("copy"); }}/>
     {admin && <MenuItem icon={<IconLayout/>} label={t("saveTemplate") + "…"} onClick={() => { done(); onSaveAs("template"); }}/>}
+  </>;
+}
+
+// In a flat's room: the whole flat, this room, and the previous / next room.
+function FlatCrumbs({nav}: {nav: FlatNav}){
+  const list = nav.flat.spaces, i = list.findIndex(s => s.id === nav.spaceId), n = list.length;
+  const go = (d: number) => nav.onOpen(list[(i + d + n) % n].id);
+  return <>
+    <button type="button" className="tb-crumblink" onClick={nav.onFlat}>{t("wholeFlat")}</button>
+    <span className="tb-sep" aria-hidden="true">/</span>
+    <span className="tb-name tb-space">{list[i]?.name || "—"}</span>
+    {n > 1 && <span className="tb-steps">
+      <button type="button" className="btn ghost icon" aria-label={t("prevRoom")} title={t("prevRoom")} onClick={() => go(-1)}><IconChevron/></button>
+      <button type="button" className="btn ghost icon" aria-label={t("nextRoom")} title={t("nextRoom")} onClick={() => go(1)}><IconChevron/></button>
+    </span>}
   </>;
 }
 
@@ -157,7 +176,7 @@ function AccountMenu({account, onDialog, onAccount, onLang}: {account: Account, 
   );
 }
 
-export default function TopBar({account, onProjects, onTemplates, onRoomSetup, onLang, onDialog, onAccount}: Props){
+export default function TopBar({account, flatNav = null, onProjects, onTemplates, onRoomSetup, onLang, onDialog, onAccount}: Props){
   const wide = useMedia(WIDE);
   const [project, setProject] = useProject();
   const [saveAs, setSaveAs] = useState<SaveAs | null>(null);
@@ -168,10 +187,11 @@ export default function TopBar({account, onProjects, onTemplates, onRoomSetup, o
         <button type="button" className="tb-home" onClick={onProjects} title={t("allProjects")} aria-label={t("allProjects")}><Mark/></button>
         <nav className="tb-crumb" aria-label={t("whereYouAre")}>
           {wide && <><button type="button" className="tb-crumblink" onClick={onProjects}>{t("myProjects")}</button><span className="tb-sep" aria-hidden="true">/</span></>}
-          <RoomName wide={wide} project={project} setProject={setProject} admin={admin} onProjects={onProjects} onTemplates={onTemplates} onRoomSetup={onRoomSetup}
-            onPdf={() => onDialog("pdf")} onSaveAs={setSaveAs}/>
+          {flatNav ? <FlatCrumbs nav={flatNav}/>
+            : <RoomName wide={wide} project={project} setProject={setProject} admin={admin} onProjects={onProjects} onTemplates={onTemplates} onRoomSetup={onRoomSetup}
+              onPdf={() => onDialog("pdf")} onSaveAs={setSaveAs}/>}
         </nav>
-        <SaveState wide={wide} project={project} admin={admin} onSaveAs={setSaveAs}/>
+        {!flatNav && <SaveState wide={wide} project={project} admin={admin} onSaveAs={setSaveAs}/>}
         <span className="tb-div" aria-hidden="true"/>
         <UndoRedo/>
       </div>

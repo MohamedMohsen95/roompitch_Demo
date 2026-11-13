@@ -85,6 +85,13 @@
       "when": 1793728353595,
       "tag": "20261103175233_admins_read_template_covers",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1794133860000,
+      "tag": "20261108103100_projects_kind_flat",
+      "breakpoints": true
     }
   ]
 }

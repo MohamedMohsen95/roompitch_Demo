@@ -234,3 +234,13 @@ test("alignRects with a locked piece: it stays put on both axes and the others l
   assert.deepEqual(alignRects([sofa], "hcenter", [locked]), [{x:2.4, y:1}]);
   assert.deepEqual(alignRects([sofa], "vcenter", [locked]), [{x:2, y:2.2}]);
 });
+
+test("an open part may reach the ceiling and has no sill", async () => {
+  const { openingKind, openingDesc } = await import("../src/studio/openings.js");
+  const o = {id:"o", type:"open", wall:0, offset:0.5, width:1, height:2.8, sill:0};
+  assert.equal(openingKind(o), "open");
+  assert.equal(openingDesc(o), "open to the next space");
+  const poly = [[0, 0], [4, 0], [4, 3], [0, 3]];
+  assert.equal(validateOpenings(poly, 2.8, [o]).o, undefined);
+  assert.equal(validateOpenings(poly, 2.8, [{...o, sill:0.5}]).o, undefined);     // its sill doesn't count
+});

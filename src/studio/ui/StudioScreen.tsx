@@ -1,12 +1,14 @@
-// The studio: the top bar (TopBar.tsx), and below it
+// The studio: the top bar (TopBar.tsx; in a flat's room, the way back to the flat and the previous / next room), and below it
 // the selection toolbar across the whole width, and under it the library, the plan and 3D views, and the live
-// estimate (which folds sideways into a rail).
+// estimate (which folds sideways into a rail). In a flat's room a small map of the flat sits over the library.
 import { useCallback, useEffect, useState } from "react";
 import { studioKey } from "../actions.js";
 import { nudgeKeyUp, nudgeStop } from "../nudge.js";
 import { walkKeyUp, walkStop } from "../three/walk.js";
 import { t } from "../i18n.js";
 import { useStudio, useKeydown } from "./hooks";
+import RealFlatView from "./plan/RealFlatView";
+import type { FlatNav } from "./TopBar";
 import Inspector from "./Inspector";
 import Library from "./Library";
 import PlanView from "./PlanView";
@@ -28,9 +30,9 @@ const loadEstClosed = () => { try { return localStorage.getItem(EST_KEY) === "1"
 const MAX_KEY = "rp_view_max";
 const loadMax = (): ViewId | null => { try { const v = localStorage.getItem(MAX_KEY); return v === "plan" || v === "3d" ? v : null; } catch { return null; } };
 
-type Props = {onProjects: () => void, onTemplates: () => void, onRoomSetup: () => void, onLang: () => void};
+type Props = {onProjects: () => void, onTemplates: () => void, onRoomSetup: () => void, onLang: () => void, flatNav?: FlatNav | null};
 
-export default function StudioScreen({onProjects, onTemplates, onRoomSetup, onLang}: Props){
+export default function StudioScreen({onProjects, onTemplates, onRoomSetup, onLang, flatNav = null}: Props){
   useStudio();
   const account = useAccount();
   const [dialog, setDialog] = useState<DialogId>(null);
@@ -62,11 +64,19 @@ export default function StudioScreen({onProjects, onTemplates, onRoomSetup, onLa
   return (
     <div className="studio">
       <TopBar account={account} onProjects={onProjects} onTemplates={onTemplates} onRoomSetup={onRoomSetup} onLang={onLang}
-        onDialog={setDialog} onAccount={() => openAccount()}/>
+        onDialog={setDialog} onAccount={() => openAccount()} flatNav={flatNav}/>
 
       <main className={"workspace" + (estClosed ? " est-closed" : "")}>
         <Inspector/>
-        <Library onUpload={openUpload}/>
+        {flatNav ? (
+          <div className="leftcol">
+            <section className="panel flatmap">
+              <h2>{t("whereYouAre")}</h2>
+              <RealFlatView flat={flatNav.flat} highlight={flatNav.spaceId} compact onPick={id => { if (id !== flatNav.spaceId) flatNav.onOpen(id); }}/>
+            </section>
+            <Library onUpload={openUpload}/>
+          </div>
+        ) : <Library onUpload={openUpload}/>}
         <section className={"views" + (maxView ? " max-" + maxView : "")}>
           <PlanView max={maxView} onMax={toggleMax} onRoomSetup={onRoomSetup}/>
           <ThreeView max={maxView} onMax={toggleMax}/>

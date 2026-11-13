@@ -66,7 +66,7 @@ export function sunWords(){
   const facingSun = (i) => Math.cos(rad(rel - out[i]));
   const from = ws.reduce((b, w) => facingSun(w.i) > facingSun(b.i) ? w : b, ws[0]).i;
   // walls with windows (or glass doors) that face the sun
-  const lit = [...new Set(S.openings.filter(o => o.type !== "door" && facingSun(o.wall) > .15).map(o => o.wall))].sort((a, b) => a - b);
+  const lit = [...new Set(S.openings.filter(o => o.type !== "door" && o.type !== "open" && facingSun(o.wall) > .15).map(o => o.wall))].sort((a, b) => a - b);
   const enters = lit.length
     ? `, shining in through the window${lit.length > 1 ? "s" : ""} on wall${lit.length > 1 ? "s" : ""} ${lit.map(i => i + 1).join(" and ")}`
     : ", outside the windows, so no direct sunlight enters";

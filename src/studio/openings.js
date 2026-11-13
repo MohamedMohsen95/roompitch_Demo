@@ -14,12 +14,14 @@ export const OPENING_PRESETS = [
   {id:"glass-door",  type:"window", name:"Glass / balcony door", ar:"باب زجاج / بلكونة",  width:1.6, height:2.2, sill:0},
   {id:"door",        type:"door",   name:"Door",                 ar:"باب",               width:.9,  height:2.1, sill:0}
 ];
-export const OP = Object.fromEntries(OPENING_PRESETS.map(p => [p.id, p]));
+// An open part (no wall there, floor to ceiling) comes from the plan, never from the library.
+export const OP = Object.fromEntries([...OPENING_PRESETS, {id:"open", type:"open", name:"Opening", ar:"فتحة", width:1, height:2.8, sill:0}].map(p => [p.id, p]));
+export const isOpenPart = (o) => o.type === "open";
 
 // What kind of opening this is, for names and the AI prompt.
 export const isGlassDoor = (o) => o.type === "window" && o.sill < .05;
-export const openingKind = (o) => o.type === "door" ? "door" : isGlassDoor(o) ? "glass-door" : o.width >= 2 ? "wide-window" : "window";
-export const openingDesc = (o) => ({door:"interior door", "glass-door":"floor-to-ceiling glass balcony door", "wide-window":"wide window", window:"window"})[openingKind(o)];
+export const openingKind = (o) => o.type === "open" ? "open" : o.type === "door" ? "door" : isGlassDoor(o) ? "glass-door" : o.width >= 2 ? "wide-window" : "window";
+export const openingDesc = (o) => ({open:"open to the next space", door:"interior door", "glass-door":"floor-to-ceiling glass balcony door", "wide-window":"wide window", window:"window"})[openingKind(o)];
 
 const GAP = .05;          // minimum distance to a corner or another opening
 const TOP_GAP = .05;      // minimum distance below the ceiling
@@ -55,6 +57,7 @@ export function nearestWallAny(x, y){
 export function clampSize(o){
   const len = wallLen(o.wall);
   o.width = clamp(snap(o.width), .4, Math.max(.4, len - 2 * GAP));
+  if (o.type === "open"){ o.sill = 0; o.height = S.H; return; }      // an open part: floor to ceiling
   o.sill = o.type === "door" ? 0 : clamp(snap(o.sill), 0, S.H - .4);
   o.height = clamp(snap(o.height), .3, S.H - TOP_GAP - o.sill);
 }

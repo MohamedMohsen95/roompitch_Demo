@@ -77,6 +77,12 @@ button{cursor:pointer}
 .tb-namebtn:hover, .tb-namebtn.open{background:var(--active)}
 .tb-namebtn .ico{flex:none; color:var(--muted)}
 .tb-name{font-size:15px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:28vw}
+.tb-space{padding:0 8px}
+.tb-steps{display:inline-flex; flex:none}
+.tb-steps .btn:first-child .ico{transform:rotate(90deg)}
+.tb-steps .btn:last-child .ico{transform:rotate(-90deg)}
+[dir="rtl"] .tb-steps .btn:first-child .ico{transform:rotate(-90deg)}
+[dir="rtl"] .tb-steps .btn:last-child .ico{transform:rotate(90deg)}
 .tb-rename{height:32px; width:min(280px, 40vw); padding:0 8px; border:1px solid var(--accent); border-radius:8px; background:var(--surface); color:var(--ink); font:inherit; font-size:15px; font-weight:600; box-shadow:0 0 0 3px var(--accent-soft); outline:none}
 .tb-saved{display:inline-flex; align-items:center; gap:5px; margin-inline-start:6px; font-size:12.5px; color:var(--muted); white-space:nowrap}
 .tb-saved .ico{color:var(--accent)}
@@ -672,6 +678,7 @@ details p{margin:6px 0 0; font-family:var(--font-data); font-size:11.5px; line-h
     linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
   background-size:60px 60px, 60px 60px, 12px 12px, 12px 12px}
 .sheet .plan{position:absolute; inset:0; width:100%; height:100%}
+.sheet .flatglyph{inset:22%; width:56%; height:56%}
 .plan *{vector-effect:non-scaling-stroke}
 .plan .rug{stroke-dasharray:4 3}
 .plan .dimtext{font-family:var(--font-data)}
@@ -799,6 +806,13 @@ details p{margin:6px 0 0; font-family:var(--font-data); font-size:11.5px; line-h
 .tb-savebtn{height:30px; padding:0 6px 0 8px; border:0; border-radius:8px; background:none; cursor:pointer}
 .tb-savebtn:hover, .tb-savebtn.open{background:var(--active); color:var(--ink)}
 .tb-savebtn .ico:last-child{color:var(--muted)}
+
+/* Floor plan upload (its first step) and the flat's list of spaces */
+.planup{max-width:980px; width:100%; margin:6vh auto 0; display:flex; flex-direction:column; gap:14px; align-items:stretch}
+.planup h1{margin:0; font-size:28px; font-weight:600; text-wrap:balance}
+.projtext{flex:1; min-width:0; display:flex; flex-direction:column; gap:3px}
+.projtitle{font-size:14.5px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.projmeta{font-size:12.5px; color:var(--muted)}
 .setup-grid{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.1fr); gap:12px; align-items:start}
 .col-form{display:flex; flex-direction:column}
 .sblock{padding:14px; border-bottom:1px solid var(--line); display:flex; flex-direction:column; gap:10px}
@@ -845,7 +859,68 @@ details p{margin:6px 0 0; font-family:var(--font-data); font-size:11.5px; line-h
 #setupPreview{width:100%; aspect-ratio:4 / 3; display:block; background:var(--stage); border-radius:8px; touch-action:none}
 .setup-actions{display:flex; justify-content:space-between; gap:10px; margin-top:12px}
 .setup-actions .primary:disabled{opacity:.45; cursor:not-allowed}
-@media (max-width:900px){ .setup-grid{grid-template-columns:1fr} .col-preview{position:static; order:-1} }
+/* Floor plan import */
+.plan-grid{grid-template-columns:minmax(300px,0.8fr) minmax(0,1.4fr)}
+.pedit{display:flex; flex-direction:column; gap:6px}
+.ptools{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+.planedit{width:100%; height:auto; max-height:78vh; display:block; background:#fff; border-radius:8px; border:1px solid var(--line); touch-action:none; user-select:none; -webkit-user-select:none}
+.planedit.tool-trace, .planedit.tool-door, .planedit.tool-window{cursor:crosshair}
+.psp polygon{fill:var(--accent); fill-opacity:.12; stroke:var(--accent); stroke-width:2; cursor:pointer}
+.psp.ai polygon{stroke-dasharray:6 4}
+.psp.on polygon{fill-opacity:.24; stroke-width:3}
+.psp.bad polygon{stroke:#c0392b; fill:#c0392b}
+.psp.sug polygon{stroke:#d68910; fill:#f5b041; fill-opacity:.14; stroke-dasharray:10 6; stroke-width:3}
+.psp.sug.on polygon{fill-opacity:.28}
+.aitag.sugtag{background:#fdebd0; color:#9c640c}
+.psp text, .plen{fill:var(--ink); paint-order:stroke; stroke:#fff; stroke-width:3px; font-family:var(--font-body); font-weight:600; pointer-events:none}
+.plen{fill:var(--accent); font-family:var(--font-data)}
+.pop line{stroke-width:7; stroke-linecap:round; cursor:pointer}
+.pop.door line{stroke:#d35400}
+.pop.window line{stroke:#2e86c1}
+.pop.ai line{stroke-dasharray:8 5}
+.pop.on line{stroke-width:10}
+.pop.new line, line.pop.new{stroke-width:7; stroke:#888; stroke-dasharray:4 4}
+.planedit .handle{fill:#fff; stroke:var(--accent); stroke-width:2.5; cursor:grab}
+.planedit .handle.on{fill:var(--accent)}
+.ptrace polyline{fill:none; stroke:#c0392b; stroke-width:2.5; stroke-dasharray:6 4}
+.ptrace circle{fill:#fff; stroke:#c0392b; stroke-width:2}
+.ptrace circle.first{fill:#c0392b}
+.orow.on{border-color:var(--accent); background:var(--accent-soft)}
+.sname{flex:1; min-width:0; font:inherit; font-weight:600; padding:4px 8px; border:1px solid var(--line); border-radius:7px; background:var(--surface)}
+.sarea{font-family:var(--font-data); font-size:12.5px; color:var(--muted)}
+.sdetail{display:flex; flex-direction:column; gap:8px}
+.ssize{display:flex; flex-direction:column; gap:3px; font-size:12.5px; color:var(--muted)}
+.ssize input{padding:7px 8px; border:1px solid var(--line); border-radius:7px; background:var(--surface); font-family:var(--font-data)}
+.ofields.walls{grid-template-columns:repeat(3,minmax(0,1fr))}
+.olist{display:flex; flex-wrap:wrap; gap:6px}
+.ochip{font:inherit; font-size:12.5px; padding:3px 10px; border-radius:20px; border:1px solid var(--line); background:var(--sunk); cursor:pointer}
+.ochip.door{border-inline-start:4px solid #d35400}
+.ochip.window{border-inline-start:4px solid #2e86c1}
+.ochip.on{border-color:var(--accent); background:var(--accent-soft)}
+.chk{display:flex; gap:8px; align-items:flex-start; font-size:13px}
+.planup{align-items:stretch}
+.pdfpick{display:flex; flex-direction:column; gap:10px}
+.pdfpick label{display:flex; flex-direction:column; gap:4px; font-size:13px; color:var(--muted); max-width:260px}
+.pdfpick select{padding:7px 8px; border:1px solid var(--line); border-radius:7px; background:var(--surface)}
+.pdfprev{border:1px solid var(--line); border-radius:8px; background:#fff; min-height:200px; display:grid; place-items:center; overflow:hidden}
+.pdfprev img{max-width:100%; max-height:60vh; display:block}
+.setup-actions > .dnote{align-self:center; margin:0}
+/* The flat screen */
+.flat-grid{display:grid; grid-template-columns:minmax(0,1.4fr) minmax(280px,0.8fr); gap:12px; align-items:start}
+.flatplan{width:100%; height:auto; max-height:78vh; display:block; background:var(--surface); border-radius:8px; border:1px solid var(--line)}
+.flatplan polygon{fill-opacity:.18; stroke-width:2; cursor:pointer}
+.flatplan .st-todo polygon{fill:#9aa3a0; stroke:#6a736f}
+.flatplan .st-doing polygon{fill:var(--accent); stroke:var(--accent)}
+.flatplan .st-done polygon{fill:#27ae60; stroke:#1e8449}
+.flatplan g:hover polygon{fill-opacity:.32}
+.flatplan text{fill:var(--ink); paint-order:stroke; stroke:var(--surface); stroke-width:3px; font-weight:600; pointer-events:none}
+.fspaces{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:8px}
+.fspace{display:flex; align-items:center; gap:10px; padding:10px 12px; border:1px solid var(--line); border-radius:10px; background:var(--surface)}
+.fspace .projtext{flex:1}
+.stchip{font-size:11px; font-weight:600; padding:1px 8px; border-radius:999px; background:var(--sunk); border:1px solid var(--line)}
+.stchip.st-doing{background:var(--accent-soft); border-color:var(--accent)}
+.stchip.st-done{background:#e8f6ee; border-color:#27ae60; color:#1e8449}
+@media (max-width:900px){ .setup-grid, .plan-grid, .flat-grid{grid-template-columns:1fr} .col-preview{position:static; order:-1} }
 @media (max-width:560px){ .fgrid, .ofields{grid-template-columns:repeat(2,minmax(0,1fr))} }
 /* Maximizing a view: only where plan and 3D sit side by side. The other view folds into a thin rail. */
 .maxbtn, .view-rail{display:none}
@@ -871,12 +946,13 @@ details p{margin:6px 0 0; font-family:var(--font-data); font-size:11.5px; line-h
   .views{grid-template-columns:1fr}
   .stage{flex:none; height:400px; min-height:0}
   .workspace.est-closed{grid-template-columns:236px minmax(0,1fr) 44px}
-  .library, .budget{position:sticky; top:8px; max-height:calc(100vh - 16px)}
+  .library, .budget, .leftcol{position:sticky; top:8px; max-height:calc(100vh - 16px)}
+  .leftcol > .library{position:static; max-height:none; min-height:0}
 }
 @media (max-width:999px){
   .workspace, .workspace.est-closed{grid-template-columns:1fr; padding:0 8px 12px}
-  .library, .budget{position:static; max-height:none}
-  .workspace > .inspect{order:0} .views{order:1} .budget{order:2} .library{order:3}
+  .library, .budget, .leftcol{position:static; max-height:none}
+  .workspace > .inspect{order:0} .views{order:1} .budget{order:2} .library, .leftcol{order:3}
   /* One column: a folded estimate is just its header */
   .budget.closed > .est-head{display:flex}
   .est-rail{display:none}
@@ -899,3 +975,42 @@ details p{margin:6px 0 0; font-family:var(--font-data); font-size:11.5px; line-h
   .stage{height:300px}
 }
 @media (prefers-reduced-motion: reduce){*{transition:none!important}}
+/* Tracing and real flat */
+.col-preview.side{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:10px; align-items:start}
+.pv{display:flex; flex-direction:column; gap:6px; min-width:0}
+.pvhead{display:flex; align-items:baseline; gap:8px; flex-wrap:wrap}
+.pvhead .dnote{margin:0; flex:1}
+.realplan{width:100%; height:auto; max-height:60vh; display:block; background:var(--surface); border:1px solid var(--line); border-radius:8px}
+.realplan.compact{max-height:200px}
+.realplan .rroom polygon{fill:var(--sunk); stroke:var(--ink); stroke-linejoin:miter}
+.realplan .rroom[role=button]{cursor:pointer}
+.realplan .rroom[role=button]:hover polygon, .realplan .rroom:focus-visible polygon{fill:var(--accent-soft)}
+.realplan .rroom.on polygon{fill:var(--accent-soft); stroke:var(--accent)}
+.realplan .rroom.changed polygon{fill:rgba(214,137,16,.14); stroke:#d68910}
+.realplan .rroom.over polygon{fill:var(--danger-soft); stroke:var(--danger)}
+.realplan .rroom.st-doing polygon{fill:var(--accent-soft)}
+.realplan .rroom.st-done polygon{fill:color-mix(in oklch, #27ae60 16%, var(--surface))}
+.realplan .rtrace{fill:none; stroke:#8c9692; stroke-dasharray:.12 .08; pointer-events:none}
+.realplan .ropen{stroke:var(--surface); stroke-linecap:butt}
+.realplan .ropen.window{stroke:#6fa8dc}
+.realplan text{fill:var(--ink); font-family:var(--font-body); font-weight:600; pointer-events:none}
+.realplan .rsize{font-family:var(--font-data); font-weight:400; fill:var(--muted)}
+.roombox{grid-template-columns:repeat(2,minmax(0,1fr))}
+.wallsone summary{cursor:pointer; font-weight:600; margin:6px 0}
+.affected{margin:0; padding-inline-start:18px; display:flex; flex-direction:column; gap:4px}
+@media (max-width:900px){ .col-preview.side{grid-template-columns:1fr} }
+.col-preview.stacked, .col-preview.side{position:static}
+.leftcol{display:flex; flex-direction:column; gap:8px; min-width:0; min-height:0}
+.leftcol > .library{flex:1}
+.flatmap{padding:10px; display:flex; flex-direction:column; gap:6px}
+.flatmap h2{margin:0; font-size:13px}
+.crumbs{display:inline-flex; align-items:center; gap:6px; flex-wrap:wrap}
+/* Drawn walls, erased stretches, open parts */
+.planedit.tool-wall, .planedit.tool-erase{cursor:crosshair}
+.planedit .pedt{stroke-linecap:butt; cursor:pointer}
+.planedit .pedt.wall{stroke:var(--accent); stroke-opacity:.85}
+.planedit .pedt.erase{stroke:#fff; stroke-opacity:.75}
+.planedit .pedt.on{stroke-opacity:1; filter:drop-shadow(0 0 2px var(--accent))}
+.planedit .pedt.live{stroke-dasharray:6 4}
+.pop.open line{stroke:#8e44ad; stroke-dasharray:10 6}
+.realplan .ropen.open{stroke:var(--surface); stroke-dasharray:.15 .1}

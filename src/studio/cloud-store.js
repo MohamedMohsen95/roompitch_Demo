@@ -1,4 +1,5 @@
 // Keep rooms in Supabase as well as in this browser (table "projects", kind "studio"; see db/schema.js).
+// A flat read from a floor plan is one row of kind "flat" (its plan image in the private "files" bucket).
 // Each browser starts as an anonymous user, so its rows belong to it; after signing in (auth.js) they belong
 // to the account, so every browser signed in to it sees the same projects (setup/projects.js lists them).
 // The room on screen is one row, "the current project"; saves go to it, and a new room starts a new row.
@@ -6,13 +7,19 @@
 import { getSupabase } from "./supabase.js";
 import { validRoom, clearRoom } from "./room-store.js";
 import { savePhotos } from "./photo-store.js";
+import { validFlat, clearFlat } from "./plan/flat-store.js";
 
 const PROJECT_KEY = "rp_project_id";   // which cloud row is the current room, and whose: {user, id}
+const FLAT_KEY = "rp_flat_project_id"; // the same for the current flat
 const DELAY = 1500;                    // wait this long after the last change before uploading
 
 let pending = null, timer = null;
+let pendingFlat = null, flatTimer = null, flatRefused = false, flatSaved = false;
+const uploaded = new Map();            // project id -> {path, sig}: the plan image already in storage
+const sigOf = (u) => u.length + ":" + u.slice(-48);   // tells one plan image from another (a new file)
 let chain = Promise.resolve();         // saves and changes of the current project run one at a time, in call order
-let nextName = null;                   // the name of the next new row (newProject)
+let nextName = null;                   // the name of the next new room row (newProject)
+let nextFlatName = null;               // the same for the next new flat row
 
 // Where the latest change is: "saved" (in the cloud), "saving", "local" (only in this browser: no cloud),
 // or "failed" (the cloud refused it; it's still in this browser). The top bar shows it (ui/TopBar.tsx).
@@ -24,29 +31,32 @@ export const onSaveStatus = (fn) => { statusSubs.add(fn); return () => statusSub
 
 const warn = (what, e) => { if (import.meta.env?.DEV) console.warn(`[cloud] ${what}:`, e?.message || e); };
 // The row id only while the same user is signed in (another user's row can't be read or written).
-async function getId(sb){
+// Rooms and flats each have their own current row.
+const keyOf = (kind) => kind === "flat" ? FLAT_KEY : PROJECT_KEY;
+async function getId(sb, kind = "studio"){
   const { data:{ session } } = await sb.auth.getSession();
   try {
-    const v = JSON.parse(localStorage.getItem(PROJECT_KEY) || "null");
+    const v = JSON.parse(localStorage.getItem(keyOf(kind)) || "null");
     return v && v.user === session?.user.id ? v.id : null;
   } catch { return null; }
 }
-async function setId(sb, id){
+async function setId(sb, id, kind = "studio"){
   const { data:{ session } } = await sb.auth.getSession();
   try {
-    if (id) localStorage.setItem(PROJECT_KEY, JSON.stringify({user:session?.user.id, id}));
-    else localStorage.removeItem(PROJECT_KEY);
+    if (id) localStorage.setItem(keyOf(kind), JSON.stringify({user:session?.user.id, id}));
+    else localStorage.removeItem(keyOf(kind));
   } catch { /* private window: a new row next visit */ }
 }
 
-// Forget the room this browser holds: its copy, which cloud row it is, and its photos (signing out, auth.js).
+// Forget the room and the flat this browser holds: their copies, which cloud rows they are, and the photos
+// (signing out, auth.js).
 export function forgetLocalRoom(){
-  clearRoom();
-  try { localStorage.removeItem(PROJECT_KEY); } catch { /* ignore */ }
+  clearRoom(); clearFlat();
+  try { localStorage.removeItem(PROJECT_KEY); localStorage.removeItem(FLAT_KEY); } catch { /* ignore */ }
   return savePhotos([]);
 }
 
-// A room an account left in this browser (signed out before signing out forgot it, or the session ran out)
+// A room (or a flat) an account left in this browser (signed out before signing out forgot it, or the session ran out)
 // mustn't open for the guest after it. A guest whose room was saved as someone else's forgets it; a guest who
 // signs in keeps theirs (it becomes the account's), so only a guest session drops a room.
 // Resolves true when it forgot one.
@@ -55,9 +65,9 @@ export async function forgetOthersRoom(){
   if (!sb) return false;
   const { data:{ session } } = await sb.auth.getSession();
   if (!session?.user.is_anonymous) return false;
-  let v = null;
-  try { v = JSON.parse(localStorage.getItem(PROJECT_KEY) || "null"); } catch { /* unreadable: as none */ }
-  if (!v || v.user === session.user.id) return false;
+  const owner = (key) => { try { return JSON.parse(localStorage.getItem(key) || "null")?.user; } catch { return undefined; } };
+  const others = [PROJECT_KEY, FLAT_KEY].map(owner).filter(u => u && u !== session.user.id);
+  if (!others.length) return false;
   await forgetLocalRoom();
   return true;
 }
@@ -89,8 +99,52 @@ export function pushRoom(data){
 
 const queue = (fn) => (chain = chain.then(fn).catch(e => { warn("queue", e); if (status === "saving") setStatus("failed"); }));
 
+// Upload the flat a moment after the last change.
+export function pushFlat(flat){
+  pendingFlat = flat;
+  clearTimeout(flatTimer);
+  flatTimer = setTimeout(flushFlat, DELAY);
+}
+
+const dataUrlBlob = async (u) => (await fetch(u)).blob();
+
+function flushFlat(){
+  clearTimeout(flatTimer);
+  const flat = pendingFlat; pendingFlat = null;
+  if (!flat) return chain;
+  return queue(async () => {
+    const sb = await cloudReady();
+    if (!sb) return;
+    let id = await getId(sb, "flat");
+    const row = {id, kind:"flat", data:flat};
+    if (!id){
+      row.id = id = crypto.randomUUID(); await setId(sb, id, "flat");
+      if (nextFlatName){ row.name = nextFlatName; nextFlatName = null; }
+    }
+    // The plan image goes to storage once; the row keeps its path instead of the image itself.
+    const image = {...flat.image};
+    if (image.dataUrl){
+      const up = uploaded.get(id), sig = sigOf(image.dataUrl);
+      let path = image.path || (up && up.sig === sig ? up.path : null);
+      if (!path){
+        const { data:{ session } } = await sb.auth.getSession();
+        const want = `${session?.user.id}/${id}/plan.jpg`;
+        const { error } = await sb.storage.from("files").upload(want, await dataUrlBlob(image.dataUrl), {upsert:true, contentType:"image/jpeg"});
+        if (error) warn("plan image", error); else { path = want; uploaded.set(id, {path:want, sig}); }
+      }
+      if (path){ image.path = path; delete image.dataUrl; }
+    }
+    row.data = {...flat, image};
+    const { error } = await sb.from("projects").upsert(row);
+    // Until the database allows kind "flat" (a migration), the flat stays in this browser only.
+    flatSaved = !error;
+    if (error && !flatRefused){ flatRefused = true; warn("save flat (kept in this browser)", error); }
+  });
+}
+
 // Send the waiting room now (before the current project changes).
 function flush(){
+  flushFlat();
   clearTimeout(timer);
   const room = pending; pending = null;
   if (!room) return chain;
@@ -131,41 +185,56 @@ export async function listProjects(){
   if (!sb) return null;
   await flush();   // so the room just edited is listed with its latest change
   const { data, error } = await sb.from("projects")
-    .select("id, name, updated_at, form:data->form, items:data->items, poly:data->poly, openings:data->openings, H:data->H")
-    .eq("kind", "studio").order("updated_at", {ascending:false}).limit(100);
+    .select("id, name, kind, updated_at, form:data->form, items:data->items, poly:data->poly, openings:data->openings, H:data->H")
+    .in("kind", ["studio", "flat"]).order("updated_at", {ascending:false}).limit(100);
   if (error){ warn("list", error); return null; }
-  const current = await getId(sb);
+  const current = [await getId(sb), await getId(sb, "flat")];
   return data.map(r => {
     const items = Array.isArray(r.items) ? r.items : [], openings = Array.isArray(r.openings) ? r.openings : [];
-    return {id:r.id, name:r.name, updatedAt:r.updated_at, form:r.form, pieces:items.length, current:r.id === current, H:r.H || 0,
+    return {id:r.id, name:r.name, kind:r.kind, updatedAt:r.updated_at, form:r.form, pieces:items.length, current:current.includes(r.id), H:r.H || 0,
       plan:Array.isArray(r.poly) && r.poly.length > 2 ? {poly:r.poly, items} : null,
       windows:openings.filter(o => o.type === "window").length, doors:openings.filter(o => o.type === "door").length};
   });
 }
 
-// Make a project the current one; returns its room, or null when it can't be read.
+// Make a project the current one; returns {kind, data} (a room, or a flat), or null when it can't be read.
 export async function openProject(id){
   flush();   // the room being left is saved first
-  let room = null;
+  let out = null;
   await queue(async () => {
     const sb = await cloudReady();
     if (!sb) return;
-    const { data:row, error } = await sb.from("projects").select("data").eq("id", id).maybeSingle();
+    const { data:row, error } = await sb.from("projects").select("kind, data").eq("id", id).maybeSingle();
     if (error) warn("open", error);
-    if (!row || !validRoom(row.data)) return;
-    await setId(sb, id);
-    room = row.data;
+    if (!row) return;
+    const kind = row.kind === "flat" ? "flat" : "studio";
+    if (kind === "flat" ? !validFlat(row.data) : !validRoom(row.data)) return;
+    await setId(sb, id, kind);
+    if (kind === "flat") flatSaved = true;   // it came from the account, so it is saved there
+    out = {kind, data:row.data};
   });
-  return room;
+  return out;
 }
 
-// The next save starts a new project called name (a new room was set up).
-export function newProject(name){
+// Whether the last flat save reached the account (false until the "flat" migration is live, or offline).
+export const flatInCloud = () => flatSaved;
+
+// A short-lived link to a flat's plan image in storage, or null.
+export async function planImageUrl(path){
+  const sb = await cloudReady();
+  if (!sb || !path) return null;
+  const { data, error } = await sb.storage.from("files").createSignedUrl(path, 3600);
+  if (error){ warn("plan image link", error); return null; }
+  return data.signedUrl;
+}
+
+// The next save starts a new project called name (a new room, or kind "flat": a new flat, was set up).
+export function newProject(name, kind = "studio"){
   flush();
   return queue(async () => {
     const sb = await cloudReady();
-    if (sb) await setId(sb, null);
-    nextName = name || null;
+    if (sb) await setId(sb, null, kind);
+    if (kind === "flat") nextFlatName = name || null; else nextName = name || null;
   });
 }
 
@@ -203,9 +272,11 @@ export async function deleteProject(id){
     if (!sb) return;
     const { error } = await sb.from("projects").delete().eq("id", id);
     if (error){ warn("delete", error); return; }
-    const current = id === await getId(sb);
-    if (current) await setId(sb, null);
-    result = {ok:true, current};
+    const room = id === await getId(sb), flat = id === await getId(sb, "flat");
+    if (room) await setId(sb, null);
+    if (flat) await setId(sb, null, "flat");
+    const current = room || flat;
+    result = {ok:true, current, kind:flat ? "flat" : "studio"};
   });
   return result;
 }

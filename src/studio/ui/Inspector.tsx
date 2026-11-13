@@ -173,8 +173,8 @@ export default function Inspector(){
       <What name={nameOf(OP[openingKind(o)])} sub={`${t("wallN", {n:o.wall + 1})} · ${(o.width * o.height).toFixed(1)} ${t("m2")} · ${t("dragToMove")}`}/>
       <div className="sizes">
         <CmField label={t("width")} m={o.width} onCommit={resize("width")}/>
-        <CmField label={t("height")} m={o.height} onCommit={resize("height")}/>
-        {o.type !== "door" && <CmField label={t("fromFloor")} m={o.sill} onCommit={resize("sill")}/>}
+        {o.type !== "open" && <CmField label={t("height")} m={o.height} onCommit={resize("height")}/>}
+        {o.type !== "door" && o.type !== "open" && <CmField label={t("fromFloor")} m={o.sill} onCommit={resize("sill")}/>}
       </div>
       <div className="acts">
         <Btn icon={<IconCopy/>} label={t("duplicate")} onClick={() => {

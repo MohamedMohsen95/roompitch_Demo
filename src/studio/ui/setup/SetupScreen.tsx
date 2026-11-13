@@ -1,4 +1,5 @@
-// "New room": choose how to start (beside the saved rooms and the templates), then set the shape and size in cm,
+// "New room": choose how to start (by hand, from photos, or from a floor plan: a whole flat; beside the saved
+// rooms and the templates), then set the shape and size in cm,
 // place doors and windows (by hand or found by the AI in photos), and hand the room to the studio.
 import { useReducer, useState } from "react";
 import { t } from "../../i18n.js";
@@ -23,11 +24,14 @@ type Props = {
   onContinue: () => void;
   onOpenProject: (p: any) => void;
   onUseTemplate: (c: any, name: string) => Promise<boolean>;
-  onCurrentDeleted: () => void;
+  onCurrentDeleted: (kind: "studio" | "flat") => void;
+  canContinueFlat: boolean;
+  onContinueFlat: () => void;
   projectError: string | null;
   onAccount: () => void;
   onLang: () => void;
   showTemplates: boolean;            // came from "Start from a template": scroll to them
+  onPlan: () => void;                // "I have a floor plan"
 };
 
 export default function SetupScreen(props: Props){
@@ -57,7 +61,13 @@ export default function SetupScreen(props: Props){
               <span><b>{t("choosePhotos")}</b><small>{t("choosePhotosSub")}</small></span>
               <svg className="go" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><path d="M6 3l5 5-5 5"/></svg>
             </button>
+            <button className="way" type="button" onClick={props.onPlan}>
+              <span className="glyph"><svg viewBox="0 0 30 30" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><path d="M3 4h24v22H3z M3 15h9 M16 4v7 M16 19v7 M16 15h11"/><path d="M12 15a4 4 0 0 1 4-4" strokeWidth="1"/></svg></span>
+              <span><b>{t("chooseFloorPlan")}</b><small>{t("chooseFloorPlanSub")}</small></span>
+              <svg className="go" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><path d="M6 3l5 5-5 5"/></svg>
+            </button>
           </div>
+          {props.canContinueFlat && <button className="btn continue-local" type="button" onClick={props.onContinueFlat}>{t("continueFlat")}</button>}
         </section>
         <RoomsPanel onOpen={props.onOpenProject} onNew={() => start("manual")} onCurrentDeleted={props.onCurrentDeleted}
           canContinue={props.canContinue} onContinue={props.onContinue} onAccount={props.onAccount} error={props.projectError}/>

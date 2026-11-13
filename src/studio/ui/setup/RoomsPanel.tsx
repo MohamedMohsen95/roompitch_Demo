@@ -1,7 +1,8 @@
 // "Your rooms" on the New room screen: the rooms this user saved in the cloud (cloud-store.js), on any browser
 // signed in to the same account. The picked room fills a drawing sheet (its plan with dimension strings, its facts,
 // Continue or Open); below, every room is a small sheet in a strip that scrolls sideways, "New room" first.
-// Rename and delete (two clicks, like resetting prices) are in the sheet's ⋯ menu.
+// Rename and delete (two clicks, like resetting prices) are in the sheet's ⋯ menu. A flat read from a floor plan
+// is listed with them; it has no single outline, so its sheet shows a flat glyph and no room facts.
 import { useEffect, useRef, useState, type FocusEvent, type KeyboardEvent } from "react";
 import { t, getLang } from "../../i18n.js";
 import { FU } from "../../catalog.js";
@@ -37,10 +38,18 @@ function dims(p: ProjectCard){
   return {L, W, H};
 }
 
+// A flat (several rooms from a floor plan), for a project with no single outline to draw.
+const FlatGlyph = () => (
+  <svg className="plan flatglyph" viewBox="0 0 48 48" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6">
+    <path d="M6 8h36v32H6z M6 24h14 M26 8v12 M26 28v12 M26 24h16"/><path d="M20 24a6 6 0 0 1 6-6" strokeWidth="1"/>
+  </svg>
+);
+
 // The room from above as a drawing: its outline and the pieces' footprints, in navy line on the sheet.
 // `big` adds the dimension strings along the top and the start side.
 function Plan({p, big}: {p: ProjectCard, big?: boolean}){
   const plan = p.plan;
+  if (p.kind === "flat") return <FlatGlyph/>;
   if (!plan) return <svg className="plan none" viewBox="0 0 10 10" aria-hidden="true"/>;
   const xs = plan.poly.map(q => q[0]), ys = plan.poly.map(q => q[1]);
   const x0 = Math.min(...xs), y0 = Math.min(...ys), L = Math.max(...xs) - x0, W = Math.max(...ys) - y0, m = Math.max(L, W);
@@ -92,7 +101,7 @@ function FirstRoomDrawing(){
 type Props = {
   onOpen: (p: ProjectCard) => void;
   onNew: () => void;
-  onCurrentDeleted: () => void;
+  onCurrentDeleted: (kind: "studio" | "flat") => void;
   canContinue: boolean;        // a room kept only in this browser
   onContinue: () => void;
   onAccount?: () => void;      // sign in, offered to a guest with no rooms
@@ -158,7 +167,7 @@ export default function RoomsPanel({onOpen, onNew, onCurrentDeleted, canContinue
     if (!r.ok) return;
     const rest = list.filter(x => x.id !== room.id);
     setRooms(rest); setPick((rest[i] || rest[i - 1])?.id ?? null);
-    if (r.current) onCurrentDeleted();
+    if (r.current) onCurrentDeleted(r.kind || "studio");
   }
   const onNameKey = (e: KeyboardEvent) => {
     if (e.key === "Enter"){ e.preventDefault(); saveName(); }
@@ -193,17 +202,17 @@ export default function RoomsPanel({onOpen, onNew, onCurrentDeleted, canContinue
             <Plan p={room} big/>
           </div>
           <div className="block">
-            {room.current && <span className="tag">{t("projCurrent")}</span>}
+            {(room.current || room.kind === "flat") && <span className="tag">{t(room.current ? "projCurrent" : "flatTitle")}</span>}
             {renaming
               ? <input className="leadname" ref={nameInput} defaultValue={nameOf(room)} maxLength={80} aria-label={t("projRename")} onKeyDown={onNameKey} onBlur={onNameBlur}/>
               : <h3>{nameOf(room)}</h3>}
             <span className="meta">{t("roomEdited", {when:when(room.updatedAt)})}</span>
-            <dl className="facts">
+            {room.kind !== "flat" && <dl className="facts">
               <dt>{t("factSize")}</dt><dd className="num"><bdi dir="ltr">{num(d.L)} × {num(d.W)} × {num(d.H)} {t("cm")}</bdi></dd>
               <dt>{t("roomPieces")}</dt><dd className="num">{num(room.pieces)}</dd>
               <dt>{t("roomWindows")}</dt><dd className="num">{num(room.windows)}</dd>
               <dt>{t("roomDoors")}</dt><dd className="num">{num(room.doors)}</dd>
-            </dl>
+            </dl>}
             <div className="cta">
               {renaming
                 ? <button className="btn primary" type="button" onClick={saveName}>{t("projSave")}</button>
@@ -240,7 +249,7 @@ export default function RoomsPanel({onOpen, onNew, onCurrentDeleted, canContinue
       )}
 
       {/* A room kept only in this browser, beside the saved ones. */}
-      {room && canContinue && !list.some(p => p.current) &&
+      {room && canContinue && !list.some(p => p.current && p.kind !== "flat") &&
         <button className="btn continue-local" type="button" onClick={onContinue}>{t("continueLast")}</button>}
 
       {list.length > 0 && <>
@@ -256,7 +265,7 @@ export default function RoomsPanel({onOpen, onNew, onCurrentDeleted, canContinue
             return (
               <button key={p.id} className="mini" type="button" data-id={p.id} aria-pressed={p.id === pick} onClick={() => setPick(p.id)}>
                 <span className="sheet"><Plan p={p}/></span>
-                <span className="cap"><b>{nameOf(p)}</b><small><bdi dir="ltr" className="num">{num(s.L)} × {num(s.W)}</bdi>, {when(p.updatedAt)}</small></span>
+                <span className="cap"><b>{nameOf(p)}</b><small>{p.kind === "flat" ? t("flatTitle") : <bdi dir="ltr" className="num">{num(s.L)} × {num(s.W)}</bdi>}, {when(p.updatedAt)}</small></span>
               </button>
             );
           })}
