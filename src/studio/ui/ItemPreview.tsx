@@ -14,7 +14,7 @@ import { thumbOf } from "../thumbs.js";
 import { useMedia } from "./hooks";
 import { IconClose, IconPlus, IconRotate, IconFocus } from "./Icons";
 
-const NARROW = "(max-width:999px)";   // the one-column layout (studio.css): the preview is a bottom sheet
+const NARROW = "(max-width:699px)";   // the one-column layout (studio.css): the preview is a bottom sheet
 const MOUSE = "(hover:hover) and (pointer:fine)";
 export const hasMouse = () => matchMedia(MOUSE).matches;
 

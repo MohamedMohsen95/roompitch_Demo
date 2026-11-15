@@ -22,6 +22,7 @@ import { SettingsDialog, PricesDialog } from "./SettingsDialogs";
 import { useAccount } from "./account";
 import TopBar from "./TopBar";
 import type { ViewId } from "./ViewMax";
+import { IconChevron } from "./Icons";
 
 type DialogId = "render" | "settings" | "prices" | "pdf" | "upload" | "account" | null;
 
@@ -29,6 +30,29 @@ const EST_KEY = "rp_est_closed";
 const loadEstClosed = () => { try { return localStorage.getItem(EST_KEY) === "1"; } catch { return false; } };
 const MAX_KEY = "rp_view_max";
 const loadMax = (): ViewId | null => { try { const v = localStorage.getItem(MAX_KEY); return v === "plan" || v === "3d" ? v : null; } catch { return null; } };
+
+// "Where you are": the flat's map over the library, folding to one line (the room's name) so the furniture keeps
+// its room on a short screen. Folded by default when the window is under 860px tall; the choice is remembered.
+const MAP_KEY = "rp_flatmap_open";
+const loadMapOpen = () => {
+  try { const v = localStorage.getItem(MAP_KEY); if (v) return v === "1"; } catch { /* private window */ }
+  return window.innerHeight >= 860;
+};
+function FlatMap({nav}: {nav: FlatNav}){
+  const [open, setOpen] = useState(loadMapOpen);
+  const toggle = () => { setOpen(!open); try { localStorage.setItem(MAP_KEY, open ? "0" : "1"); } catch { /* private window */ } };
+  const here = nav.flat.spaces.find(s => s.id === nav.spaceId)?.name;
+  return (
+    <section className={"panel flatmap" + (open ? " open" : "")}>
+      <button type="button" className="flatmap-head" aria-expanded={open} onClick={toggle}>
+        <h2>{t("whereYouAre")}</h2>
+        {here && <span className="flatmap-here">{here}</span>}
+        <IconChevron/>
+      </button>
+      {open && <RealFlatView flat={nav.flat} highlight={nav.spaceId} compact onPick={id => { if (id !== nav.spaceId) nav.onOpen(id); }}/>}
+    </section>
+  );
+}
 
 type Props = {onProjects: () => void, onTemplates: () => void, onRoomSetup: () => void, onLang: () => void, flatNav?: FlatNav | null};
 
@@ -70,10 +94,7 @@ export default function StudioScreen({onProjects, onTemplates, onRoomSetup, onLa
         <Inspector/>
         {flatNav ? (
           <div className="leftcol">
-            <section className="panel flatmap">
-              <h2>{t("whereYouAre")}</h2>
-              <RealFlatView flat={flatNav.flat} highlight={flatNav.spaceId} compact onPick={id => { if (id !== flatNav.spaceId) flatNav.onOpen(id); }}/>
-            </section>
+            <FlatMap nav={flatNav}/>
             <Library onUpload={openUpload}/>
           </div>
         ) : <Library onUpload={openUpload}/>}

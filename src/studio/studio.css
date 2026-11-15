@@ -363,7 +363,7 @@ button{cursor:pointer}
 .ihov b{font-size:13.5px; font-weight:600; padding:0 2px}
 .ihov-row{display:flex; justify-content:space-between; gap:8px; font-size:12px; color:var(--muted); font-variant-numeric:tabular-nums; padding:0 2px}
 .ihov-tip{font-size:11.5px; color:var(--muted); border-top:1px solid var(--rule); margin-top:4px; padding:6px 2px 0}
-@media (max-width:999px){ .ihov{display:none} }
+@media (max-width:699px){ .ihov{display:none} }
 @media (prefers-reduced-motion: reduce){ .ipv, .ipv-scrim, .ihov{animation:none} }
 .sizerow{display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:6px}
 
@@ -1014,3 +1014,86 @@ details p{margin:6px 0 0; font-family:var(--font-data); font-size:11.5px; line-h
 .planedit .pedt.live{stroke-dasharray:6 4}
 .pop.open line{stroke:#8e44ad; stroke-dasharray:10 6}
 .realplan .ropen.open{stroke:var(--surface); stroke-dasharray:.15 .1}
+
+/* Fitting the editor to the screen: sizes and browser zoom (a 1920 screen at 150% is 1280 CSS px wide, a 1280
+   laptop at 150% is 853). The furniture list keeps the left column's height: the chrome above it stays compact,
+   the flat's map folds to one line, and narrow windows keep the library beside the views instead of below them. */
+
+/* "Where you are": a one-line header (the room you're in) that folds the map away */
+.flatmap{padding:0; gap:0; flex:none}
+.flatmap-head{display:flex; align-items:center; gap:8px; width:100%; min-height:40px; padding:8px 12px; border:0; border-radius:inherit; background:none; color:var(--ink); text-align:start}
+.flatmap-head:hover{background:var(--sunk)}
+.flatmap-head h2{flex:none; margin:0; font-size:13px}
+.flatmap-here{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12.5px; color:var(--muted)}
+.flatmap-head .ico{flex:none; color:var(--muted); transform:rotate(-90deg); transition:transform .15s}
+[dir="rtl"] .flatmap-head .ico{transform:rotate(90deg)}
+.flatmap.open .flatmap-head .ico{transform:none}
+.flatmap .realplan.compact{display:block; width:calc(100% - 20px); height:clamp(84px, 17vh, 200px); max-height:none; margin:0 10px 10px}
+
+/* Library: wider on big screens, tiles three to a row once there's room */
+.workspace, .workspace.est-closed{--libw:clamp(252px, 16vw, 340px)}
+.workspace{grid-template-columns:var(--libw) minmax(0,1fr) 300px}
+.workspace.est-closed{grid-template-columns:var(--libw) minmax(0,1fr) 44px}
+.lib{grid-template-columns:repeat(auto-fill, minmax(100px, 1fr))}
+/* the group chips in one row that scrolls sideways, fading at the end */
+.libchips{flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none; overscroll-behavior-x:contain; padding-inline-end:16px;
+  mask-image:linear-gradient(to right, #000 calc(100% - 20px), transparent); -webkit-mask-image:linear-gradient(to right, #000 calc(100% - 20px), transparent)}
+[dir="rtl"] .libchips{mask-image:linear-gradient(to left, #000 calc(100% - 20px), transparent); -webkit-mask-image:linear-gradient(to left, #000 calc(100% - 20px), transparent)}
+.libchips::-webkit-scrollbar{display:none}
+.libchips button{flex:none}
+/* the tip under the list: two lines at most */
+.hint{flex:none; padding:8px 12px 0; margin-bottom:10px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; line-height:1.4}
+
+/* Short windows (a laptop, or a zoomed-in browser): tighter headers, tabs, search and selection bar */
+@media (max-height:820px){
+  .library > .phead{min-height:40px; padding-block:6px}
+  .libtabs{margin-bottom:8px}
+  .libtabs button{padding:5px 2px 4px; gap:2px}
+  .libtabs button .ico{width:18px; height:18px}
+  .libsearch{margin-bottom:6px}
+  .libsearch input{height:32px}
+  .libchips{margin-bottom:8px}
+  .inspect{min-height:50px; padding-block:6px}
+  .noselect{min-height:30px}
+  .phead{min-height:42px; padding-block:5px}
+}
+@media (max-height:640px){
+  .hint{-webkit-line-clamp:1}
+  .libtabs button span{display:none}
+  .libtabs button{padding:6px 2px}
+}
+
+/* A narrow 3D view: the time drops to its sun icon so the header stays on two rows */
+@container (max-width:420px){
+  .phead-tools .menu > .btn.small bdi{display:none}
+  .phead-tools{flex-wrap:nowrap}
+}
+
+/* 1000–1279: the views stack and the page scrolls; the library column stays put beside them */
+@media (max-width:1279px){
+  .workspace, .workspace.est-closed{--libw:236px}
+  .workspace{grid-template-columns:var(--libw) minmax(0,1fr) 280px}
+  .workspace.est-closed{grid-template-columns:var(--libw) minmax(0,1fr) 44px}
+  .leftcol{display:flex}
+  .leftcol > .library{flex:1; min-height:0}
+}
+
+/* 700–999: library beside the views (estimate under them), so dragging into the plan still works */
+@media (min-width:700px) and (max-width:999px){
+  .workspace, .workspace.est-closed{grid-template-columns:220px minmax(0,1fr); grid-template-areas:"insp insp" "lib views" "lib est"; align-items:start}
+  .workspace > .inspect{grid-area:insp}
+  .workspace > .library, .workspace > .leftcol{grid-area:lib; position:sticky; top:8px; max-height:calc(100vh - 16px); align-self:start}
+  .workspace > .leftcol > .library{position:static; max-height:none}
+  .workspace > .views{grid-area:views}
+  .workspace > .budget{grid-area:est}
+  .lib{max-height:none; grid-template-columns:repeat(2, minmax(0, 1fr))}
+  .library{display:flex; flex-direction:column; min-height:0; height:calc(100vh - 16px)}
+  .workspace > .leftcol{height:calc(100vh - 16px)}
+  .workspace > .leftcol > .library{height:auto}
+}
+/* Under 700: one column, the library right after the views (before the estimate) */
+@media (max-width:699px){
+  .workspace, .workspace.est-closed{grid-template-columns:minmax(0,1fr)}
+  .workspace > .inspect{order:0} .views{order:1} .library, .leftcol{order:2} .budget{order:3}
+}
+@media (prefers-reduced-motion: reduce){ .flatmap-head .ico{transition:none} }
