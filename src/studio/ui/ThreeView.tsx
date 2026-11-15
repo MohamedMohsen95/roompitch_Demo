@@ -1,10 +1,11 @@
 // The 3D panel: shows the shared three.js canvas (three/scene.js) and takes drops from the library.
 // Its header holds the camera views and the light settings; how to move things is a tips box on the view (Hints.tsx).
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { attachScene } from "../three/scene.js";
 import { dropIn3D } from "../three/interaction.js";
 import { isWalking, lastBlink, lastExit } from "../three/walk.js";
 import { isMuted, setMuted } from "../three/walk-sound.js";
+import { liveState, onLive, canLive, startLive, stopLive } from "../three/live.js";
 import { useStudio } from "./hooks";
 import Hints from "./Hints";
 import PathTraceDialog from "./PathTraceDialog";
@@ -24,6 +25,28 @@ function Caption(){
       aria-label={t(off ? "soundOn" : "soundOff")} onClick={() => setMuted(!off)}>{off ? <IconMuted/> : <IconSound/>}</button>}
   </>;
 }
+
+// While walking: the Live switch, path tracing the view as you walk (three/live.js), and how far it's got.
+function LiveButton(){
+  useStudio();
+  const live = useSyncExternalStore(onLive, liveState);
+  if (!isWalking() || !canLive()) return null;
+  return <button type="button" className="livebtn" aria-pressed={live.on} title={t("liveTip")}
+    onClick={() => live.on ? stopLive() : startLive()}><IconRays/>{t("liveBtn")}</button>;
+}
+function LivePill(){
+  const live = useSyncExternalStore(onLive, liveState);
+  if (live.phase === "off") return null;
+  const text = live.phase === "preparing" ? t("livePreparing")
+    : live.phase === "moving" ? t("liveMoving")
+    : live.phase === "denoised" ? t("liveClean", {n:live.samples})
+    : live.phase === "error" ? t("liveError")
+    : t("livePasses", {n:live.samples, m:MAX_LIVE});
+  return <div className={"livepill" + (live.phase === "error" ? " bad" : "")} role="status">
+    <i aria-hidden="true"/>{text}{live.rate > 0 && live.phase === "tracing" ? <span>{t("liveRate", {r:live.rate.toFixed(1)})}</span> : null}
+  </div>;
+}
+const MAX_LIVE = 32;   // three/livetrace.js MAX_SAMPLES (kept out of this bundle)
 
 // Entering walk mode you blink: eyelids close over the view and open again on the room.
 // Shown only while that blink is playing, so coming back to the studio later doesn't replay it.
@@ -62,13 +85,14 @@ export default function ThreeView({max, onMax}: MaxProps){
   const [dropOn, setDropOn] = useState(false);
   const [tracing, setTracing] = useState(false);
   useEffect(() => attachScene(host.current), []);
+  useEffect(() => () => stopLive(), []);   // the live trace draws into this view's stage
   return (
     <div className={viewClass("3d", max)}>
       <ViewRail title="3D" onMax={onMax}/>
       <div className="phead">
-        <div className="phead-start"><h2>3D</h2><WalkButton max={max} onMax={onMax}/></div>
+        <div className="phead-start"><h2>3D</h2><WalkButton max={max} onMax={onMax}/><LiveButton/></div>
         <div className="phead-tools"><CameraViews/><LightMenu/>
-          <button type="button" className="btn ghost small icon" title={t("ptTip")} aria-label={t("ptBtn")} onClick={() => setTracing(true)}><IconRays/></button><MaxButton id="3d" max={max} onMax={onMax}/></div>
+          <button type="button" className="btn ghost small icon" title={t("ptTip")} aria-label={t("ptBtn")} onClick={() => { stopLive(); setTracing(true); }}><IconRays/></button><MaxButton id="3d" max={max} onMax={onMax}/></div>
       </div>
       <div className={"stage" + (dropOn ? " drop-on" : "")}>
         <div id="three" ref={host}
@@ -81,6 +105,7 @@ export default function ThreeView({max, onMax}: MaxProps){
           }}/>
         <WalkBlink/>
         <WalkExit/>
+        <LivePill/>
         <Caption/>
       </div>
       <PathTraceDialog open={tracing} onClose={() => setTracing(false)}/>

@@ -12,7 +12,8 @@ export const pickables = [];   // floor + walls, for clicks and drops
 // How the camera is driven: "orbit" (OrbitControls) or "walk" (walk.js sets step and exit while walking).
 export const nav = {mode:"orbit", step:null, exit:null};
 // hold: stop drawing for a while (the path tracer, pathtrace.js, takes the GPU while its dialog is open).
-export const loop = {hold:false};
+// noDraw: keep moving the camera but draw nothing (the live path tracer, livetrace.js, draws over the view).
+export const loop = {hold:false, noDraw:false};
 let looping = false;
 let compiled = false;
 // Resolves when the 3D view first goes on the page: work only it needs (the lighting) waits for this.
@@ -143,6 +144,7 @@ export function startLoop(beforeRender){
     const now = performance.now(), dt = Math.min(.1, (now - last) / 1000); last = now;
     if (!host || !compiled || loop.hold) return;
     if (nav.step) nav.step(dt); else { stepGlide(); keepTarget(); controls.update(); }
-    beforeRender?.(); renderer.render(scene, camera);
+    beforeRender?.();
+    if (!loop.noDraw) renderer.render(scene, camera);
   });
 }

@@ -240,6 +240,22 @@ button{cursor:pointer}
   @keyframes exit-dim{0%, 100%{background:rgba(11,13,12,0)} 10%, 70%{background:rgba(11,13,12,.35)}}
   @keyframes exit-fade{0%, 82%, 100%{opacity:0} 10%, 70%{opacity:1}}
 }
+/* Walk mode's Live switch and, over the view, the live trace (three/livetrace.js) and how far it's got */
+.livebtn{display:inline-flex; align-items:center; gap:5px; height:28px; padding-inline:9px 11px; border:1px solid var(--control); border-radius:999px;
+  background:var(--surface); color:var(--ink); font-size:12.5px; font-weight:600; white-space:nowrap; cursor:pointer}
+.livebtn svg{width:15px; height:15px}
+.livebtn:hover{border-color:var(--accent)}
+.livebtn:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+.livebtn[aria-pressed="true"]{background:var(--accent); border-color:color-mix(in srgb, var(--accent) 75%, #000); color:var(--accent-ink)}
+#three canvas.livetrace{position:absolute; inset:0; pointer-events:none}
+.livepill{position:absolute; top:10px; inset-inline-start:10px; z-index:2; display:flex; align-items:center; gap:7px; height:26px; padding:0 10px;
+  border:1px solid var(--line); border-radius:999px; background:color-mix(in srgb, var(--surface) 88%, transparent); color:var(--ink);
+  font-size:12px; font-variant-numeric:tabular-nums; backdrop-filter:blur(6px); pointer-events:none}
+.livepill i{width:7px; height:7px; border-radius:50%; background:#d64545; animation:live-dot 1.6s ease-in-out infinite}
+.livepill span{color:var(--muted)}
+.livepill.bad i{animation:none; background:var(--muted)}
+@keyframes live-dot{50%{opacity:.35}}
+@media (prefers-reduced-motion: reduce){ .livepill i{animation:none} }
 .walk-sound{position:absolute; bottom:12px; inset-inline-end:12px; z-index:2; width:34px; height:34px; display:grid; place-items:center; border:1px solid var(--line);
   border-radius:50%; background:color-mix(in srgb, var(--surface) 88%, transparent); color:var(--ink); cursor:pointer; backdrop-filter:blur(6px)}
 .walk-sound:hover{background:var(--surface)}
