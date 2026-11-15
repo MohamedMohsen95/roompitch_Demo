@@ -56,8 +56,40 @@ def _installed(module):
     return subprocess.run([sys.executable, "-c", f"import {module}"], capture_output=True).returncode == 0
 
 
+# pip name -> import name. Only the missing ones are installed, so Kaggle's own copies (opencv, scipy …) stay as they are.
+PACKAGES = {"pillow": "PIL", "imageio": "imageio", "imageio-ffmpeg": "imageio_ffmpeg", "tqdm": "tqdm", "easydict": "easydict",
+            "opencv-python-headless": "cv2", "scipy": "scipy", "ninja": "ninja", "rembg": "rembg", "onnxruntime": "onnxruntime",
+            "trimesh": "trimesh", "xatlas": "xatlas", "pyvista": "pyvista", "pymeshfix": "pymeshfix", "igraph": "igraph",
+            "plyfile": "plyfile", "ipywidgets": "ipywidgets", "requests": "requests", "matplotlib": "matplotlib"}
+WATCH = ("numpy", "scipy", "torch", "pillow")   # if pip changes one of these, the running kernel holds the old one
+
+
+def _versions():
+    from importlib.metadata import PackageNotFoundError, version
+    out = {}
+    for p in WATCH:
+        try:
+            out[p] = version(p)
+        except PackageNotFoundError:
+            out[p] = None
+    return out
+
+
+def _constraints():
+    """Pins every package already installed, so new packages pick versions that fit Kaggle's instead of upgrading them
+    (an upgraded numpy under a kernel that already loaded the old one breaks every later import)."""
+    frozen = subprocess.run([sys.executable, "-m", "pip", "list", "--format=freeze"], capture_output=True, text=True).stdout
+    path = f"{WORK}/constraints.txt"
+    os.makedirs(WORK, exist_ok=True)
+    open(path, "w").write("\n".join(l for l in frozen.splitlines() if "==" in l and not l.startswith("-")) + "\n")
+    return path
+
+
 def install():
-    """Fits everything to Kaggle's own PyTorch. Steps already done in this session are skipped."""
+    """Fits everything to Kaggle's own PyTorch and packages. Steps already done in this session are skipped."""
+    import importlib.util
+    before = _versions()
+    pip = f"pip install -q -c {_constraints()}"
     info = subprocess.run([sys.executable, "-c", "import torch,sys;print(torch.__version__.split('+')[0], torch.version.cuda, sys.version.split()[0])"],
                           capture_output=True, text=True).stdout.split()
     if len(info) < 2 or info[1] == "None":
@@ -71,12 +103,12 @@ def install():
          f"{sys.executable} -c \"import torch,torch.nn.functional as F;q=torch.randn(2,8,64,64,device='cuda',dtype=torch.half);F.scaled_dot_product_attention(q,q,q)\"")
     if not _installed("spconv"):
         spconv = "spconv-cu126" if tuple(map(int, cuda_v.split(".")[:2])) >= (12, 6) else "spconv-cu124"
-        _run(f"{spconv} (sparse convolutions)", f"pip install -q {spconv}")
-    _run("Python packages",
-         "pip install -q pillow imageio imageio-ffmpeg tqdm easydict opencv-python-headless scipy ninja "
-         "rembg onnxruntime trimesh xatlas pyvista pymeshfix igraph plyfile ipywidgets")
+        _run(f"{spconv} (sparse convolutions)", f"{pip} {spconv}")
+    missing = [p for p, m in PACKAGES.items() if importlib.util.find_spec(m) is None]
+    if missing:
+        _run(f"Python packages ({', '.join(missing)})", f"{pip} {' '.join(missing)}")
     if not _installed("utils3d"):
-        _run("utils3d", "pip install -q git+https://github.com/EasternJournalist/utils3d.git@9a4eb15e4021b67b12c460c7057d642626897ec8")
+        _run("utils3d", f"{pip} git+https://github.com/EasternJournalist/utils3d.git@9a4eb15e4021b67b12c460c7057d642626897ec8")
 
     os.makedirs(WORK, exist_ok=True)
     if not os.path.isdir(TRELLIS_DIR):
@@ -86,7 +118,7 @@ def install():
     if not _installed("nvdiffrast.torch"):
         _run("nvdiffrast (compiling)",
              f"rm -rf {WORK}/nvdiffrast && git clone -q https://github.com/NVlabs/nvdiffrast.git {WORK}/nvdiffrast && "
-             f"pip install -q --no-build-isolation {WORK}/nvdiffrast", env=T4_BUILD)
+             f"{pip} --no-build-isolation {WORK}/nvdiffrast", env=T4_BUILD)
     if not _installed("diff_gaussian_rasterization"):
         dgr = f"{WORK}/mip-splatting/submodules/diff-gaussian-rasterization"
         _run("diff-gaussian-rasterization source",
@@ -95,7 +127,7 @@ def install():
         s = open(h).read()
         if "<cstdint>" not in s:
             open(h, "w").write("#include <cstdint>\n" + s)
-        _run("diff-gaussian-rasterization (compiling)", f"pip install -q --no-build-isolation {dgr}", env=T4_BUILD)
+        _run("diff-gaussian-rasterization (compiling)", f"{pip} --no-build-isolation {dgr}", env=T4_BUILD)
 
     # So TRELLIS doesn't need kaolin (imported for a debug check) or open3d (text-to-3D only) for image-to-3D.
     _patch(f"{TRELLIS_DIR}/trellis/representations/mesh/flexicubes/flexicubes.py",
@@ -109,7 +141,13 @@ def install():
     shutil.copy(f"{HERE}/sdpa_xops.py", f"{sa}/sdpa_xops.py")
     for f in ("full_attn.py", "serialized_attn.py", "windowed_attn.py"):
         _patch(f"{sa}/{f}", "import xformers.ops as xops", "from . import sdpa_xops as xops")
-    print("All set.")
+
+    changed = {p: (before[p], v) for p, v in _versions().items() if v != before[p]}
+    if changed:
+        print("\n⚠ pip changed " + ", ".join(f"{p} {a} → {b}" for p, (a, b) in changed.items()) +
+              ".\n  Restart the kernel (Run → Restart & clear cell outputs), then run cells 0 and 2. The install itself is kept.")
+    else:
+        print("All set.")
 
 
 # ---------------------------------------------------------------- model
