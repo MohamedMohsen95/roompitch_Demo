@@ -9,6 +9,10 @@ import { pathToFileURL } from "node:url";
 export default defineConfig(({ mode }) => {
   // Server-side secrets from .env (FAL_KEY, CF_ACCOUNT_ID, ...) for the api/ functions.
   // They stay on the server: only VITE_- and NEXT_PUBLIC_-prefixed variables ever reach browser code.
+  // When .env changes, Vite restarts in the same process, and loadEnv lets what's already in process.env win,
+  // so the old values would stick. Forget what the last load added (keeping the shell's own variables) first.
+  const shell = (globalThis.__rpShellEnv ??= {...process.env});
+  for (const k of Object.keys(process.env)) if (!(k in shell)) delete process.env[k];
   Object.assign(process.env, loadEnv(mode, process.cwd(), ""));
 
   return {

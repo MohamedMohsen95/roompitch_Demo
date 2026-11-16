@@ -5,6 +5,7 @@
     "api/analyze.js": { "maxDuration": 60 },
     "api/plan.js": { "maxDuration": 60 },
     "api/point.js": { "maxDuration": 30 },
+    "api/object3d.js": { "maxDuration": 60 },
     "api/models.js": { "includeFiles": "public/models/**/*.{gltf,glb}" }
   },
   "redirects": [

@@ -1,0 +1,240 @@
+<title>RoomPitch AI Providers</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@500;600;700&display=swap">
+<style>
+/* Layout: one reading column, wide tables scroll inside their own frames; a verdict up top, detail below. */
+:root{
+  --bg:#f6f7f5; --surface:#ffffff; --ink:#18201d; --muted:#5d6964; --line:#dde3df;
+  --accent:#1f7a5c; --accent-soft:#e3f1ea; --warn:#9a5b00; --warn-soft:#fbf0dc; --bad:#a33a2c;
+  --display:"Space Grotesk", "Segoe UI", system-ui, sans-serif;
+  --body:"IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --mono:"IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#111614; --surface:#18201d; --ink:#e7ece9; --muted:#9aa6a0; --line:#2b3531;
+  --accent:#5cc49c; --accent-soft:#1d3229; --warn:#e3a94a; --warn-soft:#33281a; --bad:#ef8a7b; color-scheme:dark } }
+:root[data-theme="dark"]{
+  --bg:#111614; --surface:#18201d; --ink:#e7ece9; --muted:#9aa6a0; --line:#2b3531;
+  --accent:#5cc49c; --accent-soft:#1d3229; --warn:#e3a94a; --warn-soft:#33281a; --bad:#ef8a7b; color-scheme:dark }
+body{background:var(--bg); color:var(--ink); font:15px/1.6 var(--body);
+  padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); padding-block:40px 64px}
+main{max-width:980px; margin:0 auto; display:flex; flex-direction:column; gap:40px}
+header{display:flex; flex-direction:column; gap:10px}
+.eyebrow{font:500 12px/1 var(--mono); letter-spacing:.08em; text-transform:uppercase; color:var(--muted)}
+h1{font:700 clamp(28px, 5vw, 40px)/1.1 var(--display); margin:0; text-wrap:balance}
+h2{font:600 22px/1.25 var(--display); margin:0; text-wrap:balance}
+h3{font:600 16px/1.3 var(--display); margin:0}
+p{margin:0; max-width:68ch}
+.lede{font-size:17px; color:var(--muted)}
+section{display:flex; flex-direction:column; gap:14px}
+.verdict{background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:22px; display:flex; flex-direction:column; gap:14px}
+.verdict ol{margin:0; padding-inline-start:20px; display:flex; flex-direction:column; gap:8px; max-width:72ch}
+.pill{display:inline-block; font:500 12px/1 var(--mono); padding:4px 8px; border-radius:999px; background:var(--accent-soft); color:var(--accent); white-space:nowrap}
+.pill.warn{background:var(--warn-soft); color:var(--warn)}
+.pill.no{background:transparent; border:1px solid var(--line); color:var(--muted)}
+.scroll{overflow-x:auto; border:1px solid var(--line); border-radius:10px; background:var(--surface)}
+table{border-collapse:collapse; width:100%; min-width:640px; font-size:14px}
+th,td{text-align:left; padding:9px 12px; border-bottom:1px solid var(--line); vertical-align:top}
+th{font:600 12px/1.3 var(--body); color:var(--muted); text-transform:uppercase; letter-spacing:.04em; background:var(--bg)}
+tr:last-child td{border-bottom:0}
+td.num, th.num{text-align:right; font-family:var(--mono); font-variant-numeric:tabular-nums; white-space:nowrap}
+td.best{color:var(--accent); font-weight:600}
+td .sub{display:block; color:var(--muted); font-size:12.5px}
+.grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:14px}
+.card{background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:16px; display:flex; flex-direction:column; gap:8px; min-width:0}
+.card ul{margin:0; padding-inline-start:18px; display:flex; flex-direction:column; gap:4px}
+.note{font-size:13.5px; color:var(--muted)}
+.src{font-size:13px; color:var(--muted); columns:2 260px; padding-inline-start:18px; margin:0}
+.src li{break-inside:avoid; margin-bottom:4px}
+a{color:var(--accent)}
+a:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+code{font-family:var(--mono); font-size:.9em}
+</style>
+
+<main>
+<header>
+  <span class="eyebrow">RoomPitch · provider research · 16 Nov 2026</span>
+  <h1>AI providers for floor plans, 3D models and text</h1>
+  <p class="lede">Which API to use for image models (FLUX, Nano Banana), image-to-3D models (Tripo, TRELLIS) and basic LLMs, with list prices, plans and free tiers. Prices are list prices in USD read from each provider's pricing page this week; they move often, so check before you commit a budget.</p>
+</header>
+
+<section class="verdict">
+  <h2>Recommendation</h2>
+  <ol>
+    <li><strong>Runware is a good fit as the main provider.</strong> It is the only provider here with all three categories (FLUX and Nano Banana images, Tripo and TRELLIS 3D, and LLMs) behind one key and one bill. It also has the cheapest TRELLIS.2 we found ($0.0077 a model). Billing is pay-as-you-go with no plans, and new business-email accounts get $2 free.</li>
+    <li><strong>Keep Cloudflare Workers AI for the free tier.</strong> It is what RoomPitch already uses. It gives 10,000 neurons a day free (FLUX.2 klein images and the Llama 4 Scout and Moondream vision models), which is enough for demos and development at no cost.</li>
+    <li><strong>Call Google directly if Nano Banana becomes the main cost.</strong> Google's own Gemini API is the cheapest Nano Banana source ($0.0336 per 1K image for Nano Banana 2.1), and its Batch API halves that again. Resellers charge the same or more.</li>
+    <li><strong>No provider gives free 3D generation for production.</strong> The only free routes are signup credits ($1–2) and running TRELLIS yourself (it is open source). Budget about $0.01 for a TRELLIS.2 model and $0.20–0.30 for a Tripo model.</li>
+  </ol>
+</section>
+
+<section>
+  <h2>What RoomPitch calls today</h2>
+  <div class="scroll"><table>
+    <thead><tr><th>Feature</th><th>Route</th><th>Provider and model</th><th class="num">Cost now</th></tr></thead>
+    <tbody>
+      <tr><td>AI restyle of the 3D view</td><td><code>api/generate</code></td><td>Cloudflare <code>flux-2-klein-4b</code><span class="sub">or fal <code>nano-banana/edit</code> when a fal key is set</span></td><td class="num">free / $0.0398</td></tr>
+      <tr><td>Brush edit</td><td><code>api/generate</code></td><td>fal <code>flux-pro/v1/fill</code></td><td class="num">paid</td></tr>
+      <tr><td>Reading a floor plan, doors and windows</td><td><code>api/plan</code>, <code>api/analyze</code></td><td>Cloudflare <code>llama-4-scout-17b</code></td><td class="num">free tier</td></tr>
+      <tr><td>Pointing at things in a photo</td><td><code>api/point</code></td><td>Cloudflare <code>moondream3.1</code></td><td class="num">free tier</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <h2>Who offers what</h2>
+  <div class="scroll"><table>
+    <thead><tr><th>Provider</th><th>FLUX</th><th>Nano Banana</th><th>Tripo</th><th>TRELLIS</th><th>LLMs</th><th>Free to start</th><th>Plans</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Runware</strong></td><td><span class="pill">yes</span></td><td><span class="pill">yes</span></td><td><span class="pill">yes</span></td><td><span class="pill">TRELLIS.2</span></td><td><span class="pill">yes</span></td><td>$2 credit (business email)</td><td>Pay-as-you-go; custom volume pricing</td></tr>
+      <tr><td><strong>fal.ai</strong></td><td><span class="pill">yes</span></td><td><span class="pill">yes</span></td><td><span class="pill">yes</span></td><td><span class="pill">1 and 2</span></td><td><span class="pill no">no list</span></td><td>Signup credits (amount not stated)</td><td>Pay-as-you-go; enterprise</td></tr>
+      <tr><td><strong>WaveSpeed</strong></td><td><span class="pill">yes</span></td><td><span class="pill">yes</span></td><td><span class="pill">yes</span></td><td><span class="pill no">not found</span></td><td><span class="pill">yes</span></td><td>$1 credit, no card</td><td>Bronze → Ultra levels by top-up ($1k Gold, $5k Ultra)</td></tr>
+      <tr><td><strong>Replicate</strong></td><td><span class="pill">yes</span></td><td><span class="pill">yes</span></td><td><span class="pill warn">community</span></td><td><span class="pill warn">community</span></td><td><span class="pill">yes</span></td><td>Not stated</td><td>Pay per output or per GPU-second</td></tr>
+      <tr><td><strong>Together AI</strong></td><td><span class="pill">yes</span></td><td><span class="pill">yes</span></td><td><span class="pill no">no</span></td><td><span class="pill no">no</span></td><td><span class="pill">yes</span></td><td>One free LLM; no credit stated</td><td>Pay-as-you-go</td></tr>
+      <tr><td><strong>Cloudflare Workers AI</strong></td><td><span class="pill">yes</span></td><td><span class="pill no">no</span></td><td><span class="pill no">no</span></td><td><span class="pill no">no</span></td><td><span class="pill">yes</span></td><td><strong>10,000 neurons / day, forever</strong></td><td>Workers Paid ($5/mo) for more</td></tr>
+      <tr><td><strong>Google Gemini API</strong></td><td><span class="pill no">no</span></td><td><span class="pill">official</span></td><td><span class="pill no">no</span></td><td><span class="pill no">no</span></td><td><span class="pill">yes</span></td><td><strong>Free tier for text</strong>; none for images</td><td>Free, Standard, Batch (−50%)</td></tr>
+      <tr><td><strong>Hugging Face</strong></td><td><span class="pill">via partners</span></td><td><span class="pill warn">partners</span></td><td><span class="pill no">no</span></td><td><span class="pill warn">Spaces</span></td><td><span class="pill">yes</span></td><td>$2/month with PRO ($9/mo)</td><td>Passes partner prices through, no markup</td></tr>
+      <tr><td><strong>Tripo (direct)</strong></td><td><span class="pill no">no</span></td><td><span class="pill no">no</span></td><td><span class="pill">official</span></td><td><span class="pill no">no</span></td><td><span class="pill no">no</span></td><td>Not stated for API</td><td>Credits, $0.01 each</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <h2>Image models: price per image</h2>
+  <p class="note">For a floor plan render, 1K (about 1 megapixel) is the usual size. Green marks the cheapest source we found for that model.</p>
+  <div class="scroll"><table>
+    <thead><tr><th>Model</th><th class="num">Runware</th><th class="num">fal</th><th class="num">Google direct</th><th class="num">Together</th><th class="num">Others</th></tr></thead>
+    <tbody>
+      <tr><td>Nano Banana 2.1 (1K)</td><td class="num">tokens<span class="sub">$1.50 / 1M in</span></td><td class="num">by unit</td><td class="num best">$0.0336<span class="sub">batch $0.0168</span></td><td class="num">—</td><td class="num">—</td></tr>
+      <tr><td>Nano Banana 2 Lite (1K)</td><td class="num best">$0.0336</td><td class="num">by unit</td><td class="num best">$0.0336</td><td class="num">$0.069</td><td class="num">—</td></tr>
+      <tr><td>Nano Banana 2 (1K)</td><td class="num">—</td><td class="num">$0.08</td><td class="num">$0.067</td><td class="num best">$0.0466</td><td class="num">WaveSpeed from $0.045</td></tr>
+      <tr><td>Nano Banana Pro (1K–2K / 4K)</td><td class="num">≈$0.138 / $0.244</td><td class="num">$0.15 / $0.30</td><td class="num best">$0.134 / $0.24</td><td class="num best">$0.134</td><td class="num">WaveSpeed from $0.14</td></tr>
+      <tr><td>Nano Banana (2.5, retiring Mar 2027)</td><td class="num">—</td><td class="num">$0.0398</td><td class="num best">$0.039<span class="sub">batch $0.0195</span></td><td class="num best">$0.039</td><td class="num">—</td></tr>
+      <tr><td>FLUX.1 schnell</td><td class="num">—</td><td class="num best">$0.003 / MP</td><td class="num">—</td><td class="num">—</td><td class="num">Replicate $0.003; Cloudflare free tier</td></tr>
+      <tr><td>FLUX.1 dev</td><td class="num">—</td><td class="num best">$0.025 / MP</td><td class="num">—</td><td class="num">—</td><td class="num best">Replicate $0.025</td></tr>
+      <tr><td>FLUX.2 (dev / base)</td><td class="num">—</td><td class="num best">$0.012 / MP</td><td class="num">—</td><td class="num">$0.0154</td><td class="num">Cloudflare free tier</td></tr>
+      <tr><td>FLUX.2 pro / flex</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">$0.03</td><td class="num">—</td></tr>
+      <tr><td>FLUX.1 Kontext pro / max (editing)</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">$0.04 / $0.08 per MP</td><td class="num">—</td></tr>
+      <tr><td>FLUX 3 Image Klein (512², 16 steps)</td><td class="num best">$0.003</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td></tr>
+      <tr><td>FLUX 3 Image (0.75K)</td><td class="num best">$0.041</td><td class="num">edit $0.048 / MP</td><td class="num">—</td><td class="num">—</td><td class="num">—</td></tr>
+      <tr><td>Seedream 5.x (alternative)</td><td class="num best">$0.01926–0.048</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td></tr>
+    </tbody>
+  </table></div>
+  <p class="note">A dash means the provider's price page did not show that model, not that it is unavailable. Runware's image price list runs to 205 models over five pages; we only read page one, and its older FLUX.1 and FLUX.2 rows were not on it.</p>
+</section>
+
+<section>
+  <h2>3D models: price per model</h2>
+  <div class="scroll"><table>
+    <thead><tr><th>Model</th><th class="num">Runware</th><th class="num">fal</th><th class="num">WaveSpeed</th><th class="num">Direct</th></tr></thead>
+    <tbody>
+      <tr><td>TRELLIS.2 (image → 3D)</td><td class="num best">$0.0077<span class="sub">at resolution 512</span></td><td class="num">$0.05 per unit</td><td class="num">—</td><td class="num">open source, self-host</td></tr>
+      <tr><td>TRELLIS (v1)</td><td class="num">—</td><td class="num best">$0.02</td><td class="num">—</td><td class="num">open source, self-host</td></tr>
+      <tr><td>SAM 3D Objects (photo → object)</td><td class="num best">$0.0064</td><td class="num">—</td><td class="num">—</td><td class="num">—</td></tr>
+      <tr><td>Tripo v3.1 / H3.1</td><td class="num">$0.30</td><td class="num">$0.01 per credit</td><td class="num best">$0.20</td><td class="num best">$0.20–0.30<span class="sub">image→3D, 20–30 credits</span></td></tr>
+      <tr><td>Tripo v2.5 / P1–P2 (game-ready)</td><td class="num">—</td><td class="num">$0.01 per credit</td><td class="num">$0.30 / $1.00</td><td class="num">+ texture 10–30, retopology 10–40 credits</td></tr>
+      <tr><td>Hunyuan3D 3.1 (Pro / Rapid)</td><td class="num">$0.225</td><td class="num">$0.015 per unit</td><td class="num">listed</td><td class="num">—</td></tr>
+      <tr><td>Meshy-6</td><td class="num best">$0.80</td><td class="num best">$0.80</td><td class="num">listed</td><td class="num">credits via Meshy plan</td></tr>
+      <tr><td>Rodin Gen-2</td><td class="num best">$0.40</td><td class="num best">$0.40</td><td class="num">—</td><td class="num">—</td></tr>
+    </tbody>
+  </table></div>
+  <p class="note">fal prices several 3D models per credit or "unit" without saying how many a model takes, so its true per-model cost is only clear in its playground. Tripo's own rate is 1 credit = $0.01, which puts image-to-3D at $0.20–0.30 before texture or retopology.</p>
+</section>
+
+<section>
+  <h2>Basic text LLMs: price per million tokens</h2>
+  <div class="scroll"><table>
+    <thead><tr><th>Provider</th><th>Cheap model</th><th class="num">Input</th><th class="num">Output</th><th>Free option</th></tr></thead>
+    <tbody>
+      <tr><td>Runware</td><td>Claude Haiku 5.5 / GPT-6 Luna</td><td class="num">$0.10</td><td class="num">not shown</td><td>$2 signup credit</td></tr>
+      <tr><td>Runware</td><td>DeepSeek V4.1 Flash</td><td class="num">$0.15</td><td class="num">not shown</td><td></td></tr>
+      <tr><td>Google</td><td>Gemini 2.5 Flash-Lite</td><td class="num best">$0.10</td><td class="num best">$0.40</td><td><strong>Free tier</strong> (data may be used to improve Google's products)</td></tr>
+      <tr><td>Google</td><td>Gemini 3.1 Flash-Lite</td><td class="num">$0.25</td><td class="num">$1.50</td><td><strong>Free tier</strong></td></tr>
+      <tr><td>Together</td><td>gpt-oss-120B</td><td class="num">$0.15</td><td class="num">$0.60</td><td>Ternary Bonsai 27B free</td></tr>
+      <tr><td>WaveSpeed</td><td>DeepSeek V4.1 Flash</td><td class="num">$0.15</td><td class="num">$0.60</td><td>$1 signup credit</td></tr>
+      <tr><td>Cloudflare</td><td>Llama 4 Scout 17B (vision)</td><td class="num">$0.27</td><td class="num">$0.85</td><td><strong>Inside 10k neurons/day</strong></td></tr>
+      <tr><td>Groq</td><td>gpt-oss-120b</td><td class="num">paid tier</td><td class="num">paid tier</td><td><strong>Free</strong>: 30 req/min, 1,000 req/day, 200k tokens/day</td></tr>
+      <tr><td>Cerebras</td><td>various open models</td><td class="num">paid tier</td><td class="num">paid tier</td><td><strong>Free</strong>: about 1M tokens/day</td></tr>
+      <tr><td>OpenRouter</td><td><code>:free</code> models</td><td class="num">$0</td><td class="num">$0</td><td>50 req/day, or 1,000/day after buying $10 credit</td></tr>
+    </tbody>
+  </table></div>
+  <p class="note">For RoomPitch's text needs (labelling rooms, reading plan text, short descriptions) the cheap tier is plenty. A plan-reading call is a few thousand tokens, well under $0.001 at these rates.</p>
+</section>
+
+<section>
+  <h2>Free tiers, in short</h2>
+  <div class="grid">
+    <div class="card"><h3>Lasting free tiers</h3><ul>
+      <li><strong>Cloudflare Workers AI</strong>: 10,000 neurons a day, resets at 00:00 UTC, no card. Covers FLUX.1 schnell and FLUX.2 klein images and Llama/vision LLMs. No Nano Banana, no 3D.</li>
+      <li><strong>Google Gemini API</strong>: free text models (Flash, Flash-Lite). Image models are <em>not</em> on the free tier.</li>
+      <li><strong>Groq, Cerebras, OpenRouter</strong>: free LLMs with daily caps.</li>
+    </ul></div>
+    <div class="card"><h3>Signup credits</h3><ul>
+      <li><strong>Runware</strong>: $2 with a business email, no card (about 260 TRELLIS.2 models or 60 Nano Banana 2.1 images).</li>
+      <li><strong>WaveSpeed</strong>: $1, no card; some premium models are excluded.</li>
+      <li><strong>fal, Replicate</strong>: signup credits reported by third parties; amounts not on their pricing pages.</li>
+      <li><strong>Hugging Face PRO</strong>: $2 a month in credits for $9 a month.</li>
+    </ul></div>
+    <div class="card"><h3>Free 3D, honestly</h3><ul>
+      <li>No provider offers free 3D generation beyond signup credits.</li>
+      <li>TRELLIS and TRELLIS.2 are open source: free to run on our own GPU, or on Hugging Face Spaces (ZeroGPU quotas, fine for testing, not for customers).</li>
+    </ul></div>
+  </div>
+</section>
+
+<section>
+  <h2>What one designed flat might cost on Runware</h2>
+  <p>An example, not a quote: a 3-room flat where the plan is read once, each room gets two AI renders and eight furniture pieces are generated as 3D models.</p>
+  <div class="scroll"><table>
+    <thead><tr><th>Step</th><th class="num">Count</th><th>Model</th><th class="num">Unit price</th><th class="num">Subtotal</th></tr></thead>
+    <tbody>
+      <tr><td>Read the floor plan</td><td class="num">1</td><td>cheap LLM, ~5k tokens</td><td class="num">$0.10 / 1M</td><td class="num">&lt; $0.001</td></tr>
+      <tr><td>Room renders</td><td class="num">6</td><td>Nano Banana 2 Lite, 1K</td><td class="num">$0.0336</td><td class="num">$0.20</td></tr>
+      <tr><td>Furniture models</td><td class="num">8</td><td>TRELLIS.2</td><td class="num">$0.0077</td><td class="num">$0.06</td></tr>
+      <tr><td><em>or</em> furniture models</td><td class="num">8</td><td>Tripo v3.1</td><td class="num">$0.30</td><td class="num">$2.40</td></tr>
+      <tr><td colspan="4"><strong>Total</strong></td><td class="num"><strong>$0.26</strong> with TRELLIS.2 · <strong>$2.60</strong> with Tripo</td></tr>
+    </tbody>
+  </table></div>
+  <p class="note">The 3D model choice moves the cost about ten times more than anything else. TRELLIS.2 is worth testing first for furniture; Tripo for hero pieces that need clean topology or textures.</p>
+</section>
+
+<section>
+  <h2>Before deciding</h2>
+  <div class="grid">
+    <div class="card"><h3>Check with Runware</h3><ul>
+      <li>Nano Banana 2.1 per-image price (listed only by input tokens).</li>
+      <li>LLM output-token prices (only input shown).</li>
+      <li>What TRELLIS.2 costs above resolution 512, and Tripo with textures.</li>
+      <li>Volume pricing at our expected monthly spend.</li>
+    </ul></div>
+    <div class="card"><h3>Things to test, not just price</h3><ul>
+      <li>Speed: time to a finished 3D model, since users wait for it.</li>
+      <li>Output formats: GLB with PBR textures for three.js.</li>
+      <li>Request size limits, for plan images up to 3 MB.</li>
+      <li>Data use: free tiers (Google especially) may train on inputs.</li>
+    </ul></div>
+  </div>
+</section>
+
+<section>
+  <h2>Sources</h2>
+  <ul class="src">
+    <li><a href="https://runware.ai/pricing">Runware pricing</a> (image, 3D and LLM tabs)</li>
+    <li><a href="https://runware.ai/collections/blueprint-3d">Runware 3D collection</a></li>
+    <li><a href="https://runware.ai/llm-api">Runware LLM API</a></li>
+    <li><a href="https://runware.ai/docs/models/google-nano-banana-pro/schema.json">Runware Nano Banana Pro schema</a></li>
+    <li><a href="https://fal.ai/pricing">fal.ai pricing</a></li>
+    <li><a href="https://wavespeed.ai/pricing">WaveSpeed pricing</a></li>
+    <li><a href="https://wavespeed.ai/collections/tripo3d">WaveSpeed Tripo models</a></li>
+    <li><a href="https://replicate.com/pricing">Replicate pricing</a></li>
+    <li><a href="https://www.together.ai/pricing">Together AI pricing</a></li>
+    <li><a href="https://developers.cloudflare.com/workers-ai/platform/pricing/">Cloudflare Workers AI pricing</a></li>
+    <li><a href="https://aistudio.google.com/docs/pricing">Google Gemini API pricing</a></li>
+    <li><a href="https://huggingface.co/docs/inference-providers/pricing">Hugging Face Inference Providers billing</a></li>
+    <li><a href="https://developers.tripo3d.ai/">Tripo API pricing</a></li>
+    <li><a href="https://docs.meshy.ai/api/pricing">Meshy API pricing</a></li>
+    <li><a href="https://openrouter.ai/blog/tutorials/free-llm-apis-compared/">OpenRouter: free LLM APIs compared</a></li>
+    <li><a href="https://www.techsifted.com/posts/flux-ai-pricing-2026/">TechSifted: FLUX pricing 2026</a> (signup credits, unconfirmed)</li>
+  </ul>
+</section>
+</main>

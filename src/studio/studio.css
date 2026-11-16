@@ -571,6 +571,8 @@ details p{margin:6px 0 0; font-family:var(--font-data); font-size:11.5px; line-h
 .pt-stage progress::-webkit-progress-bar{background:transparent}
 .pt-stage progress::-webkit-progress-value{background:var(--accent)}
 .pt-stage progress::-moz-progress-bar{background:var(--accent)}
+.pt-hd{display:flex; align-items:center; gap:7px; font-size:12.5px; color:var(--ink); cursor:pointer; margin-inline-end:auto}
+.pt-hd input{width:16px; height:16px; margin:0; accent-color:var(--accent); cursor:pointer}
 .pt-bright{display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--muted)}
 .pt-bright + .pt-bright{margin-inline-start:12px}
 .pt-bright:last-of-type{margin-inline-end:auto}   /* the buttons go to the far end */
@@ -841,6 +843,27 @@ details p{margin:6px 0 0; font-family:var(--font-data); font-size:11.5px; line-h
 .seg span{padding:7px 16px; cursor:pointer; font-size:13.5px}
 .seg input:checked + span{background:var(--accent); color:var(--accent-ink); font-weight:600}
 .seg input:focus-visible + span{outline:2px solid var(--accent); outline-offset:-2px}
+.seg input:disabled + span{opacity:.45; cursor:not-allowed}
+.um-step{margin:0; font-size:12px; font-weight:600; letter-spacing:.02em; color:var(--muted)}
+.um-made{display:flex; align-items:center; gap:14px}
+.um-made .dnote{flex:1}
+.um-shots{display:flex; gap:8px; flex:none}
+.um-shots img{width:96px; height:96px; object-fit:contain; background:var(--sunk); border:1px solid var(--line); border-radius:10px}
+/* File picker in the app's look (UploadDialog's FilePick): click or drop */
+.filepick{position:relative; display:flex; align-items:center; gap:12px; padding:12px 14px; border:1.5px dashed var(--control); border-radius:12px;
+  background:var(--sunk); color:var(--ink); cursor:pointer; transition:border-color .15s, background .15s}
+.filepick:hover, .filepick.over{border-color:var(--accent); background:var(--accent-soft)}
+.filepick:focus-within{border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft)}
+.filepick.off{opacity:.6; cursor:not-allowed}
+.filepick input{position:absolute; width:1px; height:1px; opacity:0; pointer-events:none}
+.fp-text{display:flex; flex-direction:column; gap:2px; min-width:0}
+.fp-text b{font-size:13.5px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.fp-text small{font-size:12px; color:var(--muted)}
+.fp-icon{display:grid; place-items:center; width:34px; height:34px; flex:none; border-radius:9px; background:var(--surface); border:1px solid var(--line); color:var(--accent)}
+.filepick.large{flex-direction:column; justify-content:center; text-align:center; min-height:200px; padding:18px}
+.filepick.large .fp-text{align-items:center}
+.filepick.large .fp-icon{width:42px; height:42px}
+.filepick img{max-width:100%; max-height:220px; object-fit:contain; border-radius:8px}
 .fgrid{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px}
 .fgrid label, .ofields label{display:grid; grid-template-columns:1fr auto; gap:3px 6px; align-items:center; font-size:12.5px; color:var(--muted)}
 .fgrid label > span, .ofields label > span{grid-column:1 / -1}
@@ -999,8 +1022,10 @@ details p{margin:6px 0 0; font-family:var(--font-data); font-size:11.5px; line-h
 .realplan{width:100%; height:auto; max-height:60vh; display:block; background:var(--surface); border:1px solid var(--line); border-radius:8px}
 .realplan.compact{max-height:200px}
 .realplan .rroom polygon{fill:var(--sunk); stroke:var(--ink); stroke-linejoin:miter}
-.realplan .rroom[role=button]{cursor:pointer}
+/* no browser focus ring: it is drawn in the map's units (metres) and swallows the plan; the room itself shows focus */
+.realplan .rroom[role=button]{cursor:pointer; outline:none}
 .realplan .rroom[role=button]:hover polygon, .realplan .rroom:focus-visible polygon{fill:var(--accent-soft)}
+.realplan .rroom:focus-visible polygon{stroke:var(--accent)}
 .realplan .rroom.on polygon{fill:var(--accent-soft); stroke:var(--accent)}
 .realplan .rroom.changed polygon{fill:rgba(214,137,16,.14); stroke:#d68910}
 .realplan .rroom.over polygon{fill:var(--danger-soft); stroke:var(--danger)}
@@ -1051,12 +1076,9 @@ details p{margin:6px 0 0; font-family:var(--font-data); font-size:11.5px; line-h
 .workspace{grid-template-columns:var(--libw) minmax(0,1fr) 300px}
 .workspace.est-closed{grid-template-columns:var(--libw) minmax(0,1fr) 44px}
 .lib{grid-template-columns:repeat(auto-fill, minmax(100px, 1fr))}
-/* the group chips in one row that scrolls sideways, fading at the end */
-.libchips{flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none; overscroll-behavior-x:contain; padding-inline-end:16px;
-  mask-image:linear-gradient(to right, #000 calc(100% - 20px), transparent); -webkit-mask-image:linear-gradient(to right, #000 calc(100% - 20px), transparent)}
-[dir="rtl"] .libchips{mask-image:linear-gradient(to left, #000 calc(100% - 20px), transparent); -webkit-mask-image:linear-gradient(to left, #000 calc(100% - 20px), transparent)}
-.libchips::-webkit-scrollbar{display:none}
-.libchips button{flex:none}
+/* the group chips wrap onto a second row rather than hiding past the panel's edge */
+.libchips{gap:4px}
+.libchips button{flex:none; height:24px; padding:0 8px}
 /* the tip under the list: two lines at most */
 .hint{flex:none; padding:8px 12px 0; margin-bottom:10px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; line-height:1.4}
 

@@ -231,7 +231,10 @@ export default function PlanImport(props: Props){
   const selReal = selSpace && flat.scale ? realSpace(flat, selSpace.id) : null;
   const lens = selReal ? selReal.poly.map((p, i) => { const q = selReal.poly[(i + 1) % selReal.poly.length]; return Math.round(Math.hypot(q[0] - p[0], q[1] - p[1]) * 1000) / 10; }) : null;
   const box = selSpace && flat.scale ? roomBox(flat, selSpace.id) : null;
-  const overlaps = flat.scale ? realOverlaps(flat) : [];
+  // The real flat beside the tracing: with no scale yet, drawn at the scale "Next" would guess, and said so
+  const guessed = flat.scale ? 0 : readyFlat(flat, () => "").scale || 0;
+  const realShown = flat.scale ? flat : guessed ? {...flat, scale:guessed, scaleFrom:"guess" as const} : null;
+  const overlaps = realShown ? realOverlaps(realShown) : [];
   const shownLayout = layout || planLayout(flat.image);
   const setSpace = (id: string, patch: object) => change({...flat, spaces:flat.spaces.map(s => s.id === id ? {...s, ...patch} : s)});
   const setOpen = (id: string, patch: object) => change({...flat, openings:flat.openings.map(o => o.id === id ? {...o, ...patch, fromAI:false} : o)});
@@ -438,13 +441,13 @@ export default function PlanImport(props: Props){
                   <button className="btn small" type="button" onClick={() => { onEdits((flat.edits || []).filter(x => x.id !== sel.id)); setSel(null); }}>{t("remove")}</button></p>
               )}
             </div>
-            {flat.scale && (
+            {realShown && (
               <div className="pv">
-                <div className="pvhead"><strong>{t("realFlat")}</strong><span className="dnote">{t("realFlatSub")}</span></div>
+                <div className="pvhead"><strong>{t("realFlat")}</strong><span className="dnote">{t(flat.scale ? "realFlatSub" : "gapScale")}</span></div>
                 {overlaps.length > 0 && (
                   <p className="oerr">{t("overlapNotice")} <button className="btn small" type="button" onClick={() => setFlat(resetReal(flat))}>{t("resetReal")}</button></p>
                 )}
-                <RealFlatView flat={flat} diff highlight={selSpace?.id ?? null} onPick={id => setSel({kind:"space", id})}/>
+                <RealFlatView flat={realShown} diff highlight={selSpace?.id ?? null} onPick={id => setSel({kind:"space", id})}/>
               </div>
             )}
           </div>

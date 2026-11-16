@@ -9,7 +9,7 @@ import { WebGPURenderer, AgXToneMapping } from "three/webgpu";
 import { renderer, scene, camera, loop } from "./scene.js";
 import { subscribe } from "../store.js";
 import { getLighting } from "./lighting.js";
-import { traceEnv, traceStage, newTracer, newDenoiser, needWebGPU, eyeStops } from "./pathtrace.js";
+import { traceEnv, traceStage, newTracer, newDenoiser, needWebGPU, eyeStops, freeTracer } from "./pathtrace.js";
 
 export const MAX_SAMPLES = 32;   // passes once you stand still; then the denoiser runs
 const REBUILD_MS = 300;          // a burst of edits is handed to the tracer once
@@ -118,8 +118,9 @@ export function startLiveTrace(host, {onStatus = (s) => {}} = {}){
       disposed = true; cancelAnimationFrame(raf); clearTimeout(poll); clearTimeout(timer);
       unsub?.(); resized.disconnect();
       loop.noDraw = false;
-      stage?.dispose(); pt?.dispose(); lit?.dispose();
-      gpu.dispose(); canvas.remove();
+      stage?.dispose();
+      freeTracer(gpu, pt, () => lit?.dispose());
+      canvas.remove();
     }
   };
 }

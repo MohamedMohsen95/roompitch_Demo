@@ -166,6 +166,18 @@ export function newTracer(gpu){
   pt.clampIndirect = 4;           // and fewer from light bounced off them
   return pt;
 }
+// Free a tracer, its renderer and whatever else goes with them once the GPU has finished the work it was
+// given. The tracer reads its sample counts back from the GPU every frame; freed under those reads, each
+// one ends in an error. (Stop calling renderSample first.)
+export function freeTracer(gpu, pt, ...more){
+  const queue = /** @type {any} */ (gpu.backend)?.device?.queue;
+  const idle = queue ? queue.onSubmittedWorkDone().then(() => new Promise(r => setTimeout(r, 50))) : Promise.resolve();
+  idle.catch(() => {}).then(() => {
+    pt?.dispose(); for (const fn of more) fn?.();
+    Promise.resolve(gpu.dispose()).catch(() => {});
+  });
+}
+
 export const newDenoiser = () => new OIDNDenoiser({initUNetFromURL, auxWeightsUrl:"/oidn/rt_hdr_calb_cnrm.tza"});
 
 // Without a WebGPU device (or after the GPU was reset) three falls back to WebGL, which the tracer can't use.
@@ -180,20 +192,27 @@ export const eyeStops = (eyeLevel) => eyeLevel ? 1.5 : 0;
 
 // Start a path-traced render into `host`. onStatus({phase, samples}) is called as it goes; phase is
 // "preparing" | "tracing" | "denoising" | "done" | "error", samples the average passes per pixel.
+// `size` {w, h}: trace exactly that many pixels (the saved image), shown scaled down to fit the dialog.
 // Returns {stops, exposure(stops), grain(k), pause(on), finish(), save(), dispose()}.
-/** @param {HTMLElement} host @param {{maxSamples?: number, removal?: number, onStatus?: (s: {phase: "preparing"|"tracing"|"denoising"|"done"|"error", samples: number}) => void}} [opts] */
-export function startPathTrace(host, {maxSamples = 128, removal = .75, onStatus = (s) => {}} = {}){
+/** @param {HTMLElement} host @param {{maxSamples?: number, removal?: number, size?: {w: number, h: number} | null, onStatus?: (s: {phase: "preparing"|"tracing"|"denoising"|"done"|"error", samples: number}) => void}} [opts] */
+export function startPathTrace(host, {maxSamples = 128, removal = .75, size = null, onStatus = (s) => {}} = {}){
   // A landscape picture at least 3:2: from the same camera, a narrow 3D panel just shows more of the room
   // to each side. As big as fits the dialog (its width, about 60% of the window's height). Every pixel is
   // traced, so the pixel ratio stays modest: 1.5 at most.
-  const aspect = Math.max(camera.aspect, 1.5);
+  const aspect = size ? size.w / size.h : Math.max(camera.aspect, 1.5);
   const dpr = Math.min(1.5, window.devicePixelRatio || 1);
   const maxW = Math.max(320, host.clientWidth), maxH = Math.max(240, window.innerHeight * .6);
   const w = Math.round(Math.min(maxW, maxH * aspect)), h = Math.round(w / aspect);
 
   const gpu = new WebGPURenderer({antialias:false});
-  gpu.setPixelRatio(dpr);
-  gpu.setSize(w, h);
+  if (size){
+    gpu.setPixelRatio(1);
+    gpu.setSize(size.w, size.h, false);
+    gpu.domElement.style.width = w + "px"; gpu.domElement.style.height = h + "px";
+  } else {
+    gpu.setPixelRatio(dpr);
+    gpu.setSize(w, h);
+  }
   gpu.toneMapping = AgXToneMapping;
   const eyeLevel = isEyeLevel();
   const stops = eyeStops(eyeLevel), base = renderer.toneMappingExposure;
@@ -294,8 +313,8 @@ export function startPathTrace(host, {maxSamples = 128, removal = .75, onStatus 
       disposed = true; cancelAnimationFrame(raf); clearTimeout(poll);
       stage?.dispose();
       loop.hold = false;
-      pt?.dispose(); lit?.dispose();
-      gpu.dispose(); gpu.domElement.remove(); out.remove();
+      freeTracer(gpu, pt, () => lit?.dispose());
+      gpu.domElement.remove(); out.remove();
     }
   };
 }
