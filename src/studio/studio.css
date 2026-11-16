@@ -5,6 +5,7 @@
   --bg:oklch(96.5% .008 250); --surface:#ffffff; --sunk:oklch(97.5% .006 250); --stage:oklch(95.5% .012 250); --active:oklch(93% .016 252);
   --ink:oklch(22% .04 258); --muted:oklch(48% .03 256); --line:oklch(90.5% .012 250); --rule:oklch(94% .008 250); --control:oklch(83% .02 252);
   --accent:oklch(40% .14 258); --accent-ink:#ffffff; --accent-soft:oklch(40% .14 258 / .09);
+  --drop:oklch(56% .19 256); --drop-soft:oklch(56% .19 256 / .07);   /* a file drop zone's dashed frame */
   --primary:oklch(30% .1 257); --primary-ink:#ffffff;
   --grid:oklch(40% .14 258 / .08); --danger:#b3261e; --guide:#e5366a; --danger-soft:rgba(179,38,30,.08);
   --drawing:oklch(36% .12 258); --drawing-fill:oklch(36% .12 258 / .12); --sheet:oklch(97.8% .007 250);
@@ -18,6 +19,7 @@
   --bg:oklch(26.5% .095 258); --surface:oklch(31% .1 257); --sunk:oklch(28.5% .097 257); --stage:oklch(35% .105 256); --active:oklch(39% .1 256);
   --ink:oklch(97% .012 240); --muted:oklch(80% .045 244); --line:oklch(93% .02 240 / .18); --rule:oklch(93% .02 240 / .12); --control:oklch(93% .02 240 / .34);
   --accent:oklch(97% .012 240); --accent-ink:oklch(30% .1 257); --accent-soft:oklch(97% .012 240 / .12);
+  --drop:oklch(74% .13 248); --drop-soft:oklch(74% .13 248 / .1);
   --primary:oklch(97% .012 240); --primary-ink:oklch(30% .1 257);
   --grid:oklch(97% .01 240 / .1); --danger:#f2867a; --guide:#ff5c8a; --danger-soft:rgba(242,134,122,.12);
   --drawing:oklch(97% .012 240); --drawing-fill:oklch(97% .012 240 / .12); --sheet:oklch(33% .1 257); color-scheme:dark}
@@ -848,13 +850,43 @@ details p{margin:6px 0 0; font-family:var(--font-data); font-size:11.5px; line-h
 .um-made{display:flex; align-items:center; gap:14px}
 .um-made .dnote{flex:1}
 .um-shots{display:flex; gap:8px; flex:none}
+.um-earlier{display:flex; flex-direction:column; gap:6px}
+.um-earlier .dnote{margin:0}
+.um-erow{display:flex; align-items:center; gap:10px; padding:6px 8px; border:1px solid var(--line); border-radius:10px; background:var(--surface)}
+.um-erow img, .um-eimg{width:44px; height:44px; flex:none; object-fit:contain; border-radius:7px; background:var(--sunk)}
+.um-etext{display:flex; flex-direction:column; gap:1px; flex:1; min-width:0}
+.um-etext b{font-size:13px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.um-etext small{font-size:11.5px; color:var(--muted)}
+.um-erow .btn.icon{width:28px; padding:0; justify-content:center}
 .um-shots img{width:96px; height:96px; object-fit:contain; background:var(--sunk); border:1px solid var(--line); border-radius:10px}
 /* File picker in the app's look (UploadDialog's FilePick): click or drop */
-.filepick{position:relative; display:flex; align-items:center; gap:12px; padding:12px 14px; border:1.5px dashed var(--control); border-radius:12px;
+.filepick{position:relative; display:flex; align-items:center; gap:12px; padding:12px 14px; border:2px dashed var(--drop); border-radius:12px;
   background:var(--sunk); color:var(--ink); cursor:pointer; transition:border-color .15s, background .15s}
-.filepick:hover, .filepick.over{border-color:var(--accent); background:var(--accent-soft)}
-.filepick:focus-within{border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft)}
+.filepick:hover, .filepick.over{background:var(--drop-soft)}
+.filepick.over{border-style:solid}
+.filepick:focus-within{box-shadow:0 0 0 3px var(--drop-soft)}
+.fp-clear{position:absolute; top:8px; inset-inline-end:8px; display:grid; place-items:center; width:30px; height:30px; padding:0;
+  border:1px solid var(--line); border-radius:50%; background:var(--surface); color:var(--ink); cursor:pointer}
+.fp-clear:hover{border-color:var(--danger); color:var(--danger)}
+.fp-clear:focus-visible{outline:2px solid var(--drop); outline-offset:2px}
+.filepick:not(.large) > .fp-clear{top:50%; transform:translateY(-50%)}
+.filepick:not(.large):has(> .fp-clear){padding-inline-end:48px}
 .filepick.off{opacity:.6; cursor:not-allowed}
+/* a picture chosen: no frame, the picture itself, its × on its corner */
+.filepick.has-img, .filepick.has-img:hover{border-color:transparent; background:none; padding:0}
+.filepick.has-img:focus-within{box-shadow:none}
+.filepick.has-img.over{border-color:var(--drop); background:var(--drop-soft)}
+.fp-img{position:relative; display:inline-flex; max-width:100%; max-height:100%}
+.fp-img img{border:1px solid var(--line); transition:box-shadow .15s}
+.filepick.has-img:hover .fp-img img, .filepick.has-img:focus-within .fp-img img{box-shadow:0 0 0 3px var(--drop-soft), 0 0 0 1px var(--drop)}
+.fp-img .fp-clear{top:-11px; inset-inline-end:-11px; transform:none; box-shadow:0 1px 4px rgb(0 0 0 / .18)}
+.filepick.invalid{border-color:var(--danger); background:var(--danger-soft)}
+.filepick.invalid .fp-icon{color:var(--danger); border-color:var(--danger)}
+.filepick.shake0{animation:fp-shake0 .4s ease-in-out}
+.filepick.shake1{animation:fp-shake1 .4s ease-in-out}
+@keyframes fp-shake0{20%{transform:translateX(-7px)} 40%{transform:translateX(6px)} 60%{transform:translateX(-4px)} 80%{transform:translateX(2px)}}
+@keyframes fp-shake1{20%{transform:translateX(-7px)} 40%{transform:translateX(6px)} 60%{transform:translateX(-4px)} 80%{transform:translateX(2px)}}
+@media (prefers-reduced-motion: reduce){ .filepick.shake0, .filepick.shake1{animation:none} }
 .filepick input{position:absolute; width:1px; height:1px; opacity:0; pointer-events:none}
 .fp-text{display:flex; flex-direction:column; gap:2px; min-width:0}
 .fp-text b{font-size:13.5px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
@@ -943,6 +975,33 @@ details p{margin:6px 0 0; font-family:var(--font-data); font-size:11.5px; line-h
 .pdfpick select{padding:7px 8px; border:1px solid var(--line); border-radius:7px; background:var(--surface)}
 .pdfprev{border:1px solid var(--line); border-radius:8px; background:#fff; min-height:200px; display:grid; place-items:center; overflow:hidden}
 .pdfprev img{max-width:100%; max-height:60vh; display:block}
+/* the upload page: one centred column, the drop zone a square */
+.planup{max-width:560px; text-align:center}
+.planup .dnote{text-wrap:balance}
+.planup .filepick.large{width:min(100%, 58vh); min-width:min(100%, 320px); align-self:center; aspect-ratio:1; min-height:0; padding:24px}
+.planup .filepick img{max-height:calc(100% - 56px); max-width:100%; background:#fff}
+.planup .filepick.large.has-img{aspect-ratio:auto; padding:12px 0 0}
+.planup .filepick.has-img img{max-height:52vh}
+.planup.is-reading .filepick.large{aspect-ratio:auto; max-height:30vh}   /* room for the reading steps on a short screen */
+.planup.is-reading .filepick img{max-height:calc(30vh - 100px)}
+.planup .acts2{justify-content:center}
+.planup .pdfpick{align-items:center}
+.planup .readsteps{text-align:start}
+/* reading the plan: the steps, the current one with a turning ring */
+.readsteps{display:flex; flex-direction:column; gap:8px; padding:14px 16px; border:1px solid var(--line); border-radius:12px; background:var(--surface)}
+.readsteps strong{font-size:14px}
+.readsteps ol{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:7px}
+.readsteps li{display:flex; align-items:center; gap:9px; font-size:13px; color:var(--muted)}
+.readsteps li.now{color:var(--ink); font-weight:600}
+.readsteps li.done{color:var(--ink)}
+.rs-dot{display:grid; place-items:center; width:18px; height:18px; flex:none; border-radius:50%; border:2px solid var(--line); font-size:11px; line-height:1}
+.readsteps li.done .rs-dot{border-color:var(--accent); background:var(--accent); color:#fff}
+.readsteps li.now .rs-dot{border-color:var(--accent-soft); border-top-color:var(--accent); animation:rs-spin .8s linear infinite}
+.readsteps small{font-size:12px; color:var(--muted)}
+@keyframes rs-spin{to{transform:rotate(360deg)}}
+.dnote.busyline::before{content:""; display:inline-block; width:11px; height:11px; margin-inline-end:7px; vertical-align:-1px; border-radius:50%;
+  border:2px solid var(--accent-soft); border-top-color:var(--accent); animation:rs-spin .8s linear infinite}
+@media (prefers-reduced-motion: reduce){ .readsteps li.now .rs-dot, .dnote.busyline::before{animation-duration:2.4s} }
 .setup-actions > .dnote{align-self:center; margin:0}
 /* The flat screen */
 .flat-grid{display:grid; grid-template-columns:minmax(0,1.4fr) minmax(280px,0.8fr); gap:12px; align-items:start}

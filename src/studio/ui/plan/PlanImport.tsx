@@ -1,6 +1,6 @@
-// "I have a floor plan": upload an image or PDF; the rooms are read from the walls (readPlan.ts) and the AI
-// reads their names and written sizes; correct it on top of the plan, set the scale and ceiling height,
-// then start designing.
+// "I have a floor plan": upload an image or PDF and press Continue; the rooms are read from the walls (readPlan.ts)
+// and the AI reads their names and written sizes, with each step shown on the upload page. Once read, correct it
+// on top of the plan, set the scale and ceiling height, then start designing.
 import { useEffect, useReducer, useRef, useState } from "react";
 import { t } from "../../i18n.js";
 import { setCode } from "../../render-ai.js";
@@ -19,12 +19,35 @@ import { AccountButton } from "../AccountDialog";
 import ThemeButton from "../ThemeButton";
 import { useLang } from "../hooks";
 import { loadImage } from "./image";
-import { readPlan as readFromWalls, type WallHandle } from "./readPlan";
+import { readPlan as readFromWalls, type ReadStep, type WallHandle } from "./readPlan";
+import FilePick from "../FilePick";
+
+const STEPS: ReadStep[] = ["walls", "names", "places", "rooms"];
+
+// The reading steps, the current one turning: so it's plain that the plan is being read, and how far along.
+function ReadSteps({now}: {now: ReadStep}){
+  const at = STEPS.indexOf(now);
+  return (
+    <div className="readsteps" role="status" aria-live="polite">
+      <strong>{t("planReadingTitle")}</strong>
+      <ol>{STEPS.map((s, i) => (
+        <li key={s} className={i < at ? "done" : i === at ? "now" : ""}>
+          <span className="rs-dot" aria-hidden="true">{i < at ? "✓" : ""}</span>{t("readStep_" + s)}
+        </li>))}
+      </ol>
+      <small>{t("planReadWait")}</small>
+    </div>
+  );
+}
 
 const MAX_EDIT = 2400;
 
 const isPdf = (f: File) => f.type === "application/pdf" || /\.pdf$/i.test(f.name);
 const isCad = (f: File) => /\.(dwg|dxf)$/i.test(f.name);
+const isImage = (f: File) => /^image\/(png|jpeg|webp)$/.test(f.type) || /\.(png|jpe?g|webp)$/i.test(f.name);
+// PDFs: the page picker and reading work, but they're not offered yet. true lets them in again.
+const PDF_ON = false;
+const ACCEPT = "image/png,image/jpeg,image/webp" + (PDF_ON ? ",.pdf,application/pdf" : "");
 
 type Props = {
   initialFlat: Flat | null;            // "Edit plan" from the flat screen
@@ -51,6 +74,9 @@ export default function PlanImport(props: Props){
   const [layout, setLayout] = useState<"stacked" | "side" | null>(() => { try { return (localStorage.getItem("rp_plan_layout") as any) || null; } catch { return null; } });
   const [isNew, setIsNew] = useState(!props.initialFlat);
   const [armRead, setArmRead] = useState(false);       // "Read again" over designed spaces waits for a second click
+  const [picked, setPicked] = useState<{file: File, img: {dataUrl: string, w: number, h: number} | null, preview: string | null} | null>(null);
+  const [reading, setReading] = useState<ReadStep | null>(null);   // what reading is busy with
+  const [nudge, setNudge] = useState(0);   // Continue with nothing chosen: the drop zone turns red and shakes
   const codeRef = useRef<HTMLInputElement>(null);
   const walls = useRef<WallHandle | null>(null);      // for click-to-fill and doors on gaps; not saved
   const current = useRef<Flat["image"] | null>(null); // the image being read
@@ -94,10 +120,11 @@ export default function PlanImport(props: Props){
     if (f.spaces.some(s => s.design) && !armRead){ setArmRead(true); say(t("rereadSure"), true); return; }
     setArmRead(false);
     setBusy(true); setNeedCode(false);
-    say(t("readingWalls"));
+    const onStep = (s: ReadStep) => { setReading(s); say(t("readStep_" + s) + "…"); };
+    onStep("walls");
     try {
       const src = f.image.dataUrl || props.imageUrl || "";
-      const r = await readFromWalls({dataUrl:src, w:f.image.w, h:f.image.h}, {ai:true, t, edits:f.edits || [], scale:f.scale});
+      const r = await readFromWalls({dataUrl:src, w:f.image.w, h:f.image.h}, {ai:true, t, edits:f.edits || [], scale:f.scale, onStep});
       if (current.current && current.current !== f.image) return;     // another plan was picked meanwhile
       walls.current = r.walls;
       if (r.needCode){ setNeedCode(true); setTimeout(() => codeRef.current?.focus()); }
@@ -113,36 +140,60 @@ export default function PlanImport(props: Props){
       const sure = next.spaces.filter(x => !x.suggested).length, sug = next.spaces.length - sure;
       const found = next.spaces.length ? [t("planRead", {s:sure, o:next.openings.length}), sug ? t("planSuggested", {n:sug}) : "", next.scale ? t("planCheck") : t("planNeedScale")].filter(Boolean).join(" ") : "";
       say([r.notice, found || (r.walls.ok ? t("planNone") : "")].filter(Boolean).join(" "), Boolean(r.notice) || !next.spaces.length);
-    } catch { say(t("planImageErr"), true); }
-    finally { setBusy(false); }
+    } catch {
+      say(t("planImageErr"), true);
+      setFlat(prev => prev || f);   // from the upload page: on to the plan anyway, to draw the rooms by hand
+    }
+    finally { setBusy(false); setReading(null); }
   }
 
+  // A new plan is read on the upload page; the plan screen opens once it's read.
   async function useImage(img: {dataUrl: string, w: number, h: number}){
     const f = newFlat(img);
     walls.current = null;                               // the old plan's walls must not be used on this one
-    setFlat(f); setPdf(null); setSel(null); setIsNew(true); setArmRead(false);
+    setSel(null); setIsNew(true); setArmRead(false);
     await readPlan(f);
   }
 
+  // Picking a file only shows it on the upload page (from the plan screen too, via "Use another file");
+  // Continue reads it.
   async function pickFile(file: File | undefined){
     if (!file) return;
     say("");
     if (isCad(file)){ say(t("planCad"), true); return; }
+    if (!isImage(file) && !(PDF_ON && isPdf(file))){ say(t("planOnlyImages"), true); return; }
+    setNudge(0);
+    setBusy(true);
     try {
       if (isPdf(file)){
-        setBusy(true); say(t("pdfOpening"));
+        say(t("pdfOpening"));
         const {pdfPageCount, renderPdfPage} = await import("../../plan/pdf.js");
         const pages = await pdfPageCount(file);
-        if (pages === 1){ await useImage(await renderPdfPage(file, 1, MAX_EDIT)); return; }
-        const first = await renderPdfPage(file, 1, 600);
-        setFlat(null); setSel(null);   // the page picker shows instead of the plan
-        setPdf({file, pages, page:1, preview:first.dataUrl}); say("");
-        return;
+        if (pages === 1){
+          const img = await renderPdfPage(file, 1, MAX_EDIT);
+          setPdf(null); setPicked({file, img, preview:img.dataUrl});
+        } else {
+          const first = await renderPdfPage(file, 1, 600);
+          setPdf({file, pages, page:1, preview:first.dataUrl}); setPicked({file, img:null, preview:null});
+        }
+      } else {
+        const url = URL.createObjectURL(file);
+        try { const img = await loadImage(url, MAX_EDIT); setPdf(null); setPicked({file, img, preview:img.dataUrl}); }
+        finally { URL.revokeObjectURL(url); }
       }
-      const url = URL.createObjectURL(file);
-      try { await useImage(await loadImage(url, MAX_EDIT)); } finally { URL.revokeObjectURL(url); }
+      setFlat(null); setSel(null); say("");
     } catch { say(t("planFileErr"), true); }
     finally { setBusy(false); }
+  }
+
+  async function start(){
+    if (!picked){ setNudge(n => n + 1); say(t("planNeedImage"), true); return; }
+    setBusy(true); say("");
+    try {
+      let img = picked.img;
+      if (!img && pdf){ const {renderPdfPage} = await import("../../plan/pdf.js"); img = await renderPdfPage(pdf.file, pdf.page, MAX_EDIT); }
+      if (img) await useImage(img);
+    } catch { say(t("planFileErr"), true); setBusy(false); }
   }
 
   async function showPage(page: number){
@@ -152,23 +203,13 @@ export default function PlanImport(props: Props){
     try { const r = await renderPdfPage(pdf.file, page, 600); setPdf(p => p && p.page === page ? {...p, preview:r.dataUrl} : p); } catch { say(t("planFileErr"), true); }
   }
 
-  async function usePage(){
-    if (!pdf) return;
-    setBusy(true);
-    try {
-      const {renderPdfPage} = await import("../../plan/pdf.js");
-      await useImage(await renderPdfPage(pdf.file, pdf.page, MAX_EDIT));
-    } catch { say(t("planFileErr"), true); }
-    finally { setBusy(false); }
-  }
-
   const header = (
     <header className="bar">
       <div className="brand"><strong>RoomPitch</strong><span className="tag">{t("planTitleTag")}</span></div>
       <div className="tools"><ThemeButton/><AccountButton onOpen={props.onAccount}/><button className="btn langbtn" type="button" onClick={props.onLang}>{t("langBtn")}</button></div>
     </header>
   );
-  const statusLine = <p className={"dnote" + (status.err ? " err" : "")} role="status">{status.text}</p>;
+  const statusLine = <p className={"dnote" + (status.err ? " err" : "") + (reading ? " busyline" : "")} role="status">{status.text}</p>;
   const codeRow = needCode && (
     <div className="coderow">
       <label htmlFor="accessCode3">{t("accessLabel")}</label>
@@ -178,34 +219,34 @@ export default function PlanImport(props: Props){
   );
   const fileButton = (label: string, primary = false) => (
     <label className={"btn filebtn" + (primary ? " primary" : "")}><span>{label}</span>
-      <input type="file" accept="image/*,.pdf,application/pdf,.dwg,.dxf" disabled={busy} onChange={e => { pickFile(e.target.files?.[0]); e.target.value = ""; }}/>
+      <input type="file" accept={ACCEPT} disabled={busy} onChange={e => { pickFile(e.target.files?.[0]); e.target.value = ""; }}/>
     </label>
   );
 
-  // ---- 1. upload, 2. PDF page ----
+  // ---- 1. upload (a PDF: which page), then read ----
   if (!flat){
     return (
       <section className="setup wrap">
         {header}
-        <div className="planup">
+        <div className={"planup" + (reading ? " is-reading" : "")}>
           <h1>{t("planUpTitle")}</h1>
           <p className="dnote">{t("planUpSub")}</p>
-          {!pdf && <div className="acts2">{fileButton(t("planPick"), true)}</div>}
+          <FilePick id="planFile" large accept={ACCEPT} file={picked?.file || null}
+            image={pdf ? pdf.preview : picked?.preview} disabled={busy} prompt={t("planDrop")} hint={t("planDropHint")} onPick={pickFile}
+            onClear={() => { setPicked(null); setPdf(null); say(""); }} invalid={nudge}/>
           {pdf && (
             <div className="pdfpick">
               <label><span>{t("pdfPage")}</span>
                 <select value={pdf.page} disabled={busy} onChange={e => showPage(Number(e.target.value))}>
                   {Array.from({length:pdf.pages}, (_, i) => <option key={i} value={i + 1}>{t("pdfPageN", {n:i + 1, of:pdf.pages})}</option>)}
                 </select></label>
-              <div className="pdfprev">{pdf.preview ? <img src={pdf.preview} alt=""/> : <span className="dnote">{t("pdfOpening")}</span>}</div>
-              <div className="acts2">
-                <button className="btn primary" type="button" disabled={busy} onClick={usePage}>{t("pdfUse")}</button>
-                {fileButton(t("planOther"))}
-              </div>
             </div>
           )}
-          {statusLine}
-          <div className="setup-actions"><button className="btn" type="button" onClick={props.onCancel}>{t("backChoice")}</button></div>
+          {reading ? <ReadSteps now={reading}/> : statusLine}
+          <div className="acts2">
+            <button className="btn primary" type="button" disabled={busy} onClick={start}>{t(reading ? "planReadingBtn" : "planContinue")}</button>
+            <button className="btn" type="button" onClick={props.onCancel}>{t("backChoice")}</button>
+          </div>
         </div>
       </section>
     );

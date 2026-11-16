@@ -68,8 +68,12 @@ async function post(url: string, body: object){
   return {status:r.status, ok:r.ok, data};
 }
 
-export async function readPlan(image: {dataUrl: string, w: number, h: number}, opts: {ai: boolean, t: (k: string, v?: any) => string, edits?: Edit[], scale?: number | null}): Promise<ReadResult>{
-  const {t} = opts;
+// What reading is busy with, in order (names and places only when the AI reads the plan).
+export type ReadStep = "walls" | "names" | "places" | "rooms";
+
+export async function readPlan(image: {dataUrl: string, w: number, h: number}, opts: {ai: boolean, t: (k: string, v?: any) => string, edits?: Edit[], scale?: number | null, onStep?: (step: ReadStep) => void}): Promise<ReadResult>{
+  const {t} = opts, step = opts.onStep || (() => {});
+  step("walls");
   const gen = ++generation, rgba = await pixels(image.dataUrl, image.w, image.h);
   const edits = opts.edits || [];
   const info = await ask({type:"read", gen, rgba, w:image.w, h:image.h, edits, scale:opts.scale ?? null}, [rgba]);
@@ -78,8 +82,11 @@ export async function readPlan(image: {dataUrl: string, w: number, h: number}, o
   let text = {rooms:[] as any[]}, points: Record<string, [number, number][]> = {};
   if (opts.ai && (info.quality.ok || info.fittable)){
     try {
+      step("names");
       const small = await loadImage(image.dataUrl, 1600);
       const read = await post("/api/plan", {image:small.dataUrl});
+      const u = read.data.used;   // which model read the plan (also in the server's log)
+      if (u) console.info(`Plan read by ${u.provider} ${u.model}${u.app ? " via " + u.app : ""} (${read.status})${u.cost != null ? " cost $" + u.cost : ""}${u.request ? " request " + u.request : ""}`);
       if (read.status === 401){ needCode = true; notice = t("enterCode"); }
       else if (read.status === 503){ aiOff = true; notice = t("planOff"); }
       else if (!read.ok) notice = read.data.error || t("wentWrong", {s:read.status});
@@ -89,6 +96,7 @@ export async function readPlan(image: {dataUrl: string, w: number, h: number}, o
         // nothing to name and no written size to fit: don't spend the allowance
         const useful = info.candidates > 0 || (info.fittable && text.rooms.some((r: any) => r.size));
         if (names.length && useful){
+          step("places");
           const pt = await post("/api/point", {image:small.dataUrl, w:small.w, h:small.h, names}).catch(() => null);
           if (pt?.ok) for (const [name, list] of Object.entries(pt.data.points || {}))
             if ((list as any[]).length) points[name] = (list as [number, number][]).map(([x, y]) => [x * image.w, y * image.h]);
@@ -105,6 +113,7 @@ export async function readPlan(image: {dataUrl: string, w: number, h: number}, o
       }
     } catch { notice = t("noServer"); }
   }
+  step("rooms");
   const read: Flat = await ask({type:"assemble", gen, text, points, image:{w:image.w, h:image.h}});
   const flat = deriveOpens({...read, image:{...read.image, dataUrl:image.dataUrl}, edits}, info.gaps || [], openTol(info.thick || 0));
   const walls: WallHandle = {

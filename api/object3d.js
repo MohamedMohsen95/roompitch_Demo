@@ -6,6 +6,8 @@
 // POST /api/object3d  { image: "data:image/jpeg;base64,..." }  -> { task }
 // GET  /api/object3d?task=<id>    -> { status: "working"|"done"|"failed", queued?, url?, preview?, error? }
 // GET  /api/object3d?task=<id>&file=1  -> the model itself (.glb), for when the browser can't fetch fal's link
+// GET  /api/object3d?recent=1     -> { models: [{task, at, preview}] }: models fal finished in the last 7 days (newest first),
+//                                    from fal's own request history, so one the app stopped waiting for isn't lost
 //
 //   FAL_KEY              the same fal.ai key as api/generate.js
 //   FAL_3D_MODEL         optional: default "tripo3d/h3.1/image-to-3d"
@@ -73,11 +75,23 @@ async function fal(path, init = {}){
   throw err;
 }
 
+// Finished models from fal's request history (its platform API, the same key). The input photos come back too, so
+// only a few are asked for.
+async function recent(){
+  const q = new URLSearchParams({endpoint_id:model(), start:new Date(Date.now() - 7 * 864e5).toISOString(), status:"success", limit:"12", expand:"payloads"});
+  const r = await fetch(`https://api.fal.ai/v1/models/requests/by-endpoint?${q}`,
+    {headers:{Authorization:`Key ${process.env.FAL_KEY}`}, signal:AbortSignal.timeout(20_000)});
+  if (!r.ok){ console.error("object3d recent", r.status, (await r.text()).slice(0, 200)); return []; }
+  const data = await r.json().catch(() => ({}));
+  return (data.items || []).filter(i => i.json_output?.model_mesh?.url)
+    .map(i => ({task:i.request_id, at:i.ended_at, preview:i.json_output.rendered_image?.url || null}));
+}
+
 export default async function handler(req, res){
   res.setHeader("Cache-Control", "no-store");
   const url = new URL(req.url, "http://localhost");
   const task = url.searchParams.get("task");
-  if (req.method === "GET" && !task){
+  if (req.method === "GET" && !task && !url.searchParams.get("recent")){
     let o = null; try { o = input(); } catch {}
     return res.status(200).json({enabled:Boolean(process.env.FAL_KEY), model:model(), input:o, cost:o && cost(o)});
   }
@@ -86,6 +100,7 @@ export default async function handler(req, res){
   if (!process.env.FAL_KEY) return res.status(503).json({error:"Photo to 3D needs FAL_KEY in .env"});
 
   try {
+    if (req.method === "GET" && url.searchParams.get("recent")) return res.status(200).json({models:await recent()});
     if (req.method === "POST"){
       let body = req.body;
       if (typeof body === "string"){ try { body = JSON.parse(body); } catch { body = null; } }
@@ -98,7 +113,8 @@ export default async function handler(req, res){
     if (!/^[\w-]{8,64}$/.test(task)) return res.status(400).json({error:"Bad task id"});
     const base = `${app()}/requests/${encodeURIComponent(task)}`;
     const s = await fal(`${base}/status`);
-    if (s.status !== "COMPLETED") return res.status(200).json({status:"working", queued:s.status === "IN_QUEUE"});
+    if (s.status !== "COMPLETED") return res.status(200).json({status:"working", queued:s.status === "IN_QUEUE",
+      position:typeof s.queue_position === "number" ? s.queue_position : null});
     let out;
     try { out = await fal(base); }
     catch (err){ return res.status(200).json({status:"failed", error:err.message}); }

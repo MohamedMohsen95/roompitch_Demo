@@ -2,8 +2,8 @@
 // Or start from a photo of the piece, in two steps: the photo becomes a model (photo-3d.js, Tripo on fal.ai), then
 // it's named and priced the same way.
 // It's saved to the account (model-upload.js) and joins the furniture library.
-import { useEffect, useRef, useState, type ChangeEvent, type DragEvent } from "react";
-import { photo3dInfo, photoTo3D } from "../photo-3d.js";
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
+import { earlierModels, photo3dInfo, rememberTask, setAsideTask, startPhoto3D, waitFor3D } from "../photo-3d.js";
 import { applyCatalog, FU } from "../catalog.js";
 import { requestThumb } from "../thumbs.js";
 import { MAX_BYTES, measureModel, uploadModel } from "../model-upload.js";
@@ -12,30 +12,11 @@ import { notify } from "../store.js";
 import { t } from "../i18n.js";
 import { settings } from "../settings.js";
 import Modal from "./Modal";
-import { IconUpload } from "./Icons";
+import FilePick from "./FilePick";
 import { useAccount } from "./account";
 
 type Status = {text: string, err: boolean};
 
-// A file input in the app's look: a box to click or drop a file on, showing what's chosen (or a picture of it).
-function FilePick({id, accept, file, image, prompt, hint, disabled, large, onPick}: {
-  id: string, accept: string, file: File | null, image?: string, prompt: string, hint: string,
-  disabled?: boolean, large?: boolean, onPick: (f: File | undefined) => void
-}){
-  const [over, setOver] = useState(false);
-  const drop = (e: DragEvent) => { e.preventDefault(); setOver(false); if (!disabled) onPick(e.dataTransfer.files?.[0]); };
-  return (
-    <label htmlFor={id} className={"filepick" + (large ? " large" : "") + (over ? " over" : "") + (disabled ? " off" : "") + (image ? " has-img" : "")}
-      onDragOver={e => { e.preventDefault(); if (!disabled) setOver(true); }} onDragLeave={() => setOver(false)} onDrop={drop}>
-      <input id={id} type="file" accept={accept} disabled={disabled} onChange={e => { onPick(e.target.files?.[0]); e.target.value = ""; }}/>
-      {image ? <img src={image} alt=""/> : <span className="fp-icon"><IconUpload/></span>}
-      <span className="fp-text">
-        <b>{file ? file.name : prompt}</b>
-        <small>{file ? t("umChange") : hint}</small>
-      </span>
-    </label>
-  );
-}
 const EMPTY = {name:"", nameAr:"", price:"", w:"", d:"", h:""};
 
 export default function UploadDialog({open, onClose}: {open: boolean, onClose: () => void}){
@@ -53,6 +34,9 @@ export default function UploadDialog({open, onClose}: {open: boolean, onClose: (
   const [shots, setShots] = useState<{photo: string, model?: string} | null>(null);
   const [making, setMaking] = useState(false);
   const [step, setStep] = useState<1 | 2>(1);   // from a photo: 1 makes the model, 2 names and prices it
+  const [task, setTask] = useState<string | null>(null);   // fal's task still making the model, after waiting gave up
+  const [madeBy, setMadeBy] = useState<string | null>(null);   // the task the current model came from
+  const [earlier, setEarlier] = useState<{task: string, at: string, preview: string | null, name: string | null}[]>([]);
   const stop = useRef<AbortController | null>(null);
   const set = (k: keyof typeof EMPTY) => (e: ChangeEvent<HTMLInputElement>) => setF(v => ({...v, [k]:e.target.value}));
   const say = (text: string, err = false) => setStatus({text, err});
@@ -60,35 +44,44 @@ export default function UploadDialog({open, onClose}: {open: boolean, onClose: (
   useEffect(() => {
     if (!open) return;
     setF(EMPTY); setFile(null); setMeasured(null); setWho("everyone"); say(""); setBusy(false);
-    setSource("file"); setPhoto(null); setShots(null); setMaking(false); setStep(1);
-    photo3dInfo().then(i => { setPhotoOn(i.enabled); setCost(i.cost); });
+    setSource("file"); setPhoto(null); setShots(null); setMaking(false); setStep(1); setTask(null); setMadeBy(null); setEarlier([]);
+    photo3dInfo().then(i => { setPhotoOn(i.enabled); setCost(i.cost); if (i.enabled) earlierModels().then(setEarlier); });
     return () => stop.current?.abort();
   }, [open]);
-  useEffect(() => () => { if (shots) URL.revokeObjectURL(shots.photo); }, [shots?.photo]);
+  useEffect(() => () => { if (shots?.photo.startsWith("blob:")) URL.revokeObjectURL(shots.photo); }, [shots?.photo]);
 
   function pickSource(v: "file" | "photo"){
     if (making) return;
-    setSource(v); setFile(null); setMeasured(null); setPhoto(null); setShots(null); setStep(1); say("");
+    setSource(v); setFile(null); setMeasured(null); setPhoto(null); setShots(null); setStep(1); setTask(null); say("");
   }
 
   function choosePhoto(chosen: File | undefined){
     if (chosen && !/^image\/(jpeg|png|webp)$/.test(chosen.type)) return say(t("umErrPhotoType"), true);
-    setFile(null); setMeasured(null); setPhoto(chosen || null); say("");
+    setFile(null); setMeasured(null); setPhoto(chosen || null); setTask(null); say("");
     setShots(chosen ? {photo:URL.createObjectURL(chosen)} : null);
     if (chosen && !f.name.trim()) setF(v => ({...v, name:chosen.name.replace(/\.\w+$/, "").replace(/[_-]+/g, " ").trim()}));
   }
 
-  async function make(){
-    if (!photo) return say(t("umErrPhoto"), true);
+  // A new model from the photo, or (`again`) more waiting on one fal is making or has made (no photo needed then).
+  async function make(again?: string){
+    if (!photo && !again) return say(t("umErrPhoto"), true);
     const ctl = new AbortController(); stop.current = ctl;
-    setMaking(true); say(t("umSending"));
+    setMaking(true); setTask(null); say(t(again ? "umMaking" : "umSending", {time:"0:00"}));
+    let id = again || null;
     try {
-      const out = await photoTo3D(photo, {name:f.name.trim() || "model", signal:ctl.signal, onProgress:p => say(t(p.queued ? "umQueued" : "umMaking", {time:`${Math.floor(p.seconds / 60)}:${String(p.seconds % 60).padStart(2, "0")}`}))});
+      if (!id){ id = await startPhoto3D(photo!, ctl.signal); rememberTask(id, f.name.trim() || photo!.name); }
+      const out = await waitFor3D(id, {name:f.name.trim() || "model", signal:ctl.signal, onProgress:p => {
+        const time = `${Math.floor(p.seconds / 60)}:${String(p.seconds % 60).padStart(2, "0")}`;
+        say(p.queued ? t(p.position != null ? "umQueuedAt" : "umQueued", {time, n:p.position! + 1}) : t("umMaking", {time}));
+      }});
       if (ctl.signal.aborted) return;
-      setShots(v => v && {...v, model:out.preview});
+      setShots(v => v ? {...v, model:out.preview} : out.preview ? {photo:out.preview} : null);
+      setMadeBy(id);
       if (await choose(out.file)) setStep(2);
     } catch (e: any) {
-      if (e.name !== "AbortError") say(e.message === "timeout" ? t("umErrSlow") : t("umErrMake", {msg:e.message}), true);
+      if (e.name === "AbortError") return;
+      if (e.message === "timeout" && id){ setTask(id); say(t("umErrSlow"), true); }
+      else say(t("umErrMake", {msg:e.message}), true);
     } finally { if (!ctl.signal.aborted) setMaking(false); }
   }
 
@@ -108,6 +101,16 @@ export default function UploadDialog({open, onClose}: {open: boolean, onClose: (
     } catch { say(t("umErrFile"), true); return false; }
   }
 
+  // One of the models fal made earlier: fetched like a new one, without paying again.
+  function useEarlier(m: {task: string, name: string | null}){
+    choosePhoto(undefined);
+    if (m.name) setF(v => ({...v, name:m.name!}));
+    make(m.task);
+  }
+  function dismissEarlier(taskId: string){
+    setAsideTask(taskId); setEarlier(v => v.filter(m => m.task !== taskId));
+  }
+
   function stopMaking(){
     stop.current?.abort(); setMaking(false); say(t("umStopped"));
   }
@@ -124,6 +127,7 @@ export default function UploadDialog({open, onClose}: {open: boolean, onClose: (
       const row = await uploadModel({file, name, nameAr:f.nameAr.trim(), price, currency:settings.currency, w, d, h,
         shared:Boolean(account?.admin) && who === "everyone"});
       applyCatalog([row]); notify();
+      if (madeBy) setAsideTask(madeBy);   // in the library now: no longer offered as an earlier model
       requestThumb(FU[row.id]);   // its library picture, saved with it
       onClose();
       flashHint(t("umDone", {name}), 5000);
@@ -147,13 +151,31 @@ export default function UploadDialog({open, onClose}: {open: boolean, onClose: (
       {source === "photo" && step === 1 ? <>
         <p className="dnote">{t(cost == null ? "umPhotoNote" : "umPhotoNoteCost", {cost:cost?.toFixed(2)})}</p>
         <FilePick id="umPhoto" large accept="image/jpeg,image/png,image/webp" file={photo} image={shots?.photo} disabled={making}
-          prompt={t("umDropPhoto")} hint={t("umDropPhotoHint")} onPick={choosePhoto}/>
+          prompt={t("umDropPhoto")} hint={t("umDropPhotoHint")} onPick={choosePhoto} onClear={() => choosePhoto(undefined)}/>
+        {!making && !file && earlier.length > 0 && (
+          <div className="um-earlier">
+            <p className="dnote">{t("umEarlier")}</p>
+            {earlier.slice(0, 4).map(m => (
+              <div key={m.task} className="um-erow">
+                {m.preview ? <img src={m.preview} alt=""/> : <span className="um-eimg"/>}
+                <span className="um-etext"><b>{m.name || t("umEarlierModel")}</b>
+                  <small>{new Date(m.at).toLocaleString(undefined, {dateStyle:"medium", timeStyle:"short"})}</small></span>
+                <button className="btn small" type="button" onClick={() => useEarlier(m)}>{t("umEarlierUse")}</button>
+                <button className="btn small icon" type="button" aria-label={t("umEarlierHide")} title={t("umEarlierHide")}
+                  onClick={() => dismissEarlier(m.task)}>×</button>
+              </div>
+            ))}
+          </div>
+        )}
         <p className={"mstatus" + (status.err ? " err" : "")} role="status">{status.text}</p>
         <div className="acts2">
           {file && measured && !making
             ? <><button className="btn primary" type="button" onClick={() => { setStep(2); say(""); }}>{t("umNext")}</button>
-                <button className="btn" type="button" onClick={make}>{t("umMakeAgain")}</button></>
-            : <button className="btn primary" type="button" disabled={!photo || making} onClick={make}>{t("umMake")}</button>}
+                <button className="btn" type="button" onClick={() => make()}>{t("umMakeAgain")}</button></>
+            : task && !making
+              ? <><button className="btn primary" type="button" onClick={() => make(task)}>{t("umKeepWaiting")}</button>
+                  <button className="btn" type="button" onClick={() => make()}>{t("umMakeAgain")}</button></>
+              : <button className="btn primary" type="button" disabled={!photo || making} onClick={() => make()}>{t("umMake")}</button>}
           {making
             ? <button className="btn" type="button" onClick={stopMaking}>{t("umStop")}</button>
             : <button className="btn" type="button" onClick={onClose}>{t("cancel")}</button>}
@@ -170,7 +192,7 @@ export default function UploadDialog({open, onClose}: {open: boolean, onClose: (
           : <>
               <p className="dnote">{t(photoOn ? "umNote" : "umNoteNoPhoto")}</p>
               <FilePick id="umFile" accept=".glb,.gltf,model/gltf-binary,model/gltf+json" file={file}
-                prompt={t("umDropModel")} hint={t("umDropModelHint")} onPick={choose}/>
+                prompt={t("umDropModel")} hint={t("umDropModelHint")} onPick={choose} onClear={() => { choose(undefined); say(""); }}/>
             </>}
         <div className="form">
           <label htmlFor="umName">{t("umName")}</label><input id="umName" type="text" maxLength={80} value={f.name} onChange={set("name")}/>

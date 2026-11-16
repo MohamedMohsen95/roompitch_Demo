@@ -34,13 +34,14 @@ export async function runModel(model, body, timeoutMs = 55_000){
 }
 
 // The checks every AI route makes before calling the model: method, access code, keys, image.
-// Returns the parsed body, or null after answering the request itself.
-export function guard(req, res, model, extra = () => null){
+// Returns the parsed body, or null after answering the request itself. `keys`: for a route that can use
+// another provider, whether it is ready and what to say when it is not (default: the Cloudflare keys).
+export function guard(req, res, model, extra = () => null, keys = {ready:hasKeys(), missing:"Plan reading needs CF_ACCOUNT_ID and CF_API_TOKEN in .env"}){
   res.setHeader("Cache-Control", "no-store");
   if (req.method === "GET"){ res.status(200).json({enabled:hasKeys(), model}); return null; }
   if (req.method !== "POST"){ res.setHeader("Allow", "GET, POST"); res.status(405).json({error:"Method not allowed"}); return null; }
   if (process.env.ACCESS_CODE && req.headers["x-access-code"] !== process.env.ACCESS_CODE){ res.status(401).json({error:"Access code required"}); return null; }
-  if (!hasKeys()){ res.status(503).json({error:"Plan reading needs CF_ACCOUNT_ID and CF_API_TOKEN in .env"}); return null; }
+  if (!keys.ready){ res.status(503).json({error:keys.missing}); return null; }
   let body = req.body;
   if (typeof body === "string"){ try { body = JSON.parse(body); } catch { res.status(400).json({error:"Invalid JSON"}); return null; } }
   if (!body || !isImageDataUri(body.image)){ res.status(400).json({error:"Missing or too large image"}); return null; }
