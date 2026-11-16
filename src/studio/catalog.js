@@ -17,7 +17,12 @@ export const WALL_MATS = [
   {id:"plaster-smooth", name:"Smooth plaster", ar:"محارة ناعمة",   price:250,  kind:"paint",  c:"#c9c6c0", tex:"plastered_wall_04", tile:3.2},
   {id:"plaster-rough",  name:"Textured white plaster", ar:"محارة بيضاء خشنة", price:320, kind:"paint", c:"#d9d4ca", tex:"white_plaster_02", tile:1},
   {id:"teak-panel",     name:"Teak veneer panels", ar:"قشرة تيك",    price:2600, kind:"panel",  c:"#a8744a", tex:"teak_veneer", tile:2, turn:true},
-  {id:"marble-tiles-wall", name:"Marble wall tiles", ar:"بلاط رخام للحائط", price:2400, kind:"marble", c:"#d9cdb8", tex:"marble_01", tile:1.5}
+  {id:"marble-tiles-wall", name:"Marble wall tiles", ar:"بلاط رخام للحائط", price:2400, kind:"marble", c:"#d9cdb8", tex:"marble_01", tile:1.5},
+  // Bedroom: a soft feature wall behind the bed, quiet walls around it
+  {id:"white-panels",   name:"White grooved panels", ar:"ألواح بيضاء محززة", price:1300, kind:"panel", c:"#e4e1da", tex:"white_planks_clean", tile:1.8},
+  {id:"washed-oak-panel", name:"Washed oak veneer panels", ar:"قشرة بلوط مغسول", price:2300, kind:"panel", c:"#d9bfa9", tex:"washed_grey_oak_veneer", tile:1, turn:true},
+  {id:"fabric-wall",    name:"Ribbed fabric wall panels", ar:"تجاليد قماش مضلع", price:1800, kind:"wallpaper", c:"#7d8a72", tex:"ribbed_corduroy", tile:.27},
+  {id:"stucco-white",   name:"White stucco", ar:"ستوكو أبيض", price:380, kind:"paint", c:"#e6e3dc", tex:"white_stucco", tile:2}
 ];
 export const FLOOR_MATS = [
   {id:"bare-floor",   name:"Bare screed (unfinished)", ar:"لياسة خام بدون تشطيب", price:0, kind:"concrete", c:"#a9a49b", tile:2},
@@ -29,7 +34,9 @@ export const FLOOR_MATS = [
   {id:"laminate",     name:"Oak laminate", ar:"أرضية لامينيت بلوط", price:600, kind:"parquet", c:"#b08a63", tex:"laminate_floor_02", tile:1.7},
   {id:"interior-tiles", name:"Diagonal stone tiles", ar:"بلاط حجر مائل", price:750, kind:"tiles", c:"#b3a58f", tex:"interior_tiles", tile:1.9},
   {id:"terrazzo",     name:"Terrazzo", ar:"تيرازو",        price:1100, kind:"tiles",   c:"#b8a491", tex:"terrazzo_tiles", tile:2},
-  {id:"marble-tiles", name:"Marble tiles", ar:"بلاط رخام",  price:2600, kind:"marble",  c:"#d9cdb8", tex:"marble_01", tile:1.5}
+  {id:"marble-tiles", name:"Marble tiles", ar:"بلاط رخام",  price:2600, kind:"marble",  c:"#d9cdb8", tex:"marble_01", tile:1.5},
+  {id:"oak-planks",   name:"Oak planks", ar:"ألواح بلوط",   price:1200, kind:"parquet", c:"#a77b52", tex:"oak_wood_planks", tile:1.2},
+  {id:"carpet-beige", name:"Beige carpet", ar:"موكيت بيج", price:450, kind:"paint", c:"#c8bf9c", tex:"Carpet016", texSrc:"ambientcg", tile:1}
 ];
 // Built-in pieces are drawn from boxes; real 3D models from public/models are added by addModels().
 // surface: other pieces can be placed on top of it (see stacking.js).
@@ -71,7 +78,7 @@ const CAT_WORDS = [
   ["rug", /\brug|carpet/], ["bed", /\bbed\b/],
   ["seating", /sofa|couch|chair|ottoman|stool|bench|pouf/],   // before tables: a dining chair is seating
   ["table", /table|desk/], ["storage", /cabinet|unit|shel(f|ves)|wardrobe|dresser|drawer|sideboard|bookcase/],
-  ["decor", /plant|vase|lamp|mirror|decor|\bpot\b|frame/]
+  ["decor", /plant|vase|lamp|mirror|decor|\bpot\b|frame|basket/]
 ];
 export function furnCat(f){
   if (f.rug) return "rug";
@@ -99,7 +106,10 @@ export const EN = {
   "teak-panel":"vertical teak veneer wall panels", "marble-tiles-wall":"beige marble wall tiles",
   herringbone:"herringbone oak parquet", laminate:"light oak laminate planks", "interior-tiles":"diagonal beige stone floor tiles",
   terrazzo:"terrazzo floor tiles", "marble-tiles":"beige marble floor tiles",
-  "rug-plaid":"green and beige wool plaid rug", "rug-shag":"plum shag rug with a geometric pattern"
+  "rug-plaid":"green and beige wool plaid rug", "rug-shag":"plum shag rug with a geometric pattern",
+  "white-panels":"white vertical grooved wall panels", "washed-oak-panel":"pale washed oak veneer wall panels",
+  "fabric-wall":"sage green ribbed fabric upholstered wall panels", "stucco-white":"white textured stucco",
+  "oak-planks":"wide natural oak floor planks", "carpet-beige":"soft beige wall-to-wall carpet"
 };
 
 // Add the models found in public/models (from GET /api/models). Returns how many were new.
