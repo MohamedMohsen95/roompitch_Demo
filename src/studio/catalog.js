@@ -78,7 +78,7 @@ const CAT_WORDS = [
   ["rug", /\brug|carpet/], ["bed", /\bbed\b/],
   ["seating", /sofa|couch|chair|ottoman|stool|bench|pouf/],   // before tables: a dining chair is seating
   ["table", /table|desk/], ["storage", /cabinet|unit|shel(f|ves)|wardrobe|dresser|drawer|sideboard|bookcase/],
-  ["decor", /plant|vase|lamp|mirror|decor|\bpot\b|frame|basket/]
+  ["decor", /plant|vase|lamp|mirror|decor|\bpot\b|frame|basket|television|\btv\b/]
 ];
 export function furnCat(f){
   if (f.rug) return "rug";
